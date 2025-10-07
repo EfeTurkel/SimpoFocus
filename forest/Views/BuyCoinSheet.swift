@@ -74,7 +74,10 @@ struct BuyCoinSheet: View {
                 .environmentObject(localization)
         }
         .padding(22)
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
+        .background(
+            RoundedRectangle(cornerRadius: 28, style: .continuous)
+                .fill(.ultraThinMaterial)
+        )
         .overlay(
             RoundedRectangle(cornerRadius: 28)
                 .stroke(.white.opacity(0.08), lineWidth: 1)
@@ -452,8 +455,10 @@ private struct StatTile: View {
     let value: String
     let icon: String
     @EnvironmentObject private var localization: LocalizationManager
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
+        let isPhoneLight = colorScheme == .light && UIDevice.current.userInterfaceIdiom == .phone
         VStack(spacing: 8) {
             Image(systemName: icon)
                 .font(.headline)
@@ -461,9 +466,9 @@ private struct StatTile: View {
                 .font(.headline)
             Text(title)
                 .font(.caption)
-                .foregroundStyle(.white.opacity(0.6))
+                .foregroundStyle(isPhoneLight ? Color.black.opacity(0.6) : Color.white.opacity(0.6))
         }
-        .foregroundStyle(.white)
+        .foregroundStyle(isPhoneLight ? Color.black : Color.white)
         .frame(maxWidth: .infinity)
         .padding(.vertical, 12)
         .background(.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
@@ -522,12 +527,14 @@ private struct BuyAmountSection: View {
 private struct AmountDisplayRow: View {
     let label: String
     let value: String
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
+        let isPhoneLight = colorScheme == .light && UIDevice.current.userInterfaceIdiom == .phone
         HStack(spacing: 12) {
             Text(label)
                 .font(.caption.weight(.semibold))
-                .foregroundStyle(.white.opacity(0.85))
+                .foregroundStyle(isPhoneLight ? Color.black.opacity(0.85) : Color.white.opacity(0.85))
                 .padding(.vertical, 6)
                 .padding(.horizontal, 12)
                 .background(.white.opacity(0.12), in: Capsule())
@@ -536,7 +543,7 @@ private struct AmountDisplayRow: View {
 
             Text(value)
                 .font(.title3.weight(.semibold))
-                .foregroundStyle(.white)
+                .foregroundStyle(isPhoneLight ? Color.black : Color.white)
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
         }
