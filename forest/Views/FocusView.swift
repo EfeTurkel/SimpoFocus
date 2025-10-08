@@ -75,8 +75,9 @@ struct FocusView: View {
             Spacer(minLength: 12)
         }
         .padding(.horizontal, 24)
-        .padding(.top, 20)
-        .padding(.bottom, 28)
+        .padding(.top, 8)
+        // Align bottom spacing with other tabs; root adds shared bottom padding
+        .padding(.bottom, 0)
         .sheet(isPresented: $showingSettings) {
             TimerSettingsView()
         }

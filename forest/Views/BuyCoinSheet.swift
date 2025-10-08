@@ -458,7 +458,7 @@ private struct StatTile: View {
     @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
-        let isPhoneLight = colorScheme == .light && UIDevice.current.userInterfaceIdiom == .phone
+        let isLightMode = colorScheme == .light
         VStack(spacing: 8) {
             Image(systemName: icon)
                 .font(.headline)
@@ -466,9 +466,9 @@ private struct StatTile: View {
                 .font(.headline)
             Text(title)
                 .font(.caption)
-                .foregroundStyle(isPhoneLight ? Color.black.opacity(0.6) : Color.white.opacity(0.6))
+                .foregroundStyle(isLightMode ? Color.black.opacity(0.6) : Color.white.opacity(0.6))
         }
-        .foregroundStyle(isPhoneLight ? Color.black : Color.white)
+        .foregroundStyle(isLightMode ? Color.black : Color.white)
         .frame(maxWidth: .infinity)
         .padding(.vertical, 12)
         .background(.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
@@ -530,11 +530,11 @@ private struct AmountDisplayRow: View {
     @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
-        let isPhoneLight = colorScheme == .light && UIDevice.current.userInterfaceIdiom == .phone
+        let isLightMode = colorScheme == .light
         HStack(spacing: 12) {
             Text(label)
                 .font(.caption.weight(.semibold))
-                .foregroundStyle(isPhoneLight ? Color.black.opacity(0.85) : Color.white.opacity(0.85))
+                .foregroundStyle(isLightMode ? Color.black.opacity(0.85) : Color.white.opacity(0.85))
                 .padding(.vertical, 6)
                 .padding(.horizontal, 12)
                 .background(.white.opacity(0.12), in: Capsule())
@@ -543,7 +543,7 @@ private struct AmountDisplayRow: View {
 
             Text(value)
                 .font(.title3.weight(.semibold))
-                .foregroundStyle(isPhoneLight ? Color.black : Color.white)
+                .foregroundStyle(isLightMode ? Color.black : Color.white)
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
         }

@@ -23,8 +23,9 @@ struct HomeView: View {
                 segmentedControl
                 contentForSelectedSegment
             }
-            .padding(.vertical, 24)
+            .padding(.vertical, 16)
             .padding(.horizontal, 20)
+            .padding(.bottom, 40)
         }
         .scrollIndicators(.never)
         .background(bloomBackground)

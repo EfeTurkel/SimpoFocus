@@ -21,22 +21,26 @@ struct RootView: View {
             )
             .ignoresSafeArea()
 
-            VStack(spacing: 0) {
-                TabContentView(selectedTab: rootViewModel.selectedTab)
-                    .environmentObject(timer)
-                    .environmentObject(wallet)
-                    .environmentObject(market)
-                    .environmentObject(room)
-                    .environmentObject(bank)
-                    .environmentObject(LocalizationManager.shared)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .padding(.top, 30)
-                    .transition(.opacity.combined(with: .move(edge: .trailing)))
+            // Content fills the screen; tab bar overlays with translucent glass effect
+            TabContentView(selectedTab: rootViewModel.selectedTab)
+                .environmentObject(timer)
+                .environmentObject(wallet)
+                .environmentObject(market)
+                .environmentObject(room)
+                .environmentObject(bank)
+                .environmentObject(LocalizationManager.shared)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .padding(.top, 0)
+                .transition(.opacity.combined(with: .move(edge: .trailing)))
 
-                ModernTabBar(selectedTab: $rootViewModel.selectedTab)
-                    .padding(.horizontal, 24)
-                    .padding(.bottom, 32)
-            }
+            // Bottom bar overlay (thin style)
+            VStack { Spacer() }
+                .overlay(alignment: .bottom) {
+                    ModernTabBar(selectedTab: $rootViewModel.selectedTab)
+                        .padding(.horizontal, 24)
+                        .padding(.bottom, 12)
+                }
+                .ignoresSafeArea(.container, edges: .bottom)
         }
         .onReceive(timer.rewardPublisher) { reward in
             wallet.earn(amount: reward.coinsReward, description: "TXN_REWARD_POMODORO")
@@ -79,8 +83,7 @@ private struct TabContentView: View {
                 HomeView()
             }
         }
-        .padding(.horizontal, 20)
-        .padding(.bottom, 20)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
 
@@ -99,22 +102,16 @@ private struct ModernTabBar: View {
             }
         }
         .padding(.vertical, 12)
-        .padding(.horizontal, 14)
+        .padding(.horizontal, 16)
         .background(
-            ZStack {
-                LinearGradient(colors: [Color.white.opacity(0.22), Color.white.opacity(0.12)], startPoint: .top, endPoint: .bottom)
-                RoundedRectangle(cornerRadius: 32, style: .continuous)
-                    .fill(.ultraThinMaterial)
-                RoundedRectangle(cornerRadius: 32, style: .continuous)
-                    .stroke(LinearGradient(colors: [Color.white.opacity(0.45), Color.white.opacity(0.15)], startPoint: .top, endPoint: .bottom), lineWidth: 1.1)
-            }
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .fill(.ultraThinMaterial)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 24, style: .continuous)
+                        .stroke(.white.opacity(0.2), lineWidth: 0.5)
+                )
         )
-        .clipShape(RoundedRectangle(cornerRadius: 32, style: .continuous))
-        .shadow(color: .black.opacity(0.22), radius: 18, y: 12)
-        .overlay(
-            RoundedRectangle(cornerRadius: 32, style: .continuous)
-                .stroke(Color.white.opacity(0.08), lineWidth: 0.6)
-        )
+        .shadow(color: .black.opacity(0.1), radius: 10, y: 5)
     }
 }
 
@@ -127,16 +124,12 @@ private extension ModernTabBar {
 
     @ViewBuilder
     func tabLabel(for tab: AppTab, isSelected: Bool) -> some View {
-        VStack(spacing: 6) {
+        ZStack {
             tabBackground(isSelected: isSelected)
                 .overlay(tabIcon(for: tab, isSelected: isSelected))
-
-            Text(loc(tab.titleKey, fallback: tab.defaultTitle))
-                .font(.caption2.weight(.semibold))
-                .foregroundStyle(isSelected ? Color.white : Color.white.opacity(0.6))
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 10)
+        .padding(.vertical, 8)
         .contentShape(Rectangle())
     }
 
@@ -144,32 +137,30 @@ private extension ModernTabBar {
     func tabBackground(isSelected: Bool) -> some View {
         ZStack {
             if isSelected {
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
                     .fill(
-                        LinearGradient(colors: [Color.white.opacity(0.45), Color.white.opacity(0.18)],
-                                       startPoint: .topLeading,
-                                       endPoint: .bottomTrailing)
+                        LinearGradient(
+                            colors: [Color.white.opacity(0.25), Color.white.opacity(0.1)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
                     )
                     .overlay(
-                        RoundedRectangle(cornerRadius: 18, style: .continuous)
-                            .stroke(Color.white.opacity(0.35), lineWidth: 1.2)
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .stroke(.white.opacity(0.3), lineWidth: 0.5)
                     )
                     .matchedGeometryEffect(id: "selection", in: selectionAnimation)
             }
-
-            Circle()
-                .fill(Color.white.opacity(isSelected ? 0.95 : 0.3))
-                .frame(width: 38, height: 38)
-                .blur(radius: 8)
-                .opacity(isSelected ? 1 : 0)
         }
-        .frame(width: 52, height: 44)
+        .frame(width: 50, height: 44)
     }
 
     func tabIcon(for tab: AppTab, isSelected: Bool) -> some View {
         Image(systemName: tab.icon)
-            .font(.title3.weight(.semibold))
-            .foregroundStyle(isSelected ? Color.black : Color.white.opacity(0.7))
+            .font(.system(size: 20, weight: .medium))
+            .foregroundStyle(isSelected ? Color.black : Color.white.opacity(0.8))
+            .scaleEffect(isSelected ? 1.1 : 1.0)
+            .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isSelected)
     }
 
     func loc(_ key: String, fallback: String) -> String {

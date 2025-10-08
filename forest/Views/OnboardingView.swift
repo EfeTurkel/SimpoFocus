@@ -18,6 +18,10 @@ struct OnboardingView: View {
     @State private var notificationsEnabled = false
     @State private var selectedLanguage: AppLanguage = LocalizationManager.shared.language
     @FocusState private var nameFieldFocused: Bool
+    
+    // MARK: - Transition
+    private var insertionTransition: AnyTransition { .move(edge: .trailing).combined(with: .opacity).combined(with: .scale(scale: 0.98)) }
+    private var removalTransition: AnyTransition { .move(edge: .leading).combined(with: .opacity).combined(with: .scale(scale: 1.02)) }
 
     private var steps: [Step] { Step.allCases }
 
@@ -29,31 +33,57 @@ struct OnboardingView: View {
                            startPoint: .topLeading,
                            endPoint: .bottomTrailing)
             .ignoresSafeArea()
+            
+            // Subtle bloom accents for a premium depth
+            RadialGradient(colors: [Color.white.opacity(0.08), .clear], center: .topLeading, startRadius: 60, endRadius: 300)
+                .ignoresSafeArea()
+            RadialGradient(colors: [Color.white.opacity(0.06), .clear], center: .bottomTrailing, startRadius: 80, endRadius: 320)
+                .ignoresSafeArea()
 
             VStack(spacing: 28) {
                 Spacer(minLength: 0)
 
-                Image(systemName: step.icon)
-                    .font(.system(size: 72, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .shadow(radius: 12)
-                    .transition(.scale.combined(with: .opacity))
+                ZStack {
+                    VStack(spacing: 14) {
+                        // Gradient-masked icon for a modern Apple-like look
+                        LinearGradient(colors: [Color("ForestGreen"), Color("LakeBlue")], startPoint: .topLeading, endPoint: .bottomTrailing)
+                            .mask(
+                                Image(systemName: step.icon)
+                                    .font(.system(size: 76, weight: .bold))
+                            )
+                            .shadow(color: .black.opacity(0.25), radius: 20, y: 10)
 
-                VStack(spacing: 10) {
-                    Text(loc(step.titleKey))
-                        .font(.title.bold())
-                        .multilineTextAlignment(.center)
-                        .foregroundStyle(.white)
+                        Text(loc(step.titleKey))
+                            .font(.system(.largeTitle, design: .rounded).weight(.bold))
+                            .multilineTextAlignment(.center)
+                            .foregroundStyle(.white)
+                            .shadow(color: .black.opacity(0.12), radius: 8, y: 4)
+                            .lineLimit(2)
+                            .minimumScaleFactor(0.75)
+                            .frame(maxWidth: .infinity)
+                            .padding(.horizontal, 24)
 
-                    Text(loc(step.subtitleKey))
-                        .font(.callout)
-                        .multilineTextAlignment(.center)
-                        .foregroundStyle(.white.opacity(0.75))
-                        .padding(.horizontal, 24)
+                        Text(loc(step.subtitleKey))
+                            .font(.callout)
+                            .multilineTextAlignment(.center)
+                            .foregroundStyle(.white.opacity(0.8))
+                            .padding(.horizontal, 24)
+                            .lineLimit(3)
+                            .minimumScaleFactor(0.8)
+                    }
+                    .id(currentStep)
+                    .transition(.asymmetric(insertion: insertionTransition, removal: removalTransition))
                 }
+                .frame(minHeight: 220)
 
-                stepContent(for: step)
-                    .padding(.horizontal, 24)
+                ZStack {
+                    stepContent(for: step)
+                        .id(currentStep)
+                        .transition(.asymmetric(insertion: insertionTransition, removal: removalTransition))
+                }
+                .padding(.horizontal, 24)
+                .frame(maxWidth: .infinity, alignment: .center)
+                .frame(minHeight: 240, alignment: .top)
 
                 Spacer(minLength: 0)
 
@@ -96,6 +126,11 @@ struct OnboardingView: View {
                     .animation(.easeInOut(duration: 0.25), value: currentStep)
             }
         }
+        .padding(10)
+        .background(.ultraThinMaterial, in: Capsule())
+        .overlay(
+            Capsule().stroke(.white.opacity(0.18), lineWidth: 1)
+        )
     }
 
     private var primaryButton: some View {
@@ -111,6 +146,11 @@ struct OnboardingView: View {
                     in: RoundedRectangle(cornerRadius: 18, style: .continuous)
                 )
                 .foregroundStyle(.black)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .stroke(.white.opacity(0.25), lineWidth: 1)
+                )
+                .shadow(color: .black.opacity(0.25), radius: 18, y: 10)
         }
         .disabled(steps[currentStep] == .profile && userName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
         .opacity(steps[currentStep] == .profile && userName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? 0.5 : 1)
@@ -196,7 +236,7 @@ struct OnboardingView: View {
 
     private func nextStep() {
         if currentStep < steps.count - 1 {
-            withAnimation(.easeInOut) {
+            withAnimation(.spring(response: 0.5, dampingFraction: 0.85)) {
                 currentStep += 1
             }
         } else {
@@ -240,6 +280,7 @@ struct OnboardingView: View {
                             .stroke(.white.opacity(0.18), lineWidth: 1)
                     )
             )
+            .shadow(color: .black.opacity(0.18), radius: 24, y: 12)
         }
     }
 
@@ -248,12 +289,16 @@ struct OnboardingView: View {
 
         var body: some View {
             VStack(spacing: 16) {
+                // Keep a single, concise welcome to avoid clutter
                 Text(loc("ONBOARD_WELCOME_DESC"))
-                    .font(.body)
+                    .font(.title3.weight(.semibold))
                     .multilineTextAlignment(.center)
-                    .foregroundStyle(.white.opacity(0.85))
+                    .foregroundStyle(.white.opacity(0.9))
                     .padding()
-                    .background(.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+                    .background(
+                        RoundedRectangle(cornerRadius: 22, style: .continuous)
+                            .fill(.white.opacity(0.08))
+                    )
             }
             .padding(.horizontal, 24)
         }
