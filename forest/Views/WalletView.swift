@@ -23,11 +23,7 @@ private struct SummaryChip: View {
         .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
         .padding(.vertical, 10)
         .padding(.horizontal, 14)
-        .background(themeManager.currentTheme.getCardBackground(for: colorScheme), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 18)
-                .stroke(themeManager.currentTheme.getCardStroke(for: colorScheme), lineWidth: 1)
-        )
+        .background(themeManager.currentTheme.getCardBackground(for: colorScheme).opacity(0.5), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
     }
 
     private func loc(_ key: String, _ arguments: CVarArg...) -> String {
@@ -74,10 +70,10 @@ private struct CoinsMarketSection: View {
             }
         }
         .padding(20)
-        .background(.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 28, style: .continuous))
+        .background(themeManager.currentTheme.getCardBackground(for: colorScheme).opacity(0.8), in: RoundedRectangle(cornerRadius: 28, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 28)
-                .stroke(.white.opacity(0.12), lineWidth: 1)
+                .stroke(themeManager.currentTheme.getCardStroke(for: colorScheme), lineWidth: 1)
         )
     }
 
@@ -230,6 +226,10 @@ private struct WalletSummaryCard: View {
             RoundedRectangle(cornerRadius: 32, style: .continuous)
                 .fill(themeManager.currentTheme.getCardBackground(for: colorScheme))
                 .shadow(color: .black.opacity(0.25), radius: 24, y: 12)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 32, style: .continuous)
+                .stroke(themeManager.currentTheme.getCardStroke(for: colorScheme), lineWidth: 1)
         )
     }
 

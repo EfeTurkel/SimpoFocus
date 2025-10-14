@@ -19,8 +19,17 @@ enum AppLanguage: String, CaseIterable, Identifiable {
     var localeIdentifier: String { rawValue }
 
     static func defaultFromDevice() -> AppLanguage {
-        let code = Locale.current.language.languageCode?.identifier.lowercased() ?? "tr"
-        return AppLanguage(rawValue: code) ?? .turkish
+        // Get the preferred language from the device
+        let preferredLanguages = Locale.preferredLanguages
+        let deviceLanguage = preferredLanguages.first?.prefix(2).lowercased() ?? "en"
+        
+        // Try to match with our supported languages
+        if let language = AppLanguage(rawValue: deviceLanguage) {
+            return language
+        }
+        
+        // Fallback to English if device language is not supported
+        return .english
     }
 }
 
@@ -35,10 +44,13 @@ final class LocalizationManager: ObservableObject {
     }
 
     private init() {
+        // Always check device language first, unless user has explicitly set a preference
         if let stored = UserDefaults.standard.string(forKey: storageKey),
            let lang = AppLanguage(rawValue: stored) {
+            // User has previously set a language preference
             language = lang
         } else {
+            // First time launch - use device language (fallback to English)
             language = AppLanguage.defaultFromDevice()
         }
     }
@@ -245,12 +257,16 @@ final class LocalizationManager: ObservableObject {
             "BUY_STATS_HELD": "Elindeki",
             "BUY_STATS_AVERAGE": "Ortalama",
             "BUY_STATS_MARKET": "Piyasa",
+            "ONBOARD_STEP_WELCOME": "Simpo'ya Hoş Geldin",
+            "ONBOARD_STEP_THEME": "Tema Seçimi",
             "ONBOARD_STEP_FOCUS": "Odak Ritmini Seç",
             "ONBOARD_STEP_BREAKS": "Mola Tercihlerini Belirle",
             "ONBOARD_STEP_FINANCE": "Kazanç ve Faiz Mantığı",
             "ONBOARD_STEP_HOME": "Evi Kişiselleştir",
             "ONBOARD_STEP_NOTIFICATIONS": "Bildirimleri Aç",
             "ONBOARD_STEP_PROFILE": "Seni Tanıyalım",
+            "ONBOARD_SUB_WELCOME": "Odak süreni Simpo ile yönet. Birkaç adımda kişiselleştirelim.",
+            "ONBOARD_SUB_THEME": "Uygulamanın görünümünü seç. İstediğin zaman değiştirebilirsin.",
             "ONBOARD_SUB_FOCUS": "Odak ve günlük hedef ayarlarını kendine göre yap.",
             "ONBOARD_SUB_BREAKS": "Kısa ve uzun mola sürelerini, otomatik başlatmayı seç.",
             "ONBOARD_SUB_FINANCE": "Kazancını nasıl artıracağını ve nerelerde harcayabileceğini öğren.",
@@ -259,6 +275,7 @@ final class LocalizationManager: ObservableObject {
             "ONBOARD_SUB_PROFILE": "Son adım: seni nasıl çağıralım?",
             "ONBOARD_PRIMARY_NEXT": "İleri",
             "ONBOARD_PRIMARY_START": "Başla",
+            "ONBOARD_BACK": "Geri",
             "ONBOARD_NAME_PROMPT": "Adın nedir?",
             "ONBOARD_NAME_HINT": "Bu ayarları Ayarlar ekranından her zaman değiştirebilirsin.",
             "ONBOARD_LANGUAGE_TITLE": "Dil Seçimi",
@@ -544,12 +561,16 @@ final class LocalizationManager: ObservableObject {
             "BUY_STATS_HELD": "Held",
             "BUY_STATS_AVERAGE": "Average",
             "BUY_STATS_MARKET": "Market",
+            "ONBOARD_STEP_WELCOME": "Welcome to Simpo",
+            "ONBOARD_STEP_THEME": "Choose Theme",
             "ONBOARD_STEP_FOCUS": "Choose Your Focus Rhythm",
             "ONBOARD_STEP_BREAKS": "Set Your Break Preferences",
             "ONBOARD_STEP_FINANCE": "Understand Earnings & Interest",
             "ONBOARD_STEP_HOME": "Customize Your Home",
             "ONBOARD_STEP_NOTIFICATIONS": "Enable Notifications",
             "ONBOARD_STEP_PROFILE": "Tell Us About You",
+            "ONBOARD_SUB_WELCOME": "Manage your focus time with Simpo. Let's personalize it in a few steps.",
+            "ONBOARD_SUB_THEME": "Choose the app appearance. You can change it anytime.",
             "ONBOARD_SUB_FOCUS": "Configure your focus durations and daily targets.",
             "ONBOARD_SUB_BREAKS": "Pick short and long break durations and auto-start preferences.",
             "ONBOARD_SUB_FINANCE": "Learn how to earn coins and where to spend them.",
@@ -558,6 +579,7 @@ final class LocalizationManager: ObservableObject {
             "ONBOARD_SUB_PROFILE": "Final step: how should Simpo call you?",
             "ONBOARD_PRIMARY_NEXT": "Next",
             "ONBOARD_PRIMARY_START": "Start",
+            "ONBOARD_BACK": "Back",
             "ONBOARD_NAME_PROMPT": "What's your name?",
             "ONBOARD_NAME_HINT": "You can change these settings anytime in Settings.",
             "ONBOARD_LANGUAGE_TITLE": "Choose Language",
@@ -942,12 +964,16 @@ final class LocalizationManager: ObservableObject {
             "BUY_STATS_HELD": "Bestand",
             "BUY_STATS_AVERAGE": "Durchschnitt",
             "BUY_STATS_MARKET": "Markt",
+            "ONBOARD_STEP_WELCOME": "Willkommen bei Simpo",
+            "ONBOARD_STEP_THEME": "Design wählen",
             "ONBOARD_STEP_FOCUS": "Fokusrhythmus wählen",
             "ONBOARD_STEP_BREAKS": "Pausen festlegen",
             "ONBOARD_STEP_FINANCE": "Verdienst & Zinsen verstehen",
             "ONBOARD_STEP_HOME": "Zuhause gestalten",
             "ONBOARD_STEP_NOTIFICATIONS": "Benachrichtigungen aktivieren",
             "ONBOARD_STEP_PROFILE": "Erzähl uns von dir",
+            "ONBOARD_SUB_WELCOME": "Verwalte deine Fokuszeit mit Simpo. Lass es uns in ein paar Schritten personalisieren.",
+            "ONBOARD_SUB_THEME": "Wähle das App-Design. Du kannst es jederzeit ändern.",
             "ONBOARD_SUB_FOCUS": "Passe Fokusdauer und Tagesziele nach Bedarf an.",
             "ONBOARD_SUB_BREAKS": "Wähle Dauer und Automatikstart für kurze und lange Pausen.",
             "ONBOARD_SUB_FINANCE": "Erfahre, wie du Coins verdienst und ausgibst.",
@@ -956,6 +982,7 @@ final class LocalizationManager: ObservableObject {
             "ONBOARD_SUB_PROFILE": "Letzter Schritt: Wie sollen wir dich nennen?",
             "ONBOARD_PRIMARY_NEXT": "Weiter",
             "ONBOARD_PRIMARY_START": "Start",
+            "ONBOARD_BACK": "Zurück",
             "ONBOARD_NAME_PROMPT": "Wie heißt du?",
             "ONBOARD_NAME_HINT": "Du kannst diese Einstellungen später im Menü ändern.",
             "ONBOARD_LANGUAGE_TITLE": "Sprache wählen",

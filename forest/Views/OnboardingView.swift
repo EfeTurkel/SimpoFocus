@@ -18,7 +18,7 @@ struct OnboardingView: View {
     @State private var dailyTarget: Double = 4
     @State private var autoStartBreaks = false
     @State private var notificationsEnabled = false
-    @State private var selectedLanguage: AppLanguage = LocalizationManager.shared.language
+    @State private var selectedLanguage: AppLanguage = .english
     @FocusState private var nameFieldFocused: Bool
     
     // MARK: - Transition
@@ -92,13 +92,25 @@ struct OnboardingView: View {
                 onboardingProgress
                     .padding(.horizontal, 24)
 
-                primaryButton
-                    .padding(.horizontal, 24)
-                    .padding(.bottom, 28)
+                HStack(spacing: 16) {
+                    if currentStep > 0 {
+                        backButton
+                    }
+                    
+                    primaryButton
+                        .frame(maxWidth: .infinity)
+                }
+                .padding(.horizontal, 24)
+                .padding(.bottom, 28)
             }
         }
         .interactiveDismissDisabled(true)
-        .onAppear(perform: preloadValues)
+        .onAppear {
+            // Set the language to device language when onboarding appears
+            selectedLanguage = AppLanguage.defaultFromDevice()
+            localization.language = selectedLanguage
+            preloadValues()
+        }
         .onChange(of: currentStep, initial: false) { _, newValue in
             if steps[newValue] == .profile {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
@@ -156,6 +168,29 @@ struct OnboardingView: View {
         }
         .disabled(steps[currentStep] == .profile && userName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
         .opacity(steps[currentStep] == .profile && userName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? 0.5 : 1)
+    }
+    
+    private var backButton: some View {
+        Button(action: previousStep) {
+            HStack(spacing: 8) {
+                Image(systemName: "chevron.left")
+                    .font(.headline.weight(.semibold))
+                Text(loc("ONBOARD_BACK"))
+                    .font(.headline.weight(.semibold))
+            }
+            .padding(.vertical, 16)
+            .padding(.horizontal, 20)
+            .background(
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .fill(.ultraThinMaterial)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 18, style: .continuous)
+                            .stroke(.white.opacity(0.25), lineWidth: 1)
+                    )
+            )
+            .foregroundStyle(.white)
+            .shadow(color: .black.opacity(0.15), radius: 12, y: 6)
+        }
     }
 
     @ViewBuilder
@@ -245,6 +280,14 @@ struct OnboardingView: View {
             }
         } else {
             attemptFinish()
+        }
+    }
+    
+    private func previousStep() {
+        if currentStep > 0 {
+            withAnimation(.spring(response: 0.5, dampingFraction: 0.85)) {
+                currentStep -= 1
+            }
         }
     }
 
@@ -459,8 +502,8 @@ struct OnboardingView: View {
 
         var titleKey: String {
             switch self {
-            case .welcome: return "Simpo'ya Hoş Geldin"
-            case .theme: return "Tema Seçimi"
+            case .welcome: return "ONBOARD_STEP_WELCOME"
+            case .theme: return "ONBOARD_STEP_THEME"
             case .focus: return "ONBOARD_STEP_FOCUS"
             case .breaks: return "ONBOARD_STEP_BREAKS"
             case .finance: return "ONBOARD_STEP_FINANCE"
@@ -473,8 +516,8 @@ struct OnboardingView: View {
 
         var subtitleKey: String {
             switch self {
-            case .welcome: return "Odak süreni Simpo ile yönet. Birkaç adımda kişiselleştirelim."
-            case .theme: return "Uygulamanın görünümünü seç. İstediğin zaman değiştirebilirsin."
+            case .welcome: return "ONBOARD_SUB_WELCOME"
+            case .theme: return "ONBOARD_SUB_THEME"
             case .focus: return "ONBOARD_SUB_FOCUS"
             case .breaks: return "ONBOARD_SUB_BREAKS"
             case .finance: return "ONBOARD_SUB_FINANCE"

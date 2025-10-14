@@ -336,13 +336,13 @@ private struct BalanceCard: View {
                 .font(.title2.weight(.semibold))
                 .foregroundStyle(
                     colorScheme == .dark ? 
-                    Color.white : 
+                    Color.white.opacity(0.8) : 
                     themeManager.currentTheme.getPrimaryTextColor(for: colorScheme)
                 )
                 .padding(12)
                 .background(
                     colorScheme == .dark ? 
-                    Color.white.opacity(0.15) : 
+                    Color.white.opacity(0.08) : 
                     themeManager.currentTheme.getCardBackground(for: colorScheme), 
                     in: RoundedRectangle(cornerRadius: 18, style: .continuous)
                 )
@@ -352,14 +352,14 @@ private struct BalanceCard: View {
                     .font(.title2.weight(.bold))
                     .foregroundStyle(
                         colorScheme == .dark ? 
-                        Color.white : 
+                        Color.white.opacity(0.9) : 
                         themeManager.currentTheme.getPrimaryTextColor(for: colorScheme)
                     )
                 Text(title)
                     .font(.caption)
                     .foregroundStyle(
                         colorScheme == .dark ? 
-                        Color.white.opacity(0.8) : 
+                        Color.white.opacity(0.6) : 
                         themeManager.currentTheme.getSecondaryTextColor(for: colorScheme)
                     )
             }
@@ -368,7 +368,7 @@ private struct BalanceCard: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
             colorScheme == .dark ? 
-            tint.opacity(0.8) : 
+            tint.opacity(0.4) : 
             tint.opacity(0.65), 
             in: RoundedRectangle(cornerRadius: 28, style: .continuous)
         )
@@ -376,7 +376,7 @@ private struct BalanceCard: View {
             RoundedRectangle(cornerRadius: 28, style: .continuous)
                 .stroke(
                     colorScheme == .dark ? 
-                    Color.white.opacity(0.2) : 
+                    Color.white.opacity(0.1) : 
                     themeManager.currentTheme.getCardStroke(for: colorScheme), 
                     lineWidth: 1
                 )

@@ -196,6 +196,10 @@ private struct BankSummaryCard: View {
                 .fill(themeManager.currentTheme.getCardBackground(for: colorScheme))
                 .shadow(color: .black.opacity(0.25), radius: 24, y: 12)
         )
+        .overlay(
+            RoundedRectangle(cornerRadius: 32, style: .continuous)
+                .stroke(themeManager.currentTheme.getCardStroke(for: colorScheme), lineWidth: 1)
+        )
     }
 
     private var ratePercent: String {
