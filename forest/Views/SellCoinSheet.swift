@@ -81,6 +81,7 @@ struct SellCoinSheet: View {
 private struct PickerCard: View {
     @Binding var selectedSymbol: String?
     let coins: [Coin]
+    @ObservedObject private var themeManager = ThemeManager.shared
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -97,7 +98,12 @@ private struct PickerCard: View {
         }
         .padding(22)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(LinearGradient(colors: [Color("LakeBlue"), Color("LakeNight")], startPoint: .topLeading, endPoint: .bottomTrailing), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .background(
+            themeManager.currentTheme == .light
+                ? LinearGradient(colors: [Color("LakeBlue").opacity(0.8), Color("LakeNight").opacity(0.8)], startPoint: .topLeading, endPoint: .bottomTrailing)
+                : LinearGradient(colors: [Color("LakeBlue"), Color("LakeNight")], startPoint: .topLeading, endPoint: .bottomTrailing),
+            in: RoundedRectangle(cornerRadius: 24, style: .continuous)
+        )
         .foregroundStyle(.white)
     }
 }
@@ -107,6 +113,7 @@ private struct CoinOverview: View {
     @Binding var quickSelection: Double?
     let action: (Double) -> Void
     @EnvironmentObject private var market: MarketViewModel
+    @ObservedObject private var themeManager = ThemeManager.shared
 
     private var quickOptions: [Double] {
         let base = coin.quantity
@@ -183,7 +190,11 @@ private struct CoinOverview: View {
         .padding(24)
         .background(
             RoundedRectangle(cornerRadius: 32, style: .continuous)
-                .fill(LinearGradient(colors: [Color("ForestGreen"), Color("LakeBlue")], startPoint: .topLeading, endPoint: .bottomTrailing))
+                .fill(
+                    themeManager.currentTheme == .light
+                        ? LinearGradient(colors: [Color("ForestGreen").opacity(0.8), Color("LakeBlue").opacity(0.8)], startPoint: .topLeading, endPoint: .bottomTrailing)
+                        : LinearGradient(colors: [Color("ForestGreen"), Color("LakeBlue")], startPoint: .topLeading, endPoint: .bottomTrailing)
+                )
                 .shadow(color: .black.opacity(0.25), radius: 24, y: 12)
         )
     }

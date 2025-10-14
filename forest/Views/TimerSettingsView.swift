@@ -4,8 +4,10 @@ struct TimerSettingsView: View {
     @EnvironmentObject private var timer: PomodoroTimerService
     @EnvironmentObject private var market: MarketViewModel
     @EnvironmentObject private var localization: LocalizationManager
+    @ObservedObject private var themeManager = ThemeManager.shared
     @Environment(\.dismiss) private var dismiss
     @Environment(\.openURL) private var openURL
+    @Environment(\.colorScheme) var colorScheme
 
     @State private var focusMinutes: Double = 25
     @State private var shortBreakMinutes: Double = 5
@@ -21,13 +23,12 @@ struct TimerSettingsView: View {
     @State private var tickVolume: Double = 0.55
     @State private var notificationsEnabled: Bool = false
     @State private var selectedLanguage: AppLanguage = LocalizationManager.shared.language
+    @State private var selectedTheme: AppTheme = ThemeManager.shared.currentTheme
 
     var body: some View {
         NavigationStack {
             ZStack {
-                LinearGradient(colors: [Color("ForestGreen").opacity(0.35), Color("LakeNight").opacity(0.6)],
-                               startPoint: .topLeading,
-                               endPoint: .bottomTrailing)
+                themeManager.currentTheme.backgroundGradient(for: colorScheme)
                     .ignoresSafeArea()
 
                 VStack(spacing: 24) {
@@ -145,7 +146,20 @@ struct TimerSettingsView: View {
 
                                     Text(loc("SETTINGS_LANGUAGE_NOTE"))
                                         .font(.footnote)
-                                        .foregroundStyle(.white.opacity(0.7))
+                                        .foregroundStyle(themeManager.currentTheme.secondaryTextColor(for: colorScheme))
+                                }
+                            }
+
+                            GlassSection(title: loc("SETTINGS_SECTION_THEME_TITLE"),
+                                         subtitle: loc("SETTINGS_SECTION_THEME_SUBTITLE"),
+                                         icon: "paintbrush.fill") {
+                                VStack(spacing: 16) {
+                                    Picker(loc("SETTINGS_SECTION_THEME_TITLE"), selection: $selectedTheme) {
+                                        ForEach(AppTheme.allCases) { theme in
+                                            Text(theme.displayName).tag(theme)
+                                        }
+                                    }
+                                    .pickerStyle(.segmented)
                                 }
                             }
 
@@ -179,9 +193,13 @@ struct TimerSettingsView: View {
             tickVolume = timer.tickVolume
             notificationsEnabled = timer.notificationsEnabled
             selectedLanguage = localization.language
+            selectedTheme = ThemeManager.shared.currentTheme
         }
         .onChange(of: selectedLanguage) { _, newValue in
             localization.language = newValue
+        }
+        .onChange(of: selectedTheme) { _, newValue in
+            ThemeManager.shared.currentTheme = newValue
         }
         .onChange(of: tickVolume) { _, newValue in
             timer.tickVolume = newValue
@@ -196,10 +214,10 @@ struct TimerSettingsView: View {
             } label: {
                 Label(loc("SETTINGS_BUTTON_CANCEL"), systemImage: "xmark")
                     .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(themeManager.currentTheme.primaryTextColor(for: colorScheme))
                     .padding(.vertical, 16)
                     .frame(maxWidth: .infinity)
-                    .background(.white.opacity(0.12), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                    .background(themeManager.currentTheme.cardBackground(for: colorScheme), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
             }
 
             Button {
@@ -235,7 +253,7 @@ struct TimerSettingsView: View {
         .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 24)
-                .stroke(.white.opacity(0.08), lineWidth: 1)
+                .stroke(themeManager.currentTheme.cardStroke(for: colorScheme), lineWidth: 1)
         )
         .shadow(color: .black.opacity(0.2), radius: 20, y: 12)
     }
@@ -252,6 +270,8 @@ private struct NotificationStatusCard: View {
     @Binding var isEnabled: Bool
     @EnvironmentObject private var timer: PomodoroTimerService
     @EnvironmentObject private var localization: LocalizationManager
+    @ObservedObject private var themeManager = ThemeManager.shared
+    @Environment(\.colorScheme) var colorScheme
 
     private var backgroundRefreshEnabled: Bool {
         timer.backgroundRefreshAvailable
@@ -303,11 +323,11 @@ private struct NotificationStatusCard: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text(loc(backgroundRefreshEnabled && isEnabled ? "SETTINGS_BACKGROUND_READY_TITLE" : "SETTINGS_BACKGROUND_ALERT_TITLE"))
                     .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(themeManager.currentTheme.primaryTextColor(for: colorScheme))
 
                 Text(descriptionText)
                     .font(.footnote)
-                    .foregroundStyle(.white.opacity(0.7))
+                    .foregroundStyle(themeManager.currentTheme.secondaryTextColor(for: colorScheme))
             }
         }
     }
@@ -431,6 +451,8 @@ private struct SettingsHeaderCard: View {
     @Binding var dailyTarget: Double
     @Binding var sessionsBeforeLongBreak: Double
     @EnvironmentObject private var localization: LocalizationManager
+    @ObservedObject private var themeManager = ThemeManager.shared
+    @Environment(\.colorScheme) var colorScheme
 
     var body: some View {
         VStack(spacing: 22) {
@@ -438,18 +460,18 @@ private struct SettingsHeaderCard: View {
                 VStack(alignment: .leading, spacing: 6) {
                     Text(loc("SETTINGS_HEADER_TITLE"))
                         .font(.title2.weight(.semibold))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(themeManager.currentTheme.primaryTextColor(for: colorScheme))
                     Text(loc("SETTINGS_HEADER_SUBTITLE"))
                         .font(.footnote)
-                        .foregroundStyle(.white.opacity(0.7))
+                        .foregroundStyle(themeManager.currentTheme.secondaryTextColor(for: colorScheme))
                 }
                 Spacer()
                 Text(loc("SETTINGS_HEADER_ACTION"))
                     .font(.caption2.weight(.semibold))
-                    .foregroundStyle(.white.opacity(0.75))
+                    .foregroundStyle(themeManager.currentTheme.secondaryTextColor(for: colorScheme))
                     .padding(.horizontal, 16)
                     .padding(.vertical, 8)
-                    .background(.white.opacity(0.1), in: Capsule())
+                    .background(themeManager.currentTheme.cardBackground(for: colorScheme), in: Capsule())
             }
 
             HStack(spacing: 16) {
@@ -460,10 +482,10 @@ private struct SettingsHeaderCard: View {
         }
         .padding(28)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(.ultraThinMaterial.opacity(0.6), in: RoundedRectangle(cornerRadius: 36, style: .continuous))
+        .background(themeManager.currentTheme.cardBackground(for: colorScheme).opacity(0.8), in: RoundedRectangle(cornerRadius: 36, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 36)
-                .stroke(.white.opacity(0.12), lineWidth: 1)
+                .stroke(themeManager.currentTheme.cardStroke(for: colorScheme), lineWidth: 1)
         )
     }
 
@@ -478,6 +500,8 @@ private struct SummaryTile: View {
     let icon: String
     let color: Color
     @EnvironmentObject private var localization: LocalizationManager
+    @ObservedObject private var themeManager = ThemeManager.shared
+    @Environment(\.colorScheme) var colorScheme
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -489,14 +513,14 @@ private struct SummaryTile: View {
 
             Text(value)
                 .font(.title3.weight(.semibold))
-                .foregroundStyle(.white)
+                .foregroundStyle(themeManager.currentTheme.primaryTextColor(for: colorScheme))
             Text(title)
                 .font(.caption.weight(.semibold))
-                .foregroundStyle(.white.opacity(0.85))
+                .foregroundStyle(themeManager.currentTheme.secondaryTextColor(for: colorScheme))
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(18)
-        .background(.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .background(themeManager.currentTheme.cardBackground(for: colorScheme).opacity(0.5), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
     }
 }
 
@@ -505,23 +529,25 @@ private struct GlassSection<Content: View>: View {
     let subtitle: String
     let icon: String
     @ViewBuilder let content: Content
+    @ObservedObject private var themeManager = ThemeManager.shared
+    @Environment(\.colorScheme) var colorScheme
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
             HStack(spacing: 14) {
                 Image(systemName: icon)
                     .font(.title3.weight(.semibold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(themeManager.currentTheme.primaryTextColor(for: colorScheme))
                     .frame(width: 46, height: 46)
-                    .background(.white.opacity(0.12), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    .background(themeManager.currentTheme.cardBackground(for: colorScheme), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
 
                 VStack(alignment: .leading, spacing: 4) {
                     Text(title)
                         .font(.headline)
-                        .foregroundStyle(.white)
+                        .foregroundStyle(themeManager.currentTheme.primaryTextColor(for: colorScheme))
                     Text(subtitle)
                         .font(.caption)
-                        .foregroundStyle(.white.opacity(0.6))
+                        .foregroundStyle(themeManager.currentTheme.secondaryTextColor(for: colorScheme))
                 }
             }
 
@@ -529,10 +555,10 @@ private struct GlassSection<Content: View>: View {
         }
         .padding(24)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 32, style: .continuous))
+        .background(themeManager.currentTheme.cardBackground(for: colorScheme).opacity(0.6), in: RoundedRectangle(cornerRadius: 32, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 32)
-                .stroke(.white.opacity(0.08), lineWidth: 1)
+                .stroke(themeManager.currentTheme.cardStroke(for: colorScheme), lineWidth: 1)
         )
     }
 }
@@ -544,13 +570,15 @@ private struct DurationSlider: View {
     let color: Color
     var valueColor: Color?
     @EnvironmentObject private var localization: LocalizationManager
+    @ObservedObject private var themeManager = ThemeManager.shared
+    @Environment(\.colorScheme) var colorScheme
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
                 Text(title)
                     .font(.subheadline.weight(.medium))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(themeManager.currentTheme.primaryTextColor(for: colorScheme))
                 Spacer()
                 Text(loc("SETTINGS_DURATION_FORMAT", Int(value)))
                     .font(.subheadline.weight(.semibold))
@@ -573,22 +601,24 @@ private struct ToggleSetting: View {
     @Binding var isOn: Bool
     let icon: String
     @EnvironmentObject private var localization: LocalizationManager
+    @ObservedObject private var themeManager = ThemeManager.shared
+    @Environment(\.colorScheme) var colorScheme
 
     var body: some View {
         HStack(spacing: 16) {
             Image(systemName: icon)
                 .font(.headline)
-                .foregroundStyle(.white.opacity(0.85))
+                .foregroundStyle(themeManager.currentTheme.primaryTextColor(for: colorScheme))
                 .frame(width: 40, height: 40)
-                .background(.white.opacity(0.12), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .background(themeManager.currentTheme.cardBackground(for: colorScheme), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(title)
                     .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(themeManager.currentTheme.primaryTextColor(for: colorScheme))
                 Text(description)
                     .font(.caption)
-                    .foregroundStyle(.white.opacity(0.6))
+                    .foregroundStyle(themeManager.currentTheme.secondaryTextColor(for: colorScheme))
             }
 
             Spacer()
@@ -606,16 +636,18 @@ private struct StepperSetting: View {
     let range: ClosedRange<Double>
     let step: Double
     @EnvironmentObject private var localization: LocalizationManager
+    @ObservedObject private var themeManager = ThemeManager.shared
+    @Environment(\.colorScheme) var colorScheme
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(title)
                 .font(.subheadline.weight(.medium))
-                .foregroundStyle(.white)
+                .foregroundStyle(themeManager.currentTheme.primaryTextColor(for: colorScheme))
             Stepper(value: $value, in: range, step: step) {
                 Text(loc("SETTINGS_STEPPER_VALUE_SESSIONS", Int(value)))
                     .font(.headline)
-                    .foregroundStyle(.white)
+                    .foregroundStyle(themeManager.currentTheme.primaryTextColor(for: colorScheme))
             }
         }
     }
@@ -630,19 +662,21 @@ private struct TargetProgressPreview: View {
     let value: Int
     let unit: String
     @EnvironmentObject private var localization: LocalizationManager
+    @ObservedObject private var themeManager = ThemeManager.shared
+    @Environment(\.colorScheme) var colorScheme
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(title)
                 .font(.caption)
-                .foregroundStyle(.white.opacity(0.6))
+                .foregroundStyle(themeManager.currentTheme.secondaryTextColor(for: colorScheme))
             ProgressView(value: min(Double(value) / 8.0, 1.0))
                 .tint(Color("ForestGreen"))
                 .frame(height: 12)
-                .background(Color.white.opacity(0.08), in: Capsule())
+                .background(themeManager.currentTheme.cardBackground(for: colorScheme), in: Capsule())
             Text(loc("SETTINGS_TARGET_LABEL", value, unit))
                 .font(.caption2)
-                .foregroundStyle(.white.opacity(0.55))
+                .foregroundStyle(themeManager.currentTheme.secondaryTextColor(for: colorScheme))
         }
     }
 
@@ -654,17 +688,19 @@ private struct TargetProgressPreview: View {
 private struct VolumeSlider: View {
     @Binding var value: Double
     @EnvironmentObject private var localization: LocalizationManager
+    @ObservedObject private var themeManager = ThemeManager.shared
+    @Environment(\.colorScheme) var colorScheme
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack {
                 Text(loc("SETTINGS_VOLUME_LABEL"))
                     .font(.subheadline.weight(.medium))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(themeManager.currentTheme.primaryTextColor(for: colorScheme))
                 Spacer()
                 Text(loc("SETTINGS_PERCENT_FORMAT", Int(value * 100)))
                     .font(.caption)
-                    .foregroundStyle(.white.opacity(0.7))
+                    .foregroundStyle(themeManager.currentTheme.secondaryTextColor(for: colorScheme))
             }
             Slider(value: $value, in: 0.2...1.0)
                 .tint(Color("ForestGreen"))

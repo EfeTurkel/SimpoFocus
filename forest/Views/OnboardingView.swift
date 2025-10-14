@@ -7,6 +7,8 @@ struct OnboardingView: View {
     @EnvironmentObject private var timer: PomodoroTimerService
     @EnvironmentObject private var market: MarketViewModel
     @EnvironmentObject private var localization: LocalizationManager
+    @ObservedObject private var themeManager = ThemeManager.shared
+    @Environment(\.colorScheme) var colorScheme
 
     @State private var currentStep = 0
     @State private var focusMinutes: Double = 25
@@ -29,16 +31,16 @@ struct OnboardingView: View {
         let step = steps[currentStep]
 
         ZStack {
-            LinearGradient(colors: [Color("ForestGreen"), Color("LakeNight")],
-                           startPoint: .topLeading,
-                           endPoint: .bottomTrailing)
-            .ignoresSafeArea()
+            themeManager.currentTheme.backgroundGradient(for: colorScheme)
+                .ignoresSafeArea()
             
-            // Subtle bloom accents for a premium depth
-            RadialGradient(colors: [Color.white.opacity(0.08), .clear], center: .topLeading, startRadius: 60, endRadius: 300)
-                .ignoresSafeArea()
-            RadialGradient(colors: [Color.white.opacity(0.06), .clear], center: .bottomTrailing, startRadius: 80, endRadius: 320)
-                .ignoresSafeArea()
+            // Subtle bloom accents for a premium depth (only for gradient theme)
+            if themeManager.currentTheme == .gradient {
+                RadialGradient(colors: [Color.white.opacity(0.08), .clear], center: .topLeading, startRadius: 60, endRadius: 300)
+                    .ignoresSafeArea()
+                RadialGradient(colors: [Color.white.opacity(0.06), .clear], center: .bottomTrailing, startRadius: 80, endRadius: 320)
+                    .ignoresSafeArea()
+            }
 
             VStack(spacing: 28) {
                 Spacer(minLength: 0)
@@ -56,7 +58,7 @@ struct OnboardingView: View {
                         Text(loc(step.titleKey))
                             .font(.system(.largeTitle, design: .rounded).weight(.bold))
                             .multilineTextAlignment(.center)
-                            .foregroundStyle(.white)
+                            .foregroundStyle(themeManager.currentTheme.primaryTextColor(for: colorScheme))
                             .shadow(color: .black.opacity(0.12), radius: 8, y: 4)
                             .lineLimit(2)
                             .minimumScaleFactor(0.75)
@@ -66,7 +68,7 @@ struct OnboardingView: View {
                         Text(loc(step.subtitleKey))
                             .font(.callout)
                             .multilineTextAlignment(.center)
-                            .foregroundStyle(.white.opacity(0.8))
+                            .foregroundStyle(themeManager.currentTheme.secondaryTextColor(for: colorScheme))
                             .padding(.horizontal, 24)
                             .lineLimit(3)
                             .minimumScaleFactor(0.8)

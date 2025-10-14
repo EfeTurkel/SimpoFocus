@@ -8,18 +8,16 @@ struct RootView: View {
     @EnvironmentObject private var room: RoomViewModel
     @EnvironmentObject private var bank: BankService
     @EnvironmentObject private var localization: LocalizationManager
+    @ObservedObject private var themeManager = ThemeManager.shared
+    @Environment(\.colorScheme) var colorScheme
     @AppStorage("onboardingCompleted") private var onboardingCompleted: Bool = false
     @AppStorage("userName") private var userName: String = ""
     @State private var showingOnboarding = false
 
     var body: some View {
         ZStack {
-            LinearGradient(
-                colors: [Color("ForestGreen"), Color("LakeNight")],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            .ignoresSafeArea()
+            themeManager.currentTheme.backgroundGradient(for: colorScheme)
+                .ignoresSafeArea()
 
             // Content fills the screen; tab bar overlays with translucent glass effect
             TabContentView(selectedTab: rootViewModel.selectedTab)
@@ -46,13 +44,7 @@ struct RootView: View {
             wallet.earn(amount: reward.coinsReward, description: "TXN_REWARD_POMODORO")
             wallet.applyPassiveBoost(reward.passiveBoost)
         }
-        .task(id: rootViewModel.selectedTab) {
-            if rootViewModel.selectedTab == .market {
-                market.refreshPrices()
-            }
-        }
         .onAppear {
-            market.refreshPrices()
             if !onboardingCompleted {
                 showingOnboarding = true
             }
@@ -73,8 +65,6 @@ private struct TabContentView: View {
             switch selectedTab {
             case .forest:
                 FocusView()
-            case .market:
-                MarketView()
             case .bank:
                 BankView()
             case .wallet:
@@ -91,6 +81,8 @@ private struct ModernTabBar: View {
     @Binding var selectedTab: AppTab
     @Namespace private var selectionAnimation
     @EnvironmentObject private var localization: LocalizationManager
+    @ObservedObject private var themeManager = ThemeManager.shared
+    @Environment(\.colorScheme) var colorScheme
 
     var body: some View {
         HStack(spacing: 0) {
@@ -105,13 +97,41 @@ private struct ModernTabBar: View {
         .padding(.horizontal, 16)
         .background(
             RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .fill(.ultraThinMaterial)
+                .fill(tabBarBackground)
                 .overlay(
                     RoundedRectangle(cornerRadius: 24, style: .continuous)
-                        .stroke(.white.opacity(0.2), lineWidth: 0.5)
+                        .stroke(tabBarStroke, lineWidth: 0.5)
                 )
         )
         .shadow(color: .black.opacity(0.1), radius: 10, y: 5)
+    }
+    
+    private var tabBarBackground: Color {
+        let theme = themeManager.currentTheme
+        switch theme {
+        case .system:
+            return colorScheme == .dark ? Color.black.opacity(0.8) : Color.white.opacity(0.95)
+        case .gradient:
+            return Color("ForestGreen").opacity(0.7)
+        case .oledDark:
+            return Color.black.opacity(0.8)
+        case .light:
+            return Color.white.opacity(0.95)
+        }
+    }
+    
+    private var tabBarStroke: Color {
+        let theme = themeManager.currentTheme
+        switch theme {
+        case .system:
+            return colorScheme == .dark ? Color.white.opacity(0.2) : Color.black.opacity(0.25)
+        case .gradient:
+            return Color("LakeBlue").opacity(0.4)
+        case .oledDark:
+            return Color.white.opacity(0.2)
+        case .light:
+            return Color.black.opacity(0.25)
+        }
     }
 }
 
@@ -137,17 +157,46 @@ private extension ModernTabBar {
     func tabBackground(isSelected: Bool) -> some View {
         ZStack {
             if isSelected {
+                let theme = themeManager.currentTheme
+                let bgColors: [Color] = {
+                    switch theme {
+                    case .system:
+                        return colorScheme == .dark 
+                            ? [Color.white.opacity(0.25), Color.white.opacity(0.1)]
+                            : [Color.black.opacity(0.18), Color.black.opacity(0.08)]
+                    case .gradient:
+                        return [Color("LakeBlue").opacity(0.4), Color("ForestGreen").opacity(0.3)]
+                    case .oledDark:
+                        return [Color.white.opacity(0.25), Color.white.opacity(0.1)]
+                    case .light:
+                        return [Color.black.opacity(0.18), Color.black.opacity(0.08)]
+                    }
+                }()
+                
+                let strokeColor: Color = {
+                    switch theme {
+                    case .system:
+                        return colorScheme == .dark ? Color.white.opacity(0.3) : Color.black.opacity(0.3)
+                    case .gradient:
+                        return Color.white.opacity(0.5)
+                    case .oledDark:
+                        return Color.white.opacity(0.3)
+                    case .light:
+                        return Color.black.opacity(0.3)
+                    }
+                }()
+                
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
                     .fill(
                         LinearGradient(
-                            colors: [Color.white.opacity(0.25), Color.white.opacity(0.1)],
+                            colors: bgColors,
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         )
                     )
                     .overlay(
                         RoundedRectangle(cornerRadius: 16, style: .continuous)
-                            .stroke(.white.opacity(0.3), lineWidth: 0.5)
+                            .stroke(strokeColor, lineWidth: 0.5)
                     )
                     .matchedGeometryEffect(id: "selection", in: selectionAnimation)
             }
@@ -156,9 +205,27 @@ private extension ModernTabBar {
     }
 
     func tabIcon(for tab: AppTab, isSelected: Bool) -> some View {
-        Image(systemName: tab.icon)
+        let theme = themeManager.currentTheme
+        let iconColor: Color = {
+            switch theme {
+            case .system:
+                if isSelected {
+                    return colorScheme == .dark ? .white : .black
+                } else {
+                    return colorScheme == .dark ? Color.white.opacity(0.6) : Color.black.opacity(0.55)
+                }
+            case .gradient:
+                return isSelected ? .white : Color.white.opacity(0.7)
+            case .oledDark:
+                return isSelected ? .white : Color.white.opacity(0.6)
+            case .light:
+                return isSelected ? .black : Color.black.opacity(0.55)
+            }
+        }()
+        
+        return Image(systemName: tab.icon)
             .font(.system(size: 20, weight: .medium))
-            .foregroundStyle(isSelected ? Color.black : Color.white.opacity(0.8))
+            .foregroundStyle(iconColor)
             .scaleEffect(isSelected ? 1.1 : 1.0)
             .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isSelected)
     }

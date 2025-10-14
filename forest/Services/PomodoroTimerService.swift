@@ -57,6 +57,8 @@ final class PomodoroTimerService: ObservableObject {
     @Published private(set) var focusDays: Set<Date> = []
     @Published private(set) var backgroundRefreshAvailable: Bool = true
     @Published var shouldPromptBackgroundRefresh: Bool = false
+    @Published private(set) var sessionHistory: [FocusSession] = []
+    @Published var selectedCategory: FocusCategory = .untagged
 
     // MARK: - Configuration
     @Published var focusDuration: Int = 25 * 60
@@ -148,6 +150,8 @@ final class PomodoroTimerService: ObservableObject {
         let totalFocusMinutes: Double
         let focusDays: [Date]
         let lastGoalReset: Date?
+        let sessionHistory: [FocusSession]
+        let selectedCategory: FocusCategory.RawValue
 
         init(focusDuration: Int,
              shortBreakDuration: Int,
@@ -167,7 +171,9 @@ final class PomodoroTimerService: ObservableObject {
              totalSessions: Int,
              totalFocusMinutes: Double,
              focusDays: [Date],
-             lastGoalReset: Date? = nil) {
+             lastGoalReset: Date? = nil,
+             sessionHistory: [FocusSession] = [],
+             selectedCategory: FocusCategory.RawValue = FocusCategory.untagged.rawValue) {
             self.focusDuration = focusDuration
             self.shortBreakDuration = shortBreakDuration
             self.longBreakDuration = longBreakDuration
@@ -187,6 +193,8 @@ final class PomodoroTimerService: ObservableObject {
             self.totalFocusMinutes = totalFocusMinutes
             self.focusDays = focusDays
             self.lastGoalReset = lastGoalReset
+            self.sessionHistory = sessionHistory
+            self.selectedCategory = selectedCategory
         }
     }
 
@@ -211,6 +219,8 @@ final class PomodoroTimerService: ObservableObject {
             totalFocusMinutes = snapshot.totalFocusMinutes
             focusDays = Set(snapshot.focusDays)
             lastGoalReset = snapshot.lastGoalReset ?? calendar.startOfDay(for: Date())
+            sessionHistory = snapshot.sessionHistory
+            selectedCategory = FocusCategory(rawValue: snapshot.selectedCategory) ?? .untagged
             remainingSeconds = focusDuration
         } else {
             lastGoalReset = calendar.startOfDay(for: Date())
@@ -371,10 +381,24 @@ final class PomodoroTimerService: ObservableObject {
             completedFocusSessions += 1
             totalCompletedSessions += 1
             if let start = lastFocusStart {
-                let elapsed = Date().timeIntervalSince(start)
-                totalFocusMinutes += elapsed / 60
+                // Use actual focus duration, not elapsed time
+                // This prevents incorrect time when app is opened hours later
+                let actualDuration = Double(focusDuration) / 60.0 // Convert to minutes
+                
+                // Note: totalFocusMinutes is kept for backward compatibility but not updated anymore
+                // All new data goes into sessionHistory
                 let day = calendar.startOfDay(for: start)
                 focusDays.insert(day)
+                
+                // Create and save session history with actual duration
+                let coinsEarned = rewardAmountForCurrentStreak()
+                let session = FocusSession(
+                    date: start,
+                    durationMinutes: actualDuration,
+                    category: selectedCategory,
+                    coinsEarned: coinsEarned
+                )
+                sessionHistory.append(session)
             }
             streak += 1
             let reward = FocusReward(
@@ -549,7 +573,9 @@ final class PomodoroTimerService: ObservableObject {
                  totalSessions: totalCompletedSessions,
                  totalFocusMinutes: totalFocusMinutes,
                  focusDays: Array(focusDays),
-                 lastGoalReset: lastGoalReset)
+                 lastGoalReset: lastGoalReset,
+                 sessionHistory: sessionHistory,
+                 selectedCategory: selectedCategory.rawValue)
     }
     
     private func notifyCompletion() {

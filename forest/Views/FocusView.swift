@@ -4,8 +4,11 @@ struct FocusView: View {
     @EnvironmentObject private var timer: PomodoroTimerService
     @EnvironmentObject private var market: MarketViewModel
     @EnvironmentObject private var localization: LocalizationManager
+    @ObservedObject private var themeManager = ThemeManager.shared
+    @Environment(\.colorScheme) var colorScheme
     @State private var showingSettings = false
     @State private var showingStats = false
+    @State private var showingCategoryPicker = false
 
     var body: some View {
         VStack(spacing: 20) {
@@ -13,10 +16,10 @@ struct FocusView: View {
                 VStack(alignment: .leading, spacing: 6) {
                     Text(loc("FOCUS_NOW"))
                         .font(.footnote.weight(.medium))
-                        .foregroundStyle(.white.opacity(0.7))
+                        .foregroundStyle(themeManager.currentTheme.secondaryTextColor(for: colorScheme))
                     Text(timer.phase.displayName(using: localization))
                         .font(.title.weight(.bold))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(themeManager.currentTheme.primaryTextColor(for: colorScheme))
                 }
 
                 Spacer()
@@ -50,6 +53,15 @@ struct FocusView: View {
             TimerCard(remainingSeconds: timer.remainingSeconds,
                       subtitle: loc(subtitleKey))
                 .padding(.top, 8)
+            
+            // Category selector (only show during focus)
+            if timer.phase == .focus {
+                CategorySelector(
+                    selectedCategory: timer.selectedCategory,
+                    onTap: { showingCategoryPicker = true }
+                )
+                .environmentObject(localization)
+            }
 
             CompactSoundToggle(isOn: Binding(get: { timer.tickingEnabled }, set: { timer.tickingEnabled = $0 }),
                                title: loc("SOUND_TITLE"),
@@ -82,9 +94,13 @@ struct FocusView: View {
             TimerSettingsView()
         }
         .sheet(isPresented: $showingStats) {
-            StatsView()
+            YearlyAnalyticsView()
                 .environmentObject(timer)
-                .environmentObject(market)
+                .environmentObject(localization)
+        }
+        .sheet(isPresented: $showingCategoryPicker) {
+            CategoryPickerSheet(selectedCategory: $timer.selectedCategory)
+                .environmentObject(localization)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     }
@@ -151,29 +167,31 @@ private struct BackgroundRefreshPrompt: View {
 private struct TimerCard: View {
     let remainingSeconds: Int
     let subtitle: String
+    @ObservedObject private var themeManager = ThemeManager.shared
+    @Environment(\.colorScheme) var colorScheme
 
     var body: some View {
         VStack(spacing: 18) {
             Text(formattedTime(remainingSeconds))
                 .font(.system(size: 64, weight: .heavy, design: .rounded))
                 .monospacedDigit()
-                .foregroundStyle(.white)
+                .foregroundStyle(themeManager.currentTheme.primaryTextColor(for: colorScheme))
                 .shadow(radius: 12)
 
             Text(subtitle)
                 .font(.footnote.weight(.medium))
-                .foregroundStyle(.white.opacity(0.85))
+                .foregroundStyle(themeManager.currentTheme.secondaryTextColor(for: colorScheme))
         }
         .padding(.vertical, 36)
         .frame(maxWidth: .infinity)
         .background(
             RoundedRectangle(cornerRadius: 32, style: .continuous)
-                .fill(.black.opacity(0.25))
+                .fill(themeManager.currentTheme.cardBackground(for: colorScheme).opacity(themeManager.currentTheme == .gradient ? 2.5 : 1))
                 .shadow(color: .black.opacity(0.25), radius: 24, y: 16)
         )
         .overlay(
             RoundedRectangle(cornerRadius: 32, style: .continuous)
-                .stroke(.white.opacity(0.2), lineWidth: 1)
+                .stroke(themeManager.currentTheme.cardStroke(for: colorScheme), lineWidth: 1)
         )
     }
 
@@ -190,22 +208,24 @@ private struct CompactSoundToggle: View {
     let title: String
     let onText: String
     let offText: String
+    @ObservedObject private var themeManager = ThemeManager.shared
+    @Environment(\.colorScheme) var colorScheme
 
     var body: some View {
         HStack(spacing: 12) {
             Image(systemName: isOn ? "speaker.wave.2.fill" : "speaker.slash.fill")
                 .font(.title3.weight(.semibold))
-                .foregroundStyle(.white)
+                .foregroundStyle(themeManager.currentTheme.primaryTextColor(for: colorScheme))
                 .frame(width: 44, height: 44)
-                .background(.white.opacity(0.12), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .background(themeManager.currentTheme.cardBackground(for: colorScheme).opacity(1.5), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
                     .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(themeManager.currentTheme.primaryTextColor(for: colorScheme))
                 Text(isOn ? onText : offText)
                     .font(.caption)
-                    .foregroundStyle(.white.opacity(0.7))
+                    .foregroundStyle(themeManager.currentTheme.secondaryTextColor(for: colorScheme))
             }
 
             Spacer()
@@ -216,10 +236,10 @@ private struct CompactSoundToggle: View {
         }
         .padding(.horizontal, 18)
         .padding(.vertical, 14)
-        .background(.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .background(themeManager.currentTheme.cardBackground(for: colorScheme), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .stroke(.white.opacity(0.1), lineWidth: 1)
+                .stroke(themeManager.currentTheme.cardStroke(for: colorScheme), lineWidth: 1)
         )
     }
 }
@@ -260,6 +280,8 @@ private struct ControlButton: View {
     let icon: String
     let style: Style
     let action: () -> Void
+    @ObservedObject private var themeManager = ThemeManager.shared
+    @Environment(\.colorScheme) var colorScheme
 
     var body: some View {
         Button(action: action) {
@@ -271,12 +293,22 @@ private struct ControlButton: View {
                     .lineLimit(1)
                     .minimumScaleFactor(0.75)
             }
-            .foregroundStyle(style == .primary ? Color.black : Color.white)
+            .foregroundStyle(textColor)
             .padding(.vertical, 16)
             .frame(maxWidth: .infinity)
             .background(background)
             .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
             .shadow(color: .black.opacity(0.2), radius: 18, y: 8)
+        }
+    }
+
+    private var textColor: Color {
+        switch style {
+        case .primary:
+            // Primary button always has gradient background which is dark, so text is white
+            return .white
+        case .secondary, .tertiary:
+            return themeManager.currentTheme.primaryTextColor(for: colorScheme)
         }
     }
 
@@ -286,9 +318,13 @@ private struct ControlButton: View {
             case .primary:
                 LinearGradient(colors: [Color("ForestGreen"), Color("LakeBlue")], startPoint: .topLeading, endPoint: .bottomTrailing)
             case .secondary:
-                Color.white.opacity(0.12)
+                themeManager.currentTheme.cardBackground(for: colorScheme)
             case .tertiary:
-                LinearGradient(colors: [Color("LakeNight"), Color("ForestGreen")], startPoint: .topLeading, endPoint: .bottomTrailing)
+                if themeManager.currentTheme == .gradient {
+                    LinearGradient(colors: [Color("LakeNight"), Color("ForestGreen")], startPoint: .topLeading, endPoint: .bottomTrailing)
+                } else {
+                    themeManager.currentTheme.cardBackground(for: colorScheme)
+                }
             }
         }
     }
@@ -301,6 +337,8 @@ private struct ProgressSection: View {
     @ObservedObject var timer: PomodoroTimerService
     let dailyTarget: Int
     @EnvironmentObject private var localization: LocalizationManager
+    @ObservedObject private var themeManager = ThemeManager.shared
+    @Environment(\.colorScheme) var colorScheme
 
     var body: some View {
         VStack(spacing: 18) {
@@ -314,10 +352,10 @@ private struct ProgressSection: View {
             }
         }
         .padding(20)
-        .background(.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 28, style: .continuous))
+        .background(themeManager.currentTheme.cardBackground(for: colorScheme), in: RoundedRectangle(cornerRadius: 28, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .stroke(.white.opacity(0.1), lineWidth: 1)
+                .stroke(themeManager.currentTheme.cardStroke(for: colorScheme), lineWidth: 1)
         )
     }
 
@@ -368,6 +406,8 @@ private struct GoalProgressView: View {
     @ObservedObject var timer: PomodoroTimerService
     @EnvironmentObject private var market: MarketViewModel
     @EnvironmentObject private var localization: LocalizationManager
+    @ObservedObject private var themeManager = ThemeManager.shared
+    @Environment(\.colorScheme) var colorScheme
 
     private var normalizedProgress: Double {
         let target = market.dailyTarget
@@ -406,25 +446,25 @@ private struct GoalProgressView: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(loc("FOCUS_PHASE_PROGRESS"))
                         .font(.footnote.weight(.medium))
-                        .foregroundStyle(.white.opacity(0.8))
+                        .foregroundStyle(themeManager.currentTheme.secondaryTextColor(for: colorScheme))
                     Text(phasePercentText)
                         .font(.title3.weight(.semibold))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(themeManager.currentTheme.primaryTextColor(for: colorScheme))
                 }
                 Spacer()
                 VStack(alignment: .trailing, spacing: 2) {
                     Text(loc("HOME_STATS_TITLE"))
                         .font(.footnote.weight(.medium))
-                        .foregroundStyle(.white.opacity(0.8))
+                        .foregroundStyle(themeManager.currentTheme.secondaryTextColor(for: colorScheme))
                     Text(goalStatus)
                         .font(.headline)
-                        .foregroundStyle(.white)
+                        .foregroundStyle(themeManager.currentTheme.primaryTextColor(for: colorScheme))
                 }
             }
 
             ZStack(alignment: .leading) {
                 RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .fill(.white.opacity(0.08))
+                    .fill(themeManager.currentTheme.cardBackground(for: colorScheme))
                     .frame(height: 16)
 
                 GeometryReader { geometry in
@@ -437,7 +477,7 @@ private struct GoalProgressView: View {
             }
         }
         .padding(16)
-        .background(.white.opacity(0.04), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .background(themeManager.currentTheme.cardBackground(for: colorScheme).opacity(0.5), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
     }
 
     private func loc(_ key: String) -> String {
@@ -450,6 +490,8 @@ private struct StatCard: View {
     let value: String
     let icon: String
     @EnvironmentObject private var localization: LocalizationManager
+    @ObservedObject private var themeManager = ThemeManager.shared
+    @Environment(\.colorScheme) var colorScheme
 
     var body: some View {
         VStack(spacing: 6) {
@@ -459,14 +501,67 @@ private struct StatCard: View {
                 .font(.subheadline.weight(.semibold))
             Text(loc(titleKey))
                 .font(.caption2)
-                .foregroundStyle(.white.opacity(0.6))
+                .foregroundStyle(themeManager.currentTheme.secondaryTextColor(for: colorScheme))
         }
-        .foregroundStyle(.white)
+        .foregroundStyle(themeManager.currentTheme.primaryTextColor(for: colorScheme))
         .frame(maxWidth: .infinity)
         .padding(.vertical, 16)
-        .background(.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .background(themeManager.currentTheme.cardBackground(for: colorScheme).opacity(0.6), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
     }
 
+    private func loc(_ key: String) -> String {
+        localization.translate(key, fallback: key)
+    }
+}
+
+private struct CategorySelector: View {
+    let selectedCategory: FocusCategory
+    let onTap: () -> Void
+    @EnvironmentObject private var localization: LocalizationManager
+    @ObservedObject private var themeManager = ThemeManager.shared
+    @Environment(\.colorScheme) var colorScheme
+    
+    var body: some View {
+        Button(action: onTap) {
+            HStack(spacing: 12) {
+                Image(systemName: selectedCategory.icon)
+                    .font(.title3)
+                    .foregroundStyle(selectedCategory.color)
+                    .frame(width: 44, height: 44)
+                    .background(
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .fill(selectedCategory.color.opacity(0.2))
+                    )
+                
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(loc("CATEGORY_TITLE"))
+                        .font(.caption)
+                        .foregroundStyle(themeManager.currentTheme.secondaryTextColor(for: colorScheme))
+                    Text(selectedCategory.displayName)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(themeManager.currentTheme.primaryTextColor(for: colorScheme))
+                }
+                
+                Spacer()
+                
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(themeManager.currentTheme.secondaryTextColor(for: colorScheme))
+            }
+            .padding(.horizontal, 18)
+            .padding(.vertical, 14)
+            .background(
+                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                    .fill(themeManager.currentTheme.cardBackground(for: colorScheme))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                    .stroke(themeManager.currentTheme.cardStroke(for: colorScheme), lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
+    }
+    
     private func loc(_ key: String) -> String {
         localization.translate(key, fallback: key)
     }

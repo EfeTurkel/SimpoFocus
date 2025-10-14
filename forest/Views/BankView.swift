@@ -10,6 +10,8 @@ struct BankView: View {
     @State private var depositAmount: Double = 100
     @State private var withdrawAmount: Double = 50
     @State private var feedback: FeedbackMessage?
+    @ObservedObject private var themeManager = ThemeManager.shared
+    @Environment(\.colorScheme) var colorScheme
 
     private let amountRange: ClosedRange<Double> = 0...100000
 
@@ -132,6 +134,8 @@ private struct FeedbackMessage {
 private struct ToastMessage: View {
     let text: String
     let tint: Color
+    @ObservedObject private var themeManager = ThemeManager.shared
+    @Environment(\.colorScheme) var colorScheme
 
     var body: some View {
         HStack(spacing: 12) {
@@ -153,7 +157,7 @@ private struct ToastMessage: View {
         .padding(.vertical, 14)
         .background(
             RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .fill(LinearGradient(colors: [tint.opacity(0.95), tint.opacity(0.6)], startPoint: .topLeading, endPoint: .bottomTrailing))
+                .fill(themeManager.currentTheme.cardBackground(for: colorScheme))
                 .shadow(color: .black.opacity(0.25), radius: 18, y: 12)
         )
     }
@@ -165,12 +169,14 @@ private struct BankSummaryCard: View {
     let earned: Double
     let rate: Double
     @EnvironmentObject private var localization: LocalizationManager
+    @ObservedObject private var themeManager = ThemeManager.shared
+    @Environment(\.colorScheme) var colorScheme
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
             Text(loc("BANK_ACCOUNT"))
                 .font(.callout.weight(.medium))
-                .foregroundStyle(.white.opacity(0.7))
+                .foregroundStyle(themeManager.currentTheme.secondaryTextColor(for: colorScheme))
 
             VStack(alignment: .leading, spacing: 12) {
                 SummaryRow(title: loc("BANK_AVAILABLE"), value: available)
@@ -187,7 +193,7 @@ private struct BankSummaryCard: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
             RoundedRectangle(cornerRadius: 32, style: .continuous)
-                .fill(LinearGradient(colors: [Color("LakeBlue"), Color("ForestGreen")], startPoint: .topLeading, endPoint: .bottomTrailing))
+                .fill(themeManager.currentTheme.cardBackground(for: colorScheme))
                 .shadow(color: .black.opacity(0.25), radius: 24, y: 12)
         )
     }
@@ -209,15 +215,17 @@ private struct SummaryRow: View {
     let title: String
     let value: Double
     var highlight: Bool = false
+    @ObservedObject private var themeManager = ThemeManager.shared
+    @Environment(\.colorScheme) var colorScheme
 
     var body: some View {
         HStack {
             Text(title)
-                .foregroundStyle(.white.opacity(0.7))
+                .foregroundStyle(themeManager.currentTheme.secondaryTextColor(for: colorScheme))
             Spacer()
             Text(value, format: .currency(code: "TRY"))
                 .font(.title3.weight(highlight ? .bold : .medium))
-                .foregroundStyle(.white)
+                .foregroundStyle(themeManager.currentTheme.primaryTextColor(for: colorScheme))
         }
     }
 }
@@ -225,19 +233,21 @@ private struct SummaryRow: View {
 private struct InfoChip: View {
     let title: String
     let value: String
+    @ObservedObject private var themeManager = ThemeManager.shared
+    @Environment(\.colorScheme) var colorScheme
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(title)
                 .font(.caption2)
-                .foregroundStyle(.white.opacity(0.7))
+                .foregroundStyle(themeManager.currentTheme.secondaryTextColor(for: colorScheme))
             Text(value)
                 .font(.headline)
-                .foregroundStyle(.white)
+                .foregroundStyle(themeManager.currentTheme.primaryTextColor(for: colorScheme))
         }
         .padding(.vertical, 12)
         .padding(.horizontal, 16)
-        .background(.white.opacity(0.18), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .background(themeManager.currentTheme.cardBackground(for: colorScheme).opacity(0.8), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
     }
 }
 
@@ -249,12 +259,14 @@ private struct BankActionsSection: View {
     let onDeposit: () -> Void
     let onWithdraw: () -> Void
     @EnvironmentObject private var localization: LocalizationManager
+    @ObservedObject private var themeManager = ThemeManager.shared
+    @Environment(\.colorScheme) var colorScheme
 
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
             Text(loc("BANK_ACTIONS"))
                 .font(.headline)
-                .foregroundStyle(.white)
+                .foregroundStyle(themeManager.currentTheme.primaryTextColor(for: colorScheme))
 
             VStack(spacing: 18) {
                 ActionCard(title: loc("BANK_DEPOSIT_TITLE"),
@@ -277,10 +289,10 @@ private struct BankActionsSection: View {
             }
         }
         .padding(24)
-        .background(.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 32, style: .continuous))
+        .background(themeManager.currentTheme.cardBackground(for: colorScheme).opacity(0.8), in: RoundedRectangle(cornerRadius: 32, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 32)
-                .stroke(.white.opacity(0.12), lineWidth: 1)
+                .stroke(themeManager.currentTheme.cardStroke(for: colorScheme), lineWidth: 1)
         )
     }
 
@@ -300,6 +312,8 @@ private struct ActionCard: View {
 
     @FocusState private var isFocused: Bool
     @EnvironmentObject private var localization: LocalizationManager
+    @ObservedObject private var themeManager = ThemeManager.shared
+    @Environment(\.colorScheme) var colorScheme
 
     private let formatter: NumberFormatter = {
         let formatter = NumberFormatter()
@@ -314,20 +328,20 @@ private struct ActionCard: View {
             VStack(alignment: .leading, spacing: 6) {
                 Text(title)
                     .font(.headline)
-                    .foregroundStyle(.white)
+                    .foregroundStyle(themeManager.currentTheme.primaryTextColor(for: colorScheme))
                 Text(subtitle)
                     .font(.caption)
-                    .foregroundStyle(.white.opacity(0.7))
+                    .foregroundStyle(themeManager.currentTheme.secondaryTextColor(for: colorScheme))
             }
 
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(loc("BANK_AVAILABLE_LABEL"))
                         .font(.caption2)
-                        .foregroundStyle(.white.opacity(0.6))
+                        .foregroundStyle(themeManager.currentTheme.secondaryTextColor(for: colorScheme))
                     Text(balance, format: .currency(code: "TRY"))
                         .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(themeManager.currentTheme.primaryTextColor(for: colorScheme))
                 }
                 Spacer()
             }
@@ -339,11 +353,11 @@ private struct ActionCard: View {
                     .textFieldStyle(.plain)
                     .padding(.horizontal, 16)
                     .padding(.vertical, 14)
-                    .background(.white.opacity(0.1), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-                    .foregroundStyle(.white)
+                    .background(themeManager.currentTheme.cardBackground(for: colorScheme), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+                    .foregroundStyle(themeManager.currentTheme.primaryTextColor(for: colorScheme))
                     .overlay(
                         RoundedRectangle(cornerRadius: 20)
-                            .stroke(.white.opacity(isFocused ? 0.4 : 0.15), lineWidth: 1)
+                            .stroke(themeManager.currentTheme.cardStroke(for: colorScheme).opacity(isFocused ? 1.5 : 1), lineWidth: 1)
                     )
 
                 Button(action: action) {
@@ -353,17 +367,17 @@ private struct ActionCard: View {
                         .padding(.horizontal, 20)
                         .padding(.vertical, 12)
                         .background(
-                            LinearGradient(gradient: gradient, startPoint: .topLeading, endPoint: .bottomTrailing)
+                            themeManager.currentTheme.cardBackground(for: colorScheme)
                         )
                         .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
                 }
             }
         }
         .padding(22)
-        .background(.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 28, style: .continuous))
+        .background(themeManager.currentTheme.cardBackground(for: colorScheme).opacity(0.6), in: RoundedRectangle(cornerRadius: 28, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 28)
-                .stroke(.white.opacity(0.12), lineWidth: 1)
+                .stroke(themeManager.currentTheme.cardStroke(for: colorScheme), lineWidth: 1)
         )
     }
 
@@ -421,6 +435,8 @@ private struct BankInfoSection: View {
     let lastRateUpdate: Date
     let lastInterestApplied: Date
     @EnvironmentObject private var localization: LocalizationManager
+    @ObservedObject private var themeManager = ThemeManager.shared
+    @Environment(\.colorScheme) var colorScheme
 
     private var relativeFormatter: RelativeDateTimeFormatter {
         let formatter = RelativeDateTimeFormatter()
@@ -441,7 +457,7 @@ private struct BankInfoSection: View {
         VStack(alignment: .leading, spacing: 18) {
             Text(loc("BANK_INFO"))
                 .font(.headline)
-                .foregroundStyle(.white)
+                .foregroundStyle(themeManager.currentTheme.primaryTextColor(for: colorScheme))
 
             InfoRow(icon: "calendar.badge.clock",
                     title: loc("BANK_LAST_RATE"),
@@ -456,10 +472,10 @@ private struct BankInfoSection: View {
                 .environmentObject(localization)
         }
         .padding(24)
-        .background(.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 32, style: .continuous))
+        .background(themeManager.currentTheme.cardBackground(for: colorScheme).opacity(0.8), in: RoundedRectangle(cornerRadius: 32, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 32)
-                .stroke(.white.opacity(0.12), lineWidth: 1)
+                .stroke(themeManager.currentTheme.cardStroke(for: colorScheme), lineWidth: 1)
         )
     }
 
@@ -473,25 +489,27 @@ private struct BankInfoSection: View {
         let description: String
         let relative: String
         @EnvironmentObject private var localization: LocalizationManager
+        @ObservedObject private var themeManager = ThemeManager.shared
+        @Environment(\.colorScheme) var colorScheme
 
         var body: some View {
             HStack(alignment: .top, spacing: 12) {
                 Image(systemName: icon)
                     .font(.headline)
-                    .foregroundStyle(.white.opacity(0.8))
+                    .foregroundStyle(themeManager.currentTheme.primaryTextColor(for: colorScheme))
                     .frame(width: 34, height: 34)
-                    .background(.white.opacity(0.12), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    .background(themeManager.currentTheme.cardBackground(for: colorScheme), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
 
                 VStack(alignment: .leading, spacing: 4) {
                     Text(title)
                         .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(themeManager.currentTheme.primaryTextColor(for: colorScheme))
                     Text(description)
                         .font(.caption)
-                        .foregroundStyle(.white.opacity(0.7))
+                        .foregroundStyle(themeManager.currentTheme.secondaryTextColor(for: colorScheme))
                     Text(relative)
                         .font(.caption2)
-                        .foregroundStyle(.white.opacity(0.5))
+                        .foregroundStyle(themeManager.currentTheme.secondaryTextColor(for: colorScheme).opacity(0.7))
                 }
 
                 Spacer()

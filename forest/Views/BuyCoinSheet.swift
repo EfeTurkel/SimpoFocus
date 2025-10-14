@@ -132,6 +132,7 @@ private struct CoinDetailHeader: View {
     let coin: Coin
     let history: [CoinPriceSnapshot]
     @EnvironmentObject private var localization: LocalizationManager
+    @ObservedObject private var themeManager = ThemeManager.shared
 
     var body: some View {
         VStack(spacing: 18) {
@@ -188,7 +189,11 @@ private struct CoinDetailHeader: View {
         .padding(24)
         .background(
             RoundedRectangle(cornerRadius: 32, style: .continuous)
-                .fill(LinearGradient(colors: [Color("ForestGreen"), Color("LakeBlue")], startPoint: .topLeading, endPoint: .bottomTrailing))
+                .fill(
+                    themeManager.currentTheme == .light
+                        ? LinearGradient(colors: [Color("ForestGreen").opacity(0.8), Color("LakeBlue").opacity(0.8)], startPoint: .topLeading, endPoint: .bottomTrailing)
+                        : LinearGradient(colors: [Color("ForestGreen"), Color("LakeBlue")], startPoint: .topLeading, endPoint: .bottomTrailing)
+                )
                 .shadow(color: .black.opacity(0.25), radius: 24, y: 12)
         )
     }

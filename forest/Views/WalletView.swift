@@ -5,6 +5,8 @@ private struct SummaryChip: View {
     let value: String
     let icon: String
     @EnvironmentObject private var localization: LocalizationManager
+    @ObservedObject private var themeManager = ThemeManager.shared
+    @Environment(\.colorScheme) var colorScheme
 
     var body: some View {
         HStack(spacing: 12) {
@@ -15,16 +17,16 @@ private struct SummaryChip: View {
                     .font(.headline)
                 Text(loc(title))
                     .font(.caption)
-                    .foregroundStyle(.white.opacity(0.7))
+                    .foregroundStyle(themeManager.currentTheme.secondaryTextColor(for: colorScheme))
             }
         }
-        .foregroundStyle(.white)
+        .foregroundStyle(themeManager.currentTheme.primaryTextColor(for: colorScheme))
         .padding(.vertical, 10)
         .padding(.horizontal, 14)
-        .background(.white.opacity(0.12), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .background(themeManager.currentTheme.cardBackground(for: colorScheme), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 18)
-                .stroke(.white.opacity(0.2), lineWidth: 1)
+                .stroke(themeManager.currentTheme.cardStroke(for: colorScheme), lineWidth: 1)
         )
     }
 
@@ -33,32 +35,41 @@ private struct SummaryChip: View {
     }
 }
 
-private struct PortfolioSection: View {
+private struct CoinsMarketSection: View {
     @EnvironmentObject private var market: MarketViewModel
     @EnvironmentObject private var wallet: WalletViewModel
     @EnvironmentObject private var localization: LocalizationManager
     @Binding var selectedCoin: Coin?
+    @Binding var showingSellSheet: Bool
+    @ObservedObject private var themeManager = ThemeManager.shared
+    @Environment(\.colorScheme) var colorScheme
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text(loc("WALLET_ASSETS"))
-                .font(.title3.bold())
-                .foregroundStyle(.white)
-
-            if market.coins.allSatisfy({ $0.quantity == 0 }) {
-                Text(loc("WALLET_EMPTY_ASSETS"))
-                    .foregroundStyle(.white.opacity(0.6))
-                    .padding()
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-            } else {
-                VStack(spacing: 12) {
-                    ForEach(market.coins.filter { $0.quantity > 0 }) { coin in
-                        AssetRow(coin: coin, totalValue: coin.quantity * coin.currentPrice) {
-                            selectedCoin = coin
-                        }
-                        .environmentObject(localization)
+            HStack {
+                Text(loc("MARKET_COINS"))
+                    .font(.title3.bold())
+                    .foregroundStyle(themeManager.currentTheme.primaryTextColor(for: colorScheme))
+                
+                Spacer()
+                
+                Button {
+                    showingSellSheet = true
+                } label: {
+                    Label(loc("MARKET_SELL"), systemImage: "chart.line.downtrend.xyaxis")
+                        .font(.subheadline.weight(.medium))
+                        .foregroundStyle(.white)
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(.red.opacity(0.8))
+            }
+            
+            VStack(spacing: 12) {
+                ForEach(market.coins) { coin in
+                    CoinBuyCard(coin: coin) {
+                        selectedCoin = coin
                     }
+                    .environmentObject(market)
                 }
             }
         }
@@ -75,47 +86,44 @@ private struct PortfolioSection: View {
     }
 }
 
-private struct AssetRow: View {
+private struct CoinBuyCard: View {
     let coin: Coin
-    let totalValue: Double
     let action: () -> Void
+    @EnvironmentObject private var market: MarketViewModel
     @EnvironmentObject private var localization: LocalizationManager
+    @ObservedObject private var themeManager = ThemeManager.shared
+    @Environment(\.colorScheme) var colorScheme
 
     var body: some View {
-        HStack(spacing: 16) {
-            Image(systemName: coin.iconName)
-                .font(.title3)
-                .frame(width: 46, height: 46)
-                .foregroundStyle(.white)
-                .background(.white.opacity(0.12), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        Button(action: action) {
+            HStack(spacing: 16) {
+                Image(systemName: coin.iconName)
+                    .font(.title2)
+                    .foregroundStyle(themeManager.currentTheme.primaryTextColor(for: colorScheme))
+                    .frame(width: 54, height: 54)
+                    .background(themeManager.currentTheme.cardBackground(for: colorScheme), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16)
+                            .stroke(themeManager.currentTheme.cardStroke(for: colorScheme), lineWidth: 1)
+                    )
 
-            VStack(alignment: .leading, spacing: 4) {
-                Text(coin.symbol)
-                    .font(.headline)
-                    .foregroundStyle(.white)
-                Text(loc("WALLET_QUANTITY_SUFFIX", String(format: "%.2f", coin.quantity)))
-                    .font(.caption)
-                    .foregroundStyle(.white.opacity(0.6))
-            }
-
-            Spacer()
-
-            VStack(alignment: .trailing, spacing: 4) {
-                Text(totalValue, format: .currency(code: "TRY"))
-                    .font(.headline)
-                    .foregroundStyle(.white)
-                Button(loc("WALLET_SELL")) {
-                    action()
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(coin.name)
+                        .font(.headline)
+                        .foregroundStyle(themeManager.currentTheme.primaryTextColor(for: colorScheme))
+                    Text(coin.currentPrice, format: .currency(code: "TRY"))
+                        .font(.title3.weight(.semibold))
+                        .foregroundStyle(themeManager.currentTheme.primaryTextColor(for: colorScheme))
                 }
-                .buttonStyle(.borderedProminent)
-            }
-        }
-        .padding(14)
-        .background(.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-    }
 
-    private func loc(_ key: String, _ arguments: CVarArg...) -> String {
-        localization.translate(key, fallback: key, arguments: arguments)
+                Spacer()
+
+                Image(systemName: "chevron.right")
+                    .foregroundStyle(themeManager.currentTheme.secondaryTextColor(for: colorScheme))
+            }
+            .padding(18)
+            .background(themeManager.currentTheme.cardBackground(for: colorScheme).opacity(0.5), in: RoundedRectangle(cornerRadius: 26, style: .continuous))
+        }
     }
 }
 
@@ -124,6 +132,9 @@ struct WalletView: View {
     @EnvironmentObject private var market: MarketViewModel
     @EnvironmentObject private var localization: LocalizationManager
     @State private var selectedCoin: Coin?
+    @State private var showingSellSheet = false
+    @ObservedObject private var themeManager = ThemeManager.shared
+    @Environment(\.colorScheme) var colorScheme
 
     var body: some View {
         ScrollView {
@@ -132,7 +143,7 @@ struct WalletView: View {
                     .environmentObject(wallet)
                     .environmentObject(localization)
 
-                PortfolioSection(selectedCoin: $selectedCoin)
+                CoinsMarketSection(selectedCoin: $selectedCoin, showingSellSheet: $showingSellSheet)
                     .environmentObject(market)
                     .environmentObject(wallet)
                     .environmentObject(localization)
@@ -140,7 +151,7 @@ struct WalletView: View {
                 VStack(alignment: .leading, spacing: 16) {
                     Text(loc("WALLET_TRANSACTIONS"))
                         .font(.title3.bold())
-                        .foregroundStyle(.white)
+                        .foregroundStyle(themeManager.currentTheme.primaryTextColor(for: colorScheme))
 
                     if wallet.transactions.isEmpty {
                         EmptyTransactionsView()
@@ -155,19 +166,27 @@ struct WalletView: View {
                     }
                 }
                 .padding(20)
-                .background(.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 28, style: .continuous))
+                .background(themeManager.currentTheme.cardBackground(for: colorScheme).opacity(0.8), in: RoundedRectangle(cornerRadius: 28, style: .continuous))
                 .overlay(
                     RoundedRectangle(cornerRadius: 28)
-                        .stroke(.white.opacity(0.12), lineWidth: 1)
+                        .stroke(themeManager.currentTheme.cardStroke(for: colorScheme), lineWidth: 1)
                 )
             }
             .padding(24)
         }
         .scrollIndicators(.never)
         .sheet(item: $selectedCoin) { coin in
-            SellCoinSheet(selectedCoin: coin)
+            BuyCoinSheet(coin: coin, amount: .constant(100))
                 .environmentObject(market)
                 .environmentObject(wallet)
+        }
+        .sheet(isPresented: $showingSellSheet) {
+            SellCoinSheet()
+                .environmentObject(market)
+                .environmentObject(wallet)
+        }
+        .onAppear {
+            market.refreshPrices()
         }
     }
 
@@ -181,16 +200,18 @@ private struct WalletSummaryCard: View {
     let passiveBoost: Double
     @EnvironmentObject private var wallet: WalletViewModel
     @EnvironmentObject private var localization: LocalizationManager
+    @ObservedObject private var themeManager = ThemeManager.shared
+    @Environment(\.colorScheme) var colorScheme
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
             Text(loc("WALLET_TITLE"))
                 .font(.callout.weight(.medium))
-                .foregroundStyle(.white.opacity(0.7))
+                .foregroundStyle(themeManager.currentTheme.secondaryTextColor(for: colorScheme))
 
             Text(balance, format: .currency(code: "TRY"))
                 .font(.system(size: 44, weight: .bold, design: .rounded))
-                .foregroundStyle(.white)
+                .foregroundStyle(themeManager.currentTheme.primaryTextColor(for: colorScheme))
 
             HStack(spacing: 16) {
                 SummaryChip(title: "WALLET_PASSIVE_CHIP", value: "+\(Int(passiveBoost * 100))%", icon: "sparkles")
@@ -207,7 +228,7 @@ private struct WalletSummaryCard: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
             RoundedRectangle(cornerRadius: 32, style: .continuous)
-                .fill(LinearGradient(colors: [Color("LakeBlue"), Color("ForestGreen")], startPoint: .topLeading, endPoint: .bottomTrailing))
+                .fill(themeManager.currentTheme.cardBackground(for: colorScheme))
                 .shadow(color: .black.opacity(0.25), radius: 24, y: 12)
         )
     }
@@ -221,12 +242,14 @@ private struct PassiveIncomeRow: View {
     let passiveBoost: Double
     let accruedInterest: Double
     @EnvironmentObject private var localization: LocalizationManager
+    @ObservedObject private var themeManager = ThemeManager.shared
+    @Environment(\.colorScheme) var colorScheme
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(loc("WALLET_PASSIVE_TITLE"))
                 .font(.footnote.weight(.medium))
-                .foregroundStyle(.white.opacity(0.75))
+                .foregroundStyle(themeManager.currentTheme.secondaryTextColor(for: colorScheme))
 
             HStack(spacing: 12) {
                 Label(loc("WALLET_PASSIVE_RATE", Int(passiveBoost * 100)), systemImage: "chart.line.uptrend.xyaxis")
@@ -235,13 +258,13 @@ private struct PassiveIncomeRow: View {
                 Text(accruedInterest, format: .currency(code: "TRY"))
                     .font(.headline)
             }
-            .foregroundStyle(.white)
+            .foregroundStyle(themeManager.currentTheme.primaryTextColor(for: colorScheme))
         }
         .padding(16)
-        .background(.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .background(themeManager.currentTheme.cardBackground(for: colorScheme).opacity(0.8), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 20)
-                .stroke(.white.opacity(0.12), lineWidth: 1)
+                .stroke(themeManager.currentTheme.cardStroke(for: colorScheme), lineWidth: 1)
         )
     }
 
@@ -253,6 +276,8 @@ private struct PassiveIncomeRow: View {
 private struct TransactionCard: View {
     let transaction: WalletTransaction
     @EnvironmentObject private var localization: LocalizationManager
+    @ObservedObject private var themeManager = ThemeManager.shared
+    @Environment(\.colorScheme) var colorScheme
 
     var body: some View {
         HStack(alignment: .top, spacing: 16) {
@@ -265,10 +290,10 @@ private struct TransactionCard: View {
             VStack(alignment: .leading, spacing: 6) {
                 Text(localizedDescription)
                     .font(.headline)
-                    .foregroundStyle(.white)
+                    .foregroundStyle(themeManager.currentTheme.primaryTextColor(for: colorScheme))
                 Text(transaction.date, style: .time)
                     .font(.caption)
-                    .foregroundStyle(.white.opacity(0.6))
+                    .foregroundStyle(themeManager.currentTheme.secondaryTextColor(for: colorScheme))
             }
 
             Spacer()
@@ -278,7 +303,7 @@ private struct TransactionCard: View {
                 .foregroundStyle(transaction.amount >= 0 ? .green : .red)
         }
         .padding(16)
-        .background(.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .background(themeManager.currentTheme.cardBackground(for: colorScheme).opacity(0.5), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
     }
 
     private var iconName: String {
@@ -382,18 +407,20 @@ private struct TransactionCard: View {
 
 private struct EmptyTransactionsView: View {
     @EnvironmentObject private var localization: LocalizationManager
+    @ObservedObject private var themeManager = ThemeManager.shared
+    @Environment(\.colorScheme) var colorScheme
 
     var body: some View {
         VStack(spacing: 12) {
             Image(systemName: "tray")
                 .font(.title)
-                .foregroundStyle(.white.opacity(0.6))
+                .foregroundStyle(themeManager.currentTheme.secondaryTextColor(for: colorScheme))
             Text(loc("WALLET_EMPTY_TRANSACTIONS"))
-                .foregroundStyle(.white.opacity(0.7))
+                .foregroundStyle(themeManager.currentTheme.secondaryTextColor(for: colorScheme))
         }
         .frame(maxWidth: .infinity)
         .padding(24)
-        .background(.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .background(themeManager.currentTheme.cardBackground(for: colorScheme).opacity(0.5), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
     }
 
     private func loc(_ key: String, _ arguments: CVarArg...) -> String {

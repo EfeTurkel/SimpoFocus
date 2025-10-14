@@ -226,6 +226,14 @@ final class PersistenceController {
         timer.$focusDays
             .sink { [weak self] _ in self?.saveTimer(timer) }
             .store(in: &cancellables)
+
+        timer.$sessionHistory
+            .sink { [weak self] _ in self?.saveTimer(timer) }
+            .store(in: &cancellables)
+
+        timer.$selectedCategory
+            .sink { [weak self] _ in self?.saveTimer(timer) }
+            .store(in: &cancellables)
     }
 
     func setupRoomPersistence(_ room: RoomViewModel, cancellables: inout Set<AnyCancellable>) {

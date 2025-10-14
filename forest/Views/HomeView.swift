@@ -4,6 +4,8 @@ struct HomeView: View {
     @EnvironmentObject private var room: RoomViewModel
     @EnvironmentObject private var wallet: WalletViewModel
     @EnvironmentObject private var localization: LocalizationManager
+    @ObservedObject private var themeManager = ThemeManager.shared
+    @Environment(\.colorScheme) var colorScheme
     @AppStorage("userName") private var userName: String = ""
     @State private var selectedSegment: Segment = .overview
     @State private var selectedAsset: RoomAsset?
@@ -66,9 +68,11 @@ struct HomeView: View {
 
     private var bloomBackground: some View {
         ZStack {
-            LinearGradient(colors: [Color("ForestGreen"), Color("LakeNight")], startPoint: .topLeading, endPoint: .bottomTrailing)
-            RadialGradient(colors: [Color.white.opacity(0.08), .clear], center: .topLeading, startRadius: 80, endRadius: 360)
-            RadialGradient(colors: [Color.white.opacity(0.08), .clear], center: .bottomTrailing, startRadius: 60, endRadius: 320)
+            themeManager.currentTheme.backgroundGradient(for: colorScheme)
+            if themeManager.currentTheme == .gradient {
+                RadialGradient(colors: [Color.white.opacity(0.08), .clear], center: .topLeading, startRadius: 80, endRadius: 360)
+                RadialGradient(colors: [Color.white.opacity(0.08), .clear], center: .bottomTrailing, startRadius: 60, endRadius: 320)
+            }
         }
         .ignoresSafeArea()
     }
@@ -79,11 +83,11 @@ struct HomeView: View {
                 VStack(alignment: .leading, spacing: 8) {
                     Text(String(format: loc("HOME_GREETING"), greetingName))
                         .font(.system(size: 30, weight: .bold, design: .rounded))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(themeManager.currentTheme.primaryTextColor(for: colorScheme))
 
                     Text(loc("HOME_SUBTITLE"))
                         .font(.callout)
-                        .foregroundStyle(.white.opacity(0.7))
+                        .foregroundStyle(themeManager.currentTheme.secondaryTextColor(for: colorScheme))
                 }
 
                 Spacer()
@@ -93,21 +97,21 @@ struct HomeView: View {
                 } label: {
                     Label(loc("HOME_BUTTON_INVENTORY"), systemImage: "tray.full")
                         .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(.black)
+                        .foregroundStyle(themeManager.currentTheme.primaryTextColor(for: colorScheme))
                         .padding(.vertical, 10)
                         .padding(.horizontal, 14)
                         .background(.ultraThinMaterial, in: Capsule())
                         .overlay(
                             Capsule()
-                                .stroke(.white.opacity(0.3), lineWidth: 1)
+                                .stroke(themeManager.currentTheme.cardStroke(for: colorScheme), lineWidth: 1)
                         )
                 }
             }
 
             HStack(spacing: 18) {
-                BalanceCard(title: loc("HOME_BALANCE_PRIMARY"), value: wallet.balance, icon: "creditcard.fill", tint: LinearGradient(colors: [Color("ForestGreen"), Color("LakeBlue")], startPoint: .topLeading, endPoint: .bottomTrailing))
+                BalanceCard(title: loc("HOME_BALANCE_PRIMARY"), value: wallet.balance, icon: "creditcard.fill", tint: themeManager.currentTheme == .gradient ? LinearGradient(colors: [Color("ForestGreen"), Color("LakeBlue")], startPoint: .topLeading, endPoint: .bottomTrailing) : LinearGradient(colors: [themeManager.currentTheme.primaryTextColor(for: colorScheme), themeManager.currentTheme.primaryTextColor(for: colorScheme)], startPoint: .topLeading, endPoint: .bottomTrailing))
                     .environmentObject(localization)
-                BalanceCard(title: loc("HOME_BALANCE_STAKED"), value: wallet.stakedBalance, icon: "lock.fill", tint: LinearGradient(colors: [Color("LakeBlue"), Color("LakeNight")], startPoint: .topLeading, endPoint: .bottomTrailing))
+                BalanceCard(title: loc("HOME_BALANCE_STAKED"), value: wallet.stakedBalance, icon: "lock.fill", tint: themeManager.currentTheme == .gradient ? LinearGradient(colors: [Color("LakeBlue"), Color("LakeNight")], startPoint: .topLeading, endPoint: .bottomTrailing) : LinearGradient(colors: [themeManager.currentTheme.primaryTextColor(for: colorScheme), themeManager.currentTheme.primaryTextColor(for: colorScheme)], startPoint: .topLeading, endPoint: .bottomTrailing))
                     .environmentObject(localization)
             }
         }
@@ -115,7 +119,7 @@ struct HomeView: View {
         .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 32, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 32, style: .continuous)
-                .stroke(.white.opacity(0.18), lineWidth: 1)
+                .stroke(themeManager.currentTheme.cardStroke(for: colorScheme), lineWidth: 1)
         )
     }
 
@@ -129,14 +133,14 @@ struct HomeView: View {
                 } label: {
                     Text(loc(segment.titleKey))
                         .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(selectedSegment == segment ? .black : .white.opacity(0.65))
+                        .foregroundStyle(selectedSegment == segment ? themeManager.currentTheme.primaryTextColor(for: colorScheme) : themeManager.currentTheme.secondaryTextColor(for: colorScheme))
                         .frame(maxWidth: .infinity)
                         .frame(height: 44)
                         .background(
                             Group {
                                 if selectedSegment == segment {
                                     RoundedRectangle(cornerRadius: 16)
-                                        .fill(.white)
+                                        .fill(themeManager.currentTheme.cardBackground(for: colorScheme).opacity(0.8))
                                         .matchedGeometryEffect(id: "segment", in: animation)
                                 }
                             }
@@ -146,10 +150,10 @@ struct HomeView: View {
             }
         }
         .padding(6)
-        .background(.black.opacity(0.15), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .background(themeManager.currentTheme.cardBackground(for: colorScheme).opacity(0.6), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .stroke(.white.opacity(0.2), lineWidth: 1)
+                .stroke(themeManager.currentTheme.cardStroke(for: colorScheme), lineWidth: 1)
         )
     }
 
@@ -172,10 +176,10 @@ struct HomeView: View {
                     VStack(alignment: .leading, spacing: 6) {
                         Text(loc("HOME_ACTIVE_THEME_LABEL"))
                             .font(.caption)
-                            .foregroundStyle(.white.opacity(0.65))
+                            .foregroundStyle(themeManager.currentTheme.secondaryTextColor(for: colorScheme))
                         Text(themeEnergyText)
                             .font(.headline)
-                            .foregroundStyle(.white)
+                            .foregroundStyle(themeManager.currentTheme.primaryTextColor(for: colorScheme))
                     }
                     Spacer()
                     Button {
@@ -183,9 +187,10 @@ struct HomeView: View {
                     } label: {
                         Label(loc("HOME_ACTIVE_THEME_BUTTON"), systemImage: "paintpalette")
                             .font(.footnote.weight(.semibold))
+                            .foregroundStyle(themeManager.currentTheme.primaryTextColor(for: colorScheme))
                             .padding(.vertical, 8)
                             .padding(.horizontal, 14)
-                            .background(.white.opacity(0.15), in: Capsule())
+                            .background(themeManager.currentTheme.cardBackground(for: colorScheme), in: Capsule())
                     }
                 }
             }
@@ -227,10 +232,10 @@ struct HomeView: View {
                 VStack(alignment: .leading, spacing: 6) {
                     Text(loc("HOME_STUDIO_TITLE"))
                         .font(.title3.weight(.semibold))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(themeManager.currentTheme.primaryTextColor(for: colorScheme))
                     Text(loc("HOME_STUDIO_SUBTITLE"))
                         .font(.footnote)
-                        .foregroundStyle(.white.opacity(0.7))
+                        .foregroundStyle(themeManager.currentTheme.secondaryTextColor(for: colorScheme))
                 }
                 Spacer()
                 Button {
@@ -238,9 +243,10 @@ struct HomeView: View {
                 } label: {
                     Label(loc("HOME_BUTTON_INVENTORY"), systemImage: "capsule")
                         .font(.footnote.weight(.semibold))
+                        .foregroundStyle(themeManager.currentTheme.primaryTextColor(for: colorScheme))
                         .padding(.vertical, 8)
                         .padding(.horizontal, 14)
-                        .background(.white.opacity(0.15), in: Capsule())
+                        .background(themeManager.currentTheme.cardBackground(for: colorScheme), in: Capsule())
                 }
             }
 
@@ -263,7 +269,7 @@ struct HomeView: View {
         .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .stroke(.white.opacity(0.16), lineWidth: 1)
+                .stroke(themeManager.currentTheme.cardStroke(for: colorScheme), lineWidth: 1)
         )
     }
 
@@ -272,10 +278,10 @@ struct HomeView: View {
             VStack(alignment: .leading, spacing: 6) {
                 Text(loc("HOME_MARKET_TITLE"))
                     .font(.title3.weight(.semibold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(themeManager.currentTheme.primaryTextColor(for: colorScheme))
                 Text(loc("HOME_MARKET_SUBTITLE"))
                     .font(.footnote)
-                    .foregroundStyle(.white.opacity(0.7))
+                    .foregroundStyle(themeManager.currentTheme.secondaryTextColor(for: colorScheme))
             }
 
             ForEach(room.availableMarketSections) { section in
@@ -287,10 +293,10 @@ struct HomeView: View {
             }
         }
         .padding(24)
-        .background(.black.opacity(0.2), in: RoundedRectangle(cornerRadius: 32, style: .continuous))
+        .background(themeManager.currentTheme.cardBackground(for: colorScheme).opacity(0.8), in: RoundedRectangle(cornerRadius: 32, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 32, style: .continuous)
-                .stroke(.white.opacity(0.14), lineWidth: 1)
+                .stroke(themeManager.currentTheme.cardStroke(for: colorScheme), lineWidth: 1)
         )
     }
 
@@ -321,22 +327,24 @@ private struct BalanceCard: View {
     let icon: String
     let tint: LinearGradient
     @EnvironmentObject private var localization: LocalizationManager
+    @ObservedObject private var themeManager = ThemeManager.shared
+    @Environment(\.colorScheme) var colorScheme
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             Image(systemName: icon)
                 .font(.title2.weight(.semibold))
-                .foregroundStyle(.white)
+                .foregroundStyle(themeManager.currentTheme.primaryTextColor(for: colorScheme))
                 .padding(12)
-                .background(.white.opacity(0.14), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                .background(themeManager.currentTheme.cardBackground(for: colorScheme), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(value, format: .currency(code: "TRY"))
                     .font(.title2.weight(.bold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(themeManager.currentTheme.primaryTextColor(for: colorScheme))
                 Text(title)
                     .font(.caption)
-                    .foregroundStyle(.white.opacity(0.7))
+                    .foregroundStyle(themeManager.currentTheme.secondaryTextColor(for: colorScheme))
             }
         }
         .padding(20)
@@ -344,7 +352,7 @@ private struct BalanceCard: View {
         .background(tint.opacity(0.65), in: RoundedRectangle(cornerRadius: 28, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .stroke(.white.opacity(0.2), lineWidth: 1)
+                .stroke(themeManager.currentTheme.cardStroke(for: colorScheme), lineWidth: 1)
         )
     }
 }
@@ -354,23 +362,25 @@ private struct GlassCard<Content: View>: View {
     let subtitle: String
     let icon: String
     @ViewBuilder var content: Content
+    @ObservedObject private var themeManager = ThemeManager.shared
+    @Environment(\.colorScheme) var colorScheme
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack(spacing: 14) {
                 Image(systemName: icon)
                     .font(.title3.weight(.semibold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(themeManager.currentTheme.primaryTextColor(for: colorScheme))
                     .padding(12)
-                    .background(.white.opacity(0.18), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    .background(themeManager.currentTheme.cardBackground(for: colorScheme), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
 
                 VStack(alignment: .leading, spacing: 4) {
                     Text(title)
                         .font(.headline)
-                        .foregroundStyle(.white)
+                        .foregroundStyle(themeManager.currentTheme.primaryTextColor(for: colorScheme))
                     Text(subtitle)
                         .font(.caption)
-                        .foregroundStyle(.white.opacity(0.65))
+                        .foregroundStyle(themeManager.currentTheme.secondaryTextColor(for: colorScheme))
                 }
 
                 Spacer()
@@ -382,7 +392,7 @@ private struct GlassCard<Content: View>: View {
         .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .stroke(.white.opacity(0.18), lineWidth: 1)
+                .stroke(themeManager.currentTheme.cardStroke(for: colorScheme), lineWidth: 1)
         )
     }
 }
@@ -390,39 +400,43 @@ private struct GlassCard<Content: View>: View {
 private struct StatTile: View {
     let title: String
     let value: String
+    @ObservedObject private var themeManager = ThemeManager.shared
+    @Environment(\.colorScheme) var colorScheme
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(value)
                 .font(.headline)
-                .foregroundStyle(.white)
+                .foregroundStyle(themeManager.currentTheme.primaryTextColor(for: colorScheme))
             Text(title)
                 .font(.caption)
-                .foregroundStyle(.white.opacity(0.6))
+                .foregroundStyle(themeManager.currentTheme.secondaryTextColor(for: colorScheme))
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(14)
-        .background(.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .background(themeManager.currentTheme.cardBackground(for: colorScheme), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 }
 
 private struct EmptyStateView: View {
     let message: String
+    @ObservedObject private var themeManager = ThemeManager.shared
+    @Environment(\.colorScheme) var colorScheme
 
     var body: some View {
         VStack(spacing: 12) {
             Image(systemName: "sparkles")
                 .font(.largeTitle)
-                .foregroundStyle(.white.opacity(0.65))
+                .foregroundStyle(themeManager.currentTheme.secondaryTextColor(for: colorScheme))
             Text(message)
                 .font(.footnote)
-                .foregroundStyle(.white.opacity(0.7))
+                .foregroundStyle(themeManager.currentTheme.secondaryTextColor(for: colorScheme))
                 .multilineTextAlignment(.center)
                 .padding(.horizontal)
         }
         .padding(24)
         .frame(maxWidth: .infinity)
-        .background(.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .background(themeManager.currentTheme.cardBackground(for: colorScheme).opacity(0.5), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
     }
 }
 
@@ -430,24 +444,26 @@ private struct DecorCard: View {
     let asset: RoomAsset
     let removeAction: () -> Void
     @EnvironmentObject private var localization: LocalizationManager
+    @ObservedObject private var themeManager = ThemeManager.shared
+    @Environment(\.colorScheme) var colorScheme
 
     var body: some View {
         VStack(spacing: 14) {
             Image(systemName: asset.iconName)
                 .font(.system(size: 34, weight: .semibold))
-                .foregroundStyle(.white)
+                .foregroundStyle(themeManager.currentTheme.primaryTextColor(for: colorScheme))
                 .padding(18)
-                .background(.white.opacity(0.16), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                .background(themeManager.currentTheme.cardBackground(for: colorScheme), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
 
             Text(localizedName)
                 .font(.headline)
-                .foregroundStyle(.white)
+                .foregroundStyle(themeManager.currentTheme.primaryTextColor(for: colorScheme))
                 .multilineTextAlignment(.center)
                 .lineLimit(2)
 
             Text(localizedDescription)
                 .font(.caption)
-                .foregroundStyle(.white.opacity(0.65))
+                .foregroundStyle(themeManager.currentTheme.secondaryTextColor(for: colorScheme))
                 .multilineTextAlignment(.center)
                 .lineLimit(2)
 
@@ -456,15 +472,15 @@ private struct DecorCard: View {
                     .font(.caption.weight(.semibold))
                     .padding(.vertical, 6)
                     .padding(.horizontal, 12)
-                    .background(.white.opacity(0.12), in: Capsule())
+                    .background(themeManager.currentTheme.cardBackground(for: colorScheme), in: Capsule())
             }
         }
         .padding(18)
         .frame(maxWidth: .infinity)
-        .background(.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .background(themeManager.currentTheme.cardBackground(for: colorScheme).opacity(0.6), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .stroke(.white.opacity(0.14), lineWidth: 1)
+                .stroke(themeManager.currentTheme.cardStroke(for: colorScheme), lineWidth: 1)
         )
     }
 
@@ -486,30 +502,32 @@ private struct MarketItemCard: View {
     let isUnlocked: Bool
     let action: () -> Void
     @EnvironmentObject private var localization: LocalizationManager
+    @ObservedObject private var themeManager = ThemeManager.shared
+    @Environment(\.colorScheme) var colorScheme
 
     var body: some View {
         Button(action: action) {
             VStack(spacing: 14) {
                 Image(systemName: asset.iconName)
                     .font(.title.weight(.semibold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(themeManager.currentTheme.primaryTextColor(for: colorScheme))
                     .padding(16)
-                    .background(.white.opacity(0.18), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                    .background(themeManager.currentTheme.cardBackground(for: colorScheme), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
 
                 VStack(spacing: 6) {
                     Text(localizedName)
                         .font(.headline.weight(.semibold))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(themeManager.currentTheme.primaryTextColor(for: colorScheme))
                         .multilineTextAlignment(.center)
                         .lineLimit(2)
 
                     Text(asset.price, format: .currency(code: "TRY"))
                         .font(.subheadline)
-                        .foregroundStyle(.white.opacity(0.72))
+                        .foregroundStyle(themeManager.currentTheme.secondaryTextColor(for: colorScheme))
 
                     Text(localizedDescription)
                         .font(.caption)
-                        .foregroundStyle(.white.opacity(0.6))
+                        .foregroundStyle(themeManager.currentTheme.secondaryTextColor(for: colorScheme))
                         .multilineTextAlignment(.center)
                         .lineLimit(2)
                 }
@@ -523,10 +541,10 @@ private struct MarketItemCard: View {
             }
             .padding(18)
             .frame(maxWidth: .infinity)
-            .background(.white.opacity(0.07), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+            .background(themeManager.currentTheme.cardBackground(for: colorScheme).opacity(0.7), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: 22, style: .continuous)
-                    .stroke(isUnlocked ? Color.green.opacity(0.4) : .white.opacity(0.14), lineWidth: 1)
+                    .stroke(isUnlocked ? Color.green.opacity(0.4) : themeManager.currentTheme.cardStroke(for: colorScheme), lineWidth: 1)
             )
         }
         .buttonStyle(.plain)
@@ -588,6 +606,8 @@ private struct PurchaseSheet: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var localization: LocalizationManager
     @State private var placementSuccess = false
+    @ObservedObject private var themeManager = ThemeManager.shared
+    @Environment(\.colorScheme) var colorScheme
     let completion: (ToastMessage) -> Void
 
     var body: some View {
@@ -630,7 +650,7 @@ private struct PurchaseSheet: View {
                         .foregroundStyle(.black)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 14)
-                        .background(LinearGradient(colors: [Color("ForestGreen"), Color("LakeBlue")], startPoint: .topLeading, endPoint: .bottomTrailing), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                        .background(themeManager.currentTheme == .gradient ? LinearGradient(colors: [Color("ForestGreen"), Color("LakeBlue")], startPoint: .topLeading, endPoint: .bottomTrailing) : LinearGradient(colors: [themeManager.currentTheme.primaryTextColor(for: colorScheme), themeManager.currentTheme.primaryTextColor(for: colorScheme)], startPoint: .topLeading, endPoint: .bottomTrailing), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
                 }
                 .padding(.horizontal)
                 .padding(.bottom, 12)
