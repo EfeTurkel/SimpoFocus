@@ -17,16 +17,16 @@ private struct SummaryChip: View {
                     .font(.headline)
                 Text(loc(title))
                     .font(.caption)
-                    .foregroundStyle(themeManager.currentTheme.secondaryTextColor(for: colorScheme))
+                    .foregroundStyle(themeManager.currentTheme.getSecondaryTextColor(for: colorScheme))
             }
         }
-        .foregroundStyle(themeManager.currentTheme.primaryTextColor(for: colorScheme))
+        .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
         .padding(.vertical, 10)
         .padding(.horizontal, 14)
-        .background(themeManager.currentTheme.cardBackground(for: colorScheme), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .background(themeManager.currentTheme.getCardBackground(for: colorScheme), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 18)
-                .stroke(themeManager.currentTheme.cardStroke(for: colorScheme), lineWidth: 1)
+                .stroke(themeManager.currentTheme.getCardStroke(for: colorScheme), lineWidth: 1)
         )
     }
 
@@ -49,7 +49,7 @@ private struct CoinsMarketSection: View {
             HStack {
                 Text(loc("MARKET_COINS"))
                     .font(.title3.bold())
-                    .foregroundStyle(themeManager.currentTheme.primaryTextColor(for: colorScheme))
+                    .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
                 
                 Spacer()
                 
@@ -99,30 +99,30 @@ private struct CoinBuyCard: View {
             HStack(spacing: 16) {
                 Image(systemName: coin.iconName)
                     .font(.title2)
-                    .foregroundStyle(themeManager.currentTheme.primaryTextColor(for: colorScheme))
+                    .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
                     .frame(width: 54, height: 54)
-                    .background(themeManager.currentTheme.cardBackground(for: colorScheme), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    .background(themeManager.currentTheme.getCardBackground(for: colorScheme), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
                     .overlay(
                         RoundedRectangle(cornerRadius: 16)
-                            .stroke(themeManager.currentTheme.cardStroke(for: colorScheme), lineWidth: 1)
+                            .stroke(themeManager.currentTheme.getCardStroke(for: colorScheme), lineWidth: 1)
                     )
 
                 VStack(alignment: .leading, spacing: 6) {
                     Text(coin.name)
                         .font(.headline)
-                        .foregroundStyle(themeManager.currentTheme.primaryTextColor(for: colorScheme))
+                        .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
                     Text(coin.currentPrice, format: .currency(code: "TRY"))
                         .font(.title3.weight(.semibold))
-                        .foregroundStyle(themeManager.currentTheme.primaryTextColor(for: colorScheme))
+                        .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
                 }
 
                 Spacer()
 
                 Image(systemName: "chevron.right")
-                    .foregroundStyle(themeManager.currentTheme.secondaryTextColor(for: colorScheme))
+                    .foregroundStyle(themeManager.currentTheme.getSecondaryTextColor(for: colorScheme))
             }
             .padding(18)
-            .background(themeManager.currentTheme.cardBackground(for: colorScheme).opacity(0.5), in: RoundedRectangle(cornerRadius: 26, style: .continuous))
+            .background(themeManager.currentTheme.getCardBackground(for: colorScheme).opacity(0.5), in: RoundedRectangle(cornerRadius: 26, style: .continuous))
         }
     }
 }
@@ -151,7 +151,7 @@ struct WalletView: View {
                 VStack(alignment: .leading, spacing: 16) {
                     Text(loc("WALLET_TRANSACTIONS"))
                         .font(.title3.bold())
-                        .foregroundStyle(themeManager.currentTheme.primaryTextColor(for: colorScheme))
+                        .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
 
                     if wallet.transactions.isEmpty {
                         EmptyTransactionsView()
@@ -166,10 +166,10 @@ struct WalletView: View {
                     }
                 }
                 .padding(20)
-                .background(themeManager.currentTheme.cardBackground(for: colorScheme).opacity(0.8), in: RoundedRectangle(cornerRadius: 28, style: .continuous))
+                .background(themeManager.currentTheme.getCardBackground(for: colorScheme).opacity(0.8), in: RoundedRectangle(cornerRadius: 28, style: .continuous))
                 .overlay(
                     RoundedRectangle(cornerRadius: 28)
-                        .stroke(themeManager.currentTheme.cardStroke(for: colorScheme), lineWidth: 1)
+                        .stroke(themeManager.currentTheme.getCardStroke(for: colorScheme), lineWidth: 1)
                 )
             }
             .padding(24)
@@ -207,11 +207,11 @@ private struct WalletSummaryCard: View {
         VStack(alignment: .leading, spacing: 18) {
             Text(loc("WALLET_TITLE"))
                 .font(.callout.weight(.medium))
-                .foregroundStyle(themeManager.currentTheme.secondaryTextColor(for: colorScheme))
+                .foregroundStyle(themeManager.currentTheme.getSecondaryTextColor(for: colorScheme))
 
             Text(balance, format: .currency(code: "TRY"))
                 .font(.system(size: 44, weight: .bold, design: .rounded))
-                .foregroundStyle(themeManager.currentTheme.primaryTextColor(for: colorScheme))
+                .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
 
             HStack(spacing: 16) {
                 SummaryChip(title: "WALLET_PASSIVE_CHIP", value: "+\(Int(passiveBoost * 100))%", icon: "sparkles")
@@ -228,7 +228,7 @@ private struct WalletSummaryCard: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
             RoundedRectangle(cornerRadius: 32, style: .continuous)
-                .fill(themeManager.currentTheme.cardBackground(for: colorScheme))
+                .fill(themeManager.currentTheme.getCardBackground(for: colorScheme))
                 .shadow(color: .black.opacity(0.25), radius: 24, y: 12)
         )
     }
@@ -249,7 +249,7 @@ private struct PassiveIncomeRow: View {
         VStack(alignment: .leading, spacing: 6) {
             Text(loc("WALLET_PASSIVE_TITLE"))
                 .font(.footnote.weight(.medium))
-                .foregroundStyle(themeManager.currentTheme.secondaryTextColor(for: colorScheme))
+                .foregroundStyle(themeManager.currentTheme.getSecondaryTextColor(for: colorScheme))
 
             HStack(spacing: 12) {
                 Label(loc("WALLET_PASSIVE_RATE", Int(passiveBoost * 100)), systemImage: "chart.line.uptrend.xyaxis")
@@ -258,13 +258,13 @@ private struct PassiveIncomeRow: View {
                 Text(accruedInterest, format: .currency(code: "TRY"))
                     .font(.headline)
             }
-            .foregroundStyle(themeManager.currentTheme.primaryTextColor(for: colorScheme))
+            .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
         }
         .padding(16)
-        .background(themeManager.currentTheme.cardBackground(for: colorScheme).opacity(0.8), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .background(themeManager.currentTheme.getCardBackground(for: colorScheme).opacity(0.8), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 20)
-                .stroke(themeManager.currentTheme.cardStroke(for: colorScheme), lineWidth: 1)
+                .stroke(themeManager.currentTheme.getCardStroke(for: colorScheme), lineWidth: 1)
         )
     }
 
@@ -290,10 +290,10 @@ private struct TransactionCard: View {
             VStack(alignment: .leading, spacing: 6) {
                 Text(localizedDescription)
                     .font(.headline)
-                    .foregroundStyle(themeManager.currentTheme.primaryTextColor(for: colorScheme))
+                    .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
                 Text(transaction.date, style: .time)
                     .font(.caption)
-                    .foregroundStyle(themeManager.currentTheme.secondaryTextColor(for: colorScheme))
+                    .foregroundStyle(themeManager.currentTheme.getSecondaryTextColor(for: colorScheme))
             }
 
             Spacer()
@@ -303,7 +303,7 @@ private struct TransactionCard: View {
                 .foregroundStyle(transaction.amount >= 0 ? .green : .red)
         }
         .padding(16)
-        .background(themeManager.currentTheme.cardBackground(for: colorScheme).opacity(0.5), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .background(themeManager.currentTheme.getCardBackground(for: colorScheme).opacity(0.5), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
     }
 
     private var iconName: String {
@@ -414,13 +414,13 @@ private struct EmptyTransactionsView: View {
         VStack(spacing: 12) {
             Image(systemName: "tray")
                 .font(.title)
-                .foregroundStyle(themeManager.currentTheme.secondaryTextColor(for: colorScheme))
+                .foregroundStyle(themeManager.currentTheme.getSecondaryTextColor(for: colorScheme))
             Text(loc("WALLET_EMPTY_TRANSACTIONS"))
-                .foregroundStyle(themeManager.currentTheme.secondaryTextColor(for: colorScheme))
+                .foregroundStyle(themeManager.currentTheme.getSecondaryTextColor(for: colorScheme))
         }
         .frame(maxWidth: .infinity)
         .padding(24)
-        .background(themeManager.currentTheme.cardBackground(for: colorScheme).opacity(0.5), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .background(themeManager.currentTheme.getCardBackground(for: colorScheme).opacity(0.5), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
     }
 
     private func loc(_ key: String, _ arguments: CVarArg...) -> String {

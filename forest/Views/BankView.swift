@@ -157,7 +157,7 @@ private struct ToastMessage: View {
         .padding(.vertical, 14)
         .background(
             RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .fill(themeManager.currentTheme.cardBackground(for: colorScheme))
+                .fill(themeManager.currentTheme.getCardBackground(for: colorScheme))
                 .shadow(color: .black.opacity(0.25), radius: 18, y: 12)
         )
     }
@@ -176,7 +176,7 @@ private struct BankSummaryCard: View {
         VStack(alignment: .leading, spacing: 18) {
             Text(loc("BANK_ACCOUNT"))
                 .font(.callout.weight(.medium))
-                .foregroundStyle(themeManager.currentTheme.secondaryTextColor(for: colorScheme))
+                .foregroundStyle(themeManager.currentTheme.getSecondaryTextColor(for: colorScheme))
 
             VStack(alignment: .leading, spacing: 12) {
                 SummaryRow(title: loc("BANK_AVAILABLE"), value: available)
@@ -193,7 +193,7 @@ private struct BankSummaryCard: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
             RoundedRectangle(cornerRadius: 32, style: .continuous)
-                .fill(themeManager.currentTheme.cardBackground(for: colorScheme))
+                .fill(themeManager.currentTheme.getCardBackground(for: colorScheme))
                 .shadow(color: .black.opacity(0.25), radius: 24, y: 12)
         )
     }
@@ -221,11 +221,11 @@ private struct SummaryRow: View {
     var body: some View {
         HStack {
             Text(title)
-                .foregroundStyle(themeManager.currentTheme.secondaryTextColor(for: colorScheme))
+                .foregroundStyle(themeManager.currentTheme.getSecondaryTextColor(for: colorScheme))
             Spacer()
             Text(value, format: .currency(code: "TRY"))
                 .font(.title3.weight(highlight ? .bold : .medium))
-                .foregroundStyle(themeManager.currentTheme.primaryTextColor(for: colorScheme))
+                .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
         }
     }
 }
@@ -240,14 +240,14 @@ private struct InfoChip: View {
         VStack(alignment: .leading, spacing: 4) {
             Text(title)
                 .font(.caption2)
-                .foregroundStyle(themeManager.currentTheme.secondaryTextColor(for: colorScheme))
+                .foregroundStyle(themeManager.currentTheme.getSecondaryTextColor(for: colorScheme))
             Text(value)
                 .font(.headline)
-                .foregroundStyle(themeManager.currentTheme.primaryTextColor(for: colorScheme))
+                .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
         }
         .padding(.vertical, 12)
         .padding(.horizontal, 16)
-        .background(themeManager.currentTheme.cardBackground(for: colorScheme).opacity(0.8), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .background(themeManager.currentTheme.getCardBackground(for: colorScheme).opacity(0.8), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
     }
 }
 
@@ -266,7 +266,7 @@ private struct BankActionsSection: View {
         VStack(alignment: .leading, spacing: 20) {
             Text(loc("BANK_ACTIONS"))
                 .font(.headline)
-                .foregroundStyle(themeManager.currentTheme.primaryTextColor(for: colorScheme))
+                .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
 
             VStack(spacing: 18) {
                 ActionCard(title: loc("BANK_DEPOSIT_TITLE"),
@@ -289,10 +289,10 @@ private struct BankActionsSection: View {
             }
         }
         .padding(24)
-        .background(themeManager.currentTheme.cardBackground(for: colorScheme).opacity(0.8), in: RoundedRectangle(cornerRadius: 32, style: .continuous))
+        .background(themeManager.currentTheme.getCardBackground(for: colorScheme).opacity(0.8), in: RoundedRectangle(cornerRadius: 32, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 32)
-                .stroke(themeManager.currentTheme.cardStroke(for: colorScheme), lineWidth: 1)
+                .stroke(themeManager.currentTheme.getCardStroke(for: colorScheme), lineWidth: 1)
         )
     }
 
@@ -328,20 +328,20 @@ private struct ActionCard: View {
             VStack(alignment: .leading, spacing: 6) {
                 Text(title)
                     .font(.headline)
-                    .foregroundStyle(themeManager.currentTheme.primaryTextColor(for: colorScheme))
+                    .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
                 Text(subtitle)
                     .font(.caption)
-                    .foregroundStyle(themeManager.currentTheme.secondaryTextColor(for: colorScheme))
+                    .foregroundStyle(themeManager.currentTheme.getSecondaryTextColor(for: colorScheme))
             }
 
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(loc("BANK_AVAILABLE_LABEL"))
                         .font(.caption2)
-                        .foregroundStyle(themeManager.currentTheme.secondaryTextColor(for: colorScheme))
+                        .foregroundStyle(themeManager.currentTheme.getSecondaryTextColor(for: colorScheme))
                     Text(balance, format: .currency(code: "TRY"))
                         .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(themeManager.currentTheme.primaryTextColor(for: colorScheme))
+                        .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
                 }
                 Spacer()
             }
@@ -353,31 +353,35 @@ private struct ActionCard: View {
                     .textFieldStyle(.plain)
                     .padding(.horizontal, 16)
                     .padding(.vertical, 14)
-                    .background(themeManager.currentTheme.cardBackground(for: colorScheme), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-                    .foregroundStyle(themeManager.currentTheme.primaryTextColor(for: colorScheme))
+                    .background(themeManager.currentTheme.getCardBackground(for: colorScheme), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+                    .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
                     .overlay(
                         RoundedRectangle(cornerRadius: 20)
-                            .stroke(themeManager.currentTheme.cardStroke(for: colorScheme).opacity(isFocused ? 1.5 : 1), lineWidth: 1)
+                            .stroke(themeManager.currentTheme.getCardStroke(for: colorScheme).opacity(isFocused ? 1.5 : 1), lineWidth: 1)
                     )
 
                 Button(action: action) {
                     Text(loc(buttonTitle))
                         .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(.black)
+                        .foregroundStyle(.white)
                         .padding(.horizontal, 20)
                         .padding(.vertical, 12)
                         .background(
-                            themeManager.currentTheme.cardBackground(for: colorScheme)
+                            LinearGradient(
+                                colors: gradient.stops.map { $0.color },
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
                         )
                         .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
                 }
             }
         }
         .padding(22)
-        .background(themeManager.currentTheme.cardBackground(for: colorScheme).opacity(0.6), in: RoundedRectangle(cornerRadius: 28, style: .continuous))
+        .background(themeManager.currentTheme.getCardBackground(for: colorScheme).opacity(0.6), in: RoundedRectangle(cornerRadius: 28, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 28)
-                .stroke(themeManager.currentTheme.cardStroke(for: colorScheme), lineWidth: 1)
+                .stroke(themeManager.currentTheme.getCardStroke(for: colorScheme), lineWidth: 1)
         )
     }
 
@@ -457,7 +461,7 @@ private struct BankInfoSection: View {
         VStack(alignment: .leading, spacing: 18) {
             Text(loc("BANK_INFO"))
                 .font(.headline)
-                .foregroundStyle(themeManager.currentTheme.primaryTextColor(for: colorScheme))
+                .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
 
             InfoRow(icon: "calendar.badge.clock",
                     title: loc("BANK_LAST_RATE"),
@@ -472,10 +476,10 @@ private struct BankInfoSection: View {
                 .environmentObject(localization)
         }
         .padding(24)
-        .background(themeManager.currentTheme.cardBackground(for: colorScheme).opacity(0.8), in: RoundedRectangle(cornerRadius: 32, style: .continuous))
+        .background(themeManager.currentTheme.getCardBackground(for: colorScheme).opacity(0.8), in: RoundedRectangle(cornerRadius: 32, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 32)
-                .stroke(themeManager.currentTheme.cardStroke(for: colorScheme), lineWidth: 1)
+                .stroke(themeManager.currentTheme.getCardStroke(for: colorScheme), lineWidth: 1)
         )
     }
 
@@ -496,20 +500,20 @@ private struct BankInfoSection: View {
             HStack(alignment: .top, spacing: 12) {
                 Image(systemName: icon)
                     .font(.headline)
-                    .foregroundStyle(themeManager.currentTheme.primaryTextColor(for: colorScheme))
+                    .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
                     .frame(width: 34, height: 34)
-                    .background(themeManager.currentTheme.cardBackground(for: colorScheme), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    .background(themeManager.currentTheme.getCardBackground(for: colorScheme), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
 
                 VStack(alignment: .leading, spacing: 4) {
                     Text(title)
                         .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(themeManager.currentTheme.primaryTextColor(for: colorScheme))
+                        .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
                     Text(description)
                         .font(.caption)
-                        .foregroundStyle(themeManager.currentTheme.secondaryTextColor(for: colorScheme))
+                        .foregroundStyle(themeManager.currentTheme.getSecondaryTextColor(for: colorScheme))
                     Text(relative)
                         .font(.caption2)
-                        .foregroundStyle(themeManager.currentTheme.secondaryTextColor(for: colorScheme).opacity(0.7))
+                        .foregroundStyle(themeManager.currentTheme.getSecondaryTextColor(for: colorScheme).opacity(0.7))
                 }
 
                 Spacer()

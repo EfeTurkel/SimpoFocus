@@ -4,6 +4,8 @@ struct MarketView: View {
     @EnvironmentObject private var market: MarketViewModel
     @EnvironmentObject private var wallet: WalletViewModel
     @EnvironmentObject private var localization: LocalizationManager
+    @ObservedObject private var themeManager = ThemeManager.shared
+    @Environment(\.colorScheme) var colorScheme
     @State private var selectedCoin: Coin?
     @State private var amount: Double = 100
     @State private var showingSellSheet = false
@@ -24,10 +26,10 @@ struct MarketView: View {
                     }
                 }
                 .padding(18)
-                .background(.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 28, style: .continuous))
+                .background(themeManager.currentTheme.getCardBackground(for: colorScheme).opacity(0.8), in: RoundedRectangle(cornerRadius: 28, style: .continuous))
                 .overlay(
                     RoundedRectangle(cornerRadius: 28)
-                        .stroke(.white.opacity(0.12), lineWidth: 1)
+                        .stroke(themeManager.currentTheme.getCardStroke(for: colorScheme), lineWidth: 1)
                 )
             }
             .padding(24)
@@ -93,6 +95,8 @@ private struct CoinCard: View {
     let action: () -> Void
     @EnvironmentObject private var market: MarketViewModel
     @EnvironmentObject private var localization: LocalizationManager
+    @ObservedObject private var themeManager = ThemeManager.shared
+    @Environment(\.colorScheme) var colorScheme
 
     private var history: [CoinPriceSnapshot] {
         market.priceHistory[coin.symbol] ?? []
@@ -118,30 +122,30 @@ private struct CoinCard: View {
             HStack(spacing: 16) {
                 Image(systemName: coin.iconName)
                     .font(.title2)
-                    .foregroundStyle(.white)
+                    .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
                     .frame(width: 54, height: 54)
-                    .background(LinearGradient(colors: [.white.opacity(0.3), .white.opacity(0.12)], startPoint: .topLeading, endPoint: .bottomTrailing), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    .background(themeManager.currentTheme.getCardBackground(for: colorScheme), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
                     .overlay(
                         RoundedRectangle(cornerRadius: 16)
-                            .stroke(.white.opacity(0.2), lineWidth: 1)
+                            .stroke(themeManager.currentTheme.getCardStroke(for: colorScheme), lineWidth: 1)
                     )
 
                 VStack(alignment: .leading, spacing: 6) {
                     Text(coin.name)
                         .font(.headline)
-                        .foregroundStyle(.white)
+                        .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
                     Text(coin.currentPrice, format: .currency(code: "TRY"))
                         .font(.title3.weight(.semibold))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
                 }
 
                 Spacer()
 
                 Image(systemName: "chevron.right")
-                    .foregroundStyle(.white.opacity(0.4))
+                    .foregroundStyle(themeManager.currentTheme.getSecondaryTextColor(for: colorScheme))
             }
             .padding(18)
-            .background(.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 26, style: .continuous))
+            .background(themeManager.currentTheme.getCardBackground(for: colorScheme).opacity(0.5), in: RoundedRectangle(cornerRadius: 26, style: .continuous))
         }
     }
 }
@@ -168,6 +172,8 @@ private struct ChangeBadge: View {
 private struct MiniSparkline: View {
     let history: [CoinPriceSnapshot]
     let accent: Color
+    @ObservedObject private var themeManager = ThemeManager.shared
+    @Environment(\.colorScheme) var colorScheme
 
     var body: some View {
         GeometryReader { proxy in
@@ -176,7 +182,7 @@ private struct MiniSparkline: View {
 
             ZStack {
                 RoundedRectangle(cornerRadius: 12)
-                    .fill(Color.white.opacity(0.04))
+                    .fill(themeManager.currentTheme.getCardBackground(for: colorScheme).opacity(0.3))
 
                 if points.count > 1 {
                     Path { path in
@@ -189,7 +195,7 @@ private struct MiniSparkline: View {
                     if let last = points.last {
                         Circle()
                             .strokeBorder(color.opacity(0.4), lineWidth: 2)
-                            .background(Circle().fill(Color.white))
+                            .background(Circle().fill(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme)))
                             .frame(width: 6, height: 6)
                             .position(last)
                     }

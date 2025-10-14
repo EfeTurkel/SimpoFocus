@@ -31,7 +31,7 @@ struct OnboardingView: View {
         let step = steps[currentStep]
 
         ZStack {
-            themeManager.currentTheme.backgroundGradient(for: colorScheme)
+            themeManager.currentTheme.getBackgroundGradient(for: colorScheme)
                 .ignoresSafeArea()
             
             // Subtle bloom accents for a premium depth (only for gradient theme)
@@ -58,7 +58,7 @@ struct OnboardingView: View {
                         Text(loc(step.titleKey))
                             .font(.system(.largeTitle, design: .rounded).weight(.bold))
                             .multilineTextAlignment(.center)
-                            .foregroundStyle(themeManager.currentTheme.primaryTextColor(for: colorScheme))
+                            .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
                             .shadow(color: .black.opacity(0.12), radius: 8, y: 4)
                             .lineLimit(2)
                             .minimumScaleFactor(0.75)
@@ -68,7 +68,7 @@ struct OnboardingView: View {
                         Text(loc(step.subtitleKey))
                             .font(.callout)
                             .multilineTextAlignment(.center)
-                            .foregroundStyle(themeManager.currentTheme.secondaryTextColor(for: colorScheme))
+                            .foregroundStyle(themeManager.currentTheme.getSecondaryTextColor(for: colorScheme))
                             .padding(.horizontal, 24)
                             .lineLimit(3)
                             .minimumScaleFactor(0.8)
@@ -164,6 +164,8 @@ struct OnboardingView: View {
         case .welcome:
             WelcomeCard()
                 .environmentObject(localization)
+        case .theme:
+            ThemeSelectionCard()
         case .focus:
             VStack(spacing: 18) {
                 OnboardingCard {
@@ -432,6 +434,7 @@ struct OnboardingView: View {
 
     private enum Step: Int, CaseIterable {
         case welcome
+        case theme
         case focus
         case breaks
         case finance
@@ -443,6 +446,7 @@ struct OnboardingView: View {
         var icon: String {
             switch self {
             case .welcome: return "sparkles"
+            case .theme: return "paintpalette.fill"
             case .focus: return "timer"
             case .breaks: return "bed.double"
             case .finance: return "banknote"
@@ -456,6 +460,7 @@ struct OnboardingView: View {
         var titleKey: String {
             switch self {
             case .welcome: return "Simpo'ya Hoş Geldin"
+            case .theme: return "Tema Seçimi"
             case .focus: return "ONBOARD_STEP_FOCUS"
             case .breaks: return "ONBOARD_STEP_BREAKS"
             case .finance: return "ONBOARD_STEP_FINANCE"
@@ -469,6 +474,7 @@ struct OnboardingView: View {
         var subtitleKey: String {
             switch self {
             case .welcome: return "Odak süreni Simpo ile yönet. Birkaç adımda kişiselleştirelim."
+            case .theme: return "Uygulamanın görünümünü seç. İstediğin zaman değiştirebilirsin."
             case .focus: return "ONBOARD_SUB_FOCUS"
             case .breaks: return "ONBOARD_SUB_BREAKS"
             case .finance: return "ONBOARD_SUB_FINANCE"
@@ -482,5 +488,69 @@ struct OnboardingView: View {
 
     private func loc(_ key: String, _ arguments: CVarArg...) -> String {
         localization.translate(key, fallback: key, arguments: arguments)
+    }
+}
+
+// MARK: - Theme Selection Card
+private struct ThemeSelectionCard: View {
+    @ObservedObject private var themeManager = ThemeManager.shared
+    @Environment(\.colorScheme) var colorScheme
+    
+    private let themes: [AppTheme] = [.system, .light, .gradient, .oledDark]
+    
+    var body: some View {
+        VStack(spacing: 20) {
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 2), spacing: 12) {
+                ForEach(themes, id: \.self) { theme in
+                    ThemeOptionCard(theme: theme, isSelected: themeManager.currentTheme == theme) {
+                        themeManager.currentTheme = theme
+                    }
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Theme Option Card
+private struct ThemeOptionCard: View {
+    let theme: AppTheme
+    let isSelected: Bool
+    let onTap: () -> Void
+    @Environment(\.colorScheme) var colorScheme
+    
+    var body: some View {
+        Button(action: onTap) {
+            VStack(spacing: 12) {
+                // Theme preview
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(theme.getBackgroundGradient(for: colorScheme))
+                    .frame(height: 80)
+                    .overlay(
+                        VStack(spacing: 4) {
+                            Circle()
+                                .fill(theme.getPrimaryTextColor(for: colorScheme))
+                                .frame(width: 8, height: 8)
+                            Circle()
+                                .fill(theme.getPrimaryTextColor(for: colorScheme))
+                                .frame(width: 6, height: 6)
+                            Circle()
+                                .fill(theme.getPrimaryTextColor(for: colorScheme))
+                                .frame(width: 4, height: 4)
+                        }
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(
+                                isSelected ? Color("ForestGreen") : Color.clear,
+                                lineWidth: 2
+                            )
+                    )
+                
+                Text(theme.displayName)
+                    .font(.caption.weight(.medium))
+                    .foregroundStyle(theme.getPrimaryTextColor(for: colorScheme))
+            }
+        }
+        .buttonStyle(PlainButtonStyle())
     }
 }

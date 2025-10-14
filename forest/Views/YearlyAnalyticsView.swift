@@ -38,7 +38,7 @@ struct YearlyAnalyticsView: View {
             .padding(24)
         }
         .background(
-            themeManager.currentTheme.backgroundGradient(for: colorScheme)
+            themeManager.currentTheme.getBackgroundGradient(for: colorScheme)
                 .ignoresSafeArea()
         )
     }
@@ -47,13 +47,13 @@ struct YearlyAnalyticsView: View {
         HStack {
             Text(loc("ANALYTICS_TITLE"))
                 .font(.title.weight(.bold))
-                .foregroundStyle(themeManager.currentTheme.primaryTextColor(for: colorScheme))
+                .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
             
             Spacer()
             
             Text(String(format: "%d", currentYear))
                 .font(.title3.weight(.bold))
-                .foregroundStyle(themeManager.currentTheme.secondaryTextColor(for: colorScheme))
+                .foregroundStyle(themeManager.currentTheme.getSecondaryTextColor(for: colorScheme))
         }
     }
     
@@ -115,14 +115,14 @@ struct YearlyAnalyticsView: View {
         VStack(alignment: .leading, spacing: 16) {
             Text(loc("ANALYTICS_CATEGORY_BREAKDOWN"))
                 .font(.headline.weight(.bold))
-                .foregroundStyle(themeManager.currentTheme.primaryTextColor(for: colorScheme))
+                .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
             
             let categoryStats = calculator.categoryBreakdown(for: currentYear)
             
             if categoryStats.isEmpty {
                 Text(loc("ANALYTICS_NO_DATA"))
                     .font(.subheadline)
-                    .foregroundStyle(themeManager.currentTheme.secondaryTextColor(for: colorScheme))
+                    .foregroundStyle(themeManager.currentTheme.getSecondaryTextColor(for: colorScheme))
                     .frame(maxWidth: .infinity, alignment: .center)
                     .padding(.vertical, 40)
             } else {
@@ -132,11 +132,11 @@ struct YearlyAnalyticsView: View {
         .padding(20)
         .background(
             RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .fill(themeManager.currentTheme.cardBackground(for: colorScheme))
+                .fill(themeManager.currentTheme.getCardBackground(for: colorScheme))
         )
         .overlay(
             RoundedRectangle(cornerRadius: 28)
-                .stroke(themeManager.currentTheme.cardStroke(for: colorScheme), lineWidth: 1)
+                .stroke(themeManager.currentTheme.getCardStroke(for: colorScheme), lineWidth: 1)
         )
     }
     
@@ -144,7 +144,7 @@ struct YearlyAnalyticsView: View {
         VStack(alignment: .leading, spacing: 16) {
             Text(loc("ANALYTICS_BEST_RECORDS"))
                 .font(.headline.weight(.bold))
-                .foregroundStyle(themeManager.currentTheme.primaryTextColor(for: colorScheme))
+                .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
             
             VStack(spacing: 12) {
                 if let bestDay = calculator.bestDay() {
@@ -192,11 +192,11 @@ struct YearlyAnalyticsView: View {
         .padding(20)
         .background(
             RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .fill(themeManager.currentTheme.cardBackground(for: colorScheme))
+                .fill(themeManager.currentTheme.getCardBackground(for: colorScheme))
         )
         .overlay(
             RoundedRectangle(cornerRadius: 28)
-                .stroke(themeManager.currentTheme.cardStroke(for: colorScheme), lineWidth: 1)
+                .stroke(themeManager.currentTheme.getCardStroke(for: colorScheme), lineWidth: 1)
         )
     }
     
@@ -204,7 +204,7 @@ struct YearlyAnalyticsView: View {
         VStack(alignment: .leading, spacing: 16) {
             Text(loc("ANALYTICS_ACTIVITY_CALENDAR"))
                 .font(.headline.weight(.bold))
-                .foregroundStyle(themeManager.currentTheme.primaryTextColor(for: colorScheme))
+                .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
             
             YearlyHeatmapView(
                 year: currentYear,
@@ -214,11 +214,11 @@ struct YearlyAnalyticsView: View {
         .padding(20)
         .background(
             RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .fill(themeManager.currentTheme.cardBackground(for: colorScheme))
+                .fill(themeManager.currentTheme.getCardBackground(for: colorScheme))
         )
         .overlay(
             RoundedRectangle(cornerRadius: 28)
-                .stroke(themeManager.currentTheme.cardStroke(for: colorScheme), lineWidth: 1)
+                .stroke(themeManager.currentTheme.getCardStroke(for: colorScheme), lineWidth: 1)
         )
     }
     
@@ -284,22 +284,22 @@ private struct StatCard: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text(title)
                     .font(.caption)
-                    .foregroundStyle(themeManager.currentTheme.secondaryTextColor(for: colorScheme))
+                    .foregroundStyle(themeManager.currentTheme.getSecondaryTextColor(for: colorScheme))
                 
                 Text(value)
                     .font(.title2.weight(.bold))
-                    .foregroundStyle(themeManager.currentTheme.primaryTextColor(for: colorScheme))
+                    .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
                 
                 Text("\(sessions) " + loc(sessions == 1 ? "ANALYTICS_SESSION" : "ANALYTICS_SESSIONS"))
                     .font(.caption2)
-                    .foregroundStyle(themeManager.currentTheme.secondaryTextColor(for: colorScheme).opacity(0.7))
+                    .foregroundStyle(themeManager.currentTheme.getSecondaryTextColor(for: colorScheme).opacity(0.7))
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .padding(16)
         .background(
             RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .fill(themeManager.currentTheme.cardBackground(for: colorScheme))
+                .fill(themeManager.currentTheme.getCardBackground(for: colorScheme))
         )
         .overlay(
             RoundedRectangle(cornerRadius: 20)
@@ -335,23 +335,23 @@ private struct BestRecordRow: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
                     .font(.subheadline.weight(.medium))
-                    .foregroundStyle(themeManager.currentTheme.primaryTextColor(for: colorScheme))
+                    .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
                 
                 Text(subtitle)
                     .font(.caption2)
-                    .foregroundStyle(themeManager.currentTheme.secondaryTextColor(for: colorScheme))
+                    .foregroundStyle(themeManager.currentTheme.getSecondaryTextColor(for: colorScheme))
             }
             
             Spacer()
             
             Text(value)
                 .font(.title3.weight(.bold))
-                .foregroundStyle(themeManager.currentTheme.primaryTextColor(for: colorScheme))
+                .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
         }
         .padding(12)
         .background(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(themeManager.currentTheme.cardBackground(for: colorScheme))
+                .fill(themeManager.currentTheme.getCardBackground(for: colorScheme))
         )
     }
 }

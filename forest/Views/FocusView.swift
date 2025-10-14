@@ -16,10 +16,10 @@ struct FocusView: View {
                 VStack(alignment: .leading, spacing: 6) {
                     Text(loc("FOCUS_NOW"))
                         .font(.footnote.weight(.medium))
-                        .foregroundStyle(themeManager.currentTheme.secondaryTextColor(for: colorScheme))
+                        .foregroundStyle(themeManager.currentTheme.getSecondaryTextColor(for: colorScheme))
                     Text(timer.phase.displayName(using: localization))
                         .font(.title.weight(.bold))
-                        .foregroundStyle(themeManager.currentTheme.primaryTextColor(for: colorScheme))
+                        .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
                 }
 
                 Spacer()
@@ -175,23 +175,23 @@ private struct TimerCard: View {
             Text(formattedTime(remainingSeconds))
                 .font(.system(size: 64, weight: .heavy, design: .rounded))
                 .monospacedDigit()
-                .foregroundStyle(themeManager.currentTheme.primaryTextColor(for: colorScheme))
+                .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
                 .shadow(radius: 12)
 
             Text(subtitle)
                 .font(.footnote.weight(.medium))
-                .foregroundStyle(themeManager.currentTheme.secondaryTextColor(for: colorScheme))
+                .foregroundStyle(themeManager.currentTheme.getSecondaryTextColor(for: colorScheme))
         }
         .padding(.vertical, 36)
         .frame(maxWidth: .infinity)
         .background(
             RoundedRectangle(cornerRadius: 32, style: .continuous)
-                .fill(themeManager.currentTheme.cardBackground(for: colorScheme).opacity(themeManager.currentTheme == .gradient ? 2.5 : 1))
+                .fill(themeManager.currentTheme.getCardBackground(for: colorScheme).opacity(themeManager.currentTheme == .gradient ? 2.5 : 1))
                 .shadow(color: .black.opacity(0.25), radius: 24, y: 16)
         )
         .overlay(
             RoundedRectangle(cornerRadius: 32, style: .continuous)
-                .stroke(themeManager.currentTheme.cardStroke(for: colorScheme), lineWidth: 1)
+                .stroke(themeManager.currentTheme.getCardStroke(for: colorScheme), lineWidth: 1)
         )
     }
 
@@ -215,17 +215,17 @@ private struct CompactSoundToggle: View {
         HStack(spacing: 12) {
             Image(systemName: isOn ? "speaker.wave.2.fill" : "speaker.slash.fill")
                 .font(.title3.weight(.semibold))
-                .foregroundStyle(themeManager.currentTheme.primaryTextColor(for: colorScheme))
+                .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
                 .frame(width: 44, height: 44)
-                .background(themeManager.currentTheme.cardBackground(for: colorScheme).opacity(1.5), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .background(themeManager.currentTheme.getCardBackground(for: colorScheme).opacity(1.5), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
                     .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(themeManager.currentTheme.primaryTextColor(for: colorScheme))
+                    .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
                 Text(isOn ? onText : offText)
                     .font(.caption)
-                    .foregroundStyle(themeManager.currentTheme.secondaryTextColor(for: colorScheme))
+                    .foregroundStyle(themeManager.currentTheme.getSecondaryTextColor(for: colorScheme))
             }
 
             Spacer()
@@ -236,10 +236,10 @@ private struct CompactSoundToggle: View {
         }
         .padding(.horizontal, 18)
         .padding(.vertical, 14)
-        .background(themeManager.currentTheme.cardBackground(for: colorScheme), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .background(themeManager.currentTheme.getCardBackground(for: colorScheme), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .stroke(themeManager.currentTheme.cardStroke(for: colorScheme), lineWidth: 1)
+                .stroke(themeManager.currentTheme.getCardStroke(for: colorScheme), lineWidth: 1)
         )
     }
 }
@@ -308,7 +308,7 @@ private struct ControlButton: View {
             // Primary button always has gradient background which is dark, so text is white
             return .white
         case .secondary, .tertiary:
-            return themeManager.currentTheme.primaryTextColor(for: colorScheme)
+            return themeManager.currentTheme.getPrimaryTextColor(for: colorScheme)
         }
     }
 
@@ -318,12 +318,12 @@ private struct ControlButton: View {
             case .primary:
                 LinearGradient(colors: [Color("ForestGreen"), Color("LakeBlue")], startPoint: .topLeading, endPoint: .bottomTrailing)
             case .secondary:
-                themeManager.currentTheme.cardBackground(for: colorScheme)
+                themeManager.currentTheme.getCardBackground(for: colorScheme)
             case .tertiary:
                 if themeManager.currentTheme == .gradient {
                     LinearGradient(colors: [Color("LakeNight"), Color("ForestGreen")], startPoint: .topLeading, endPoint: .bottomTrailing)
                 } else {
-                    themeManager.currentTheme.cardBackground(for: colorScheme)
+                    themeManager.currentTheme.getCardBackground(for: colorScheme)
                 }
             }
         }
@@ -352,10 +352,10 @@ private struct ProgressSection: View {
             }
         }
         .padding(20)
-        .background(themeManager.currentTheme.cardBackground(for: colorScheme), in: RoundedRectangle(cornerRadius: 28, style: .continuous))
+        .background(themeManager.currentTheme.getCardBackground(for: colorScheme), in: RoundedRectangle(cornerRadius: 28, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .stroke(themeManager.currentTheme.cardStroke(for: colorScheme), lineWidth: 1)
+                .stroke(themeManager.currentTheme.getCardStroke(for: colorScheme), lineWidth: 1)
         )
     }
 
@@ -446,25 +446,25 @@ private struct GoalProgressView: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(loc("FOCUS_PHASE_PROGRESS"))
                         .font(.footnote.weight(.medium))
-                        .foregroundStyle(themeManager.currentTheme.secondaryTextColor(for: colorScheme))
+                        .foregroundStyle(themeManager.currentTheme.getSecondaryTextColor(for: colorScheme))
                     Text(phasePercentText)
                         .font(.title3.weight(.semibold))
-                        .foregroundStyle(themeManager.currentTheme.primaryTextColor(for: colorScheme))
+                        .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
                 }
                 Spacer()
                 VStack(alignment: .trailing, spacing: 2) {
                     Text(loc("HOME_STATS_TITLE"))
                         .font(.footnote.weight(.medium))
-                        .foregroundStyle(themeManager.currentTheme.secondaryTextColor(for: colorScheme))
+                        .foregroundStyle(themeManager.currentTheme.getSecondaryTextColor(for: colorScheme))
                     Text(goalStatus)
                         .font(.headline)
-                        .foregroundStyle(themeManager.currentTheme.primaryTextColor(for: colorScheme))
+                        .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
                 }
             }
 
             ZStack(alignment: .leading) {
                 RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .fill(themeManager.currentTheme.cardBackground(for: colorScheme))
+                    .fill(themeManager.currentTheme.getCardBackground(for: colorScheme))
                     .frame(height: 16)
 
                 GeometryReader { geometry in
@@ -477,7 +477,7 @@ private struct GoalProgressView: View {
             }
         }
         .padding(16)
-        .background(themeManager.currentTheme.cardBackground(for: colorScheme).opacity(0.5), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .background(themeManager.currentTheme.getCardBackground(for: colorScheme).opacity(0.5), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
     }
 
     private func loc(_ key: String) -> String {
@@ -501,12 +501,12 @@ private struct StatCard: View {
                 .font(.subheadline.weight(.semibold))
             Text(loc(titleKey))
                 .font(.caption2)
-                .foregroundStyle(themeManager.currentTheme.secondaryTextColor(for: colorScheme))
+                .foregroundStyle(themeManager.currentTheme.getSecondaryTextColor(for: colorScheme))
         }
-        .foregroundStyle(themeManager.currentTheme.primaryTextColor(for: colorScheme))
+        .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
         .frame(maxWidth: .infinity)
         .padding(.vertical, 16)
-        .background(themeManager.currentTheme.cardBackground(for: colorScheme).opacity(0.6), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .background(themeManager.currentTheme.getCardBackground(for: colorScheme).opacity(0.6), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
     }
 
     private func loc(_ key: String) -> String {
@@ -536,27 +536,27 @@ private struct CategorySelector: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(loc("CATEGORY_TITLE"))
                         .font(.caption)
-                        .foregroundStyle(themeManager.currentTheme.secondaryTextColor(for: colorScheme))
+                        .foregroundStyle(themeManager.currentTheme.getSecondaryTextColor(for: colorScheme))
                     Text(selectedCategory.displayName)
                         .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(themeManager.currentTheme.primaryTextColor(for: colorScheme))
+                        .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
                 }
                 
                 Spacer()
                 
                 Image(systemName: "chevron.right")
                     .font(.caption.weight(.semibold))
-                    .foregroundStyle(themeManager.currentTheme.secondaryTextColor(for: colorScheme))
+                    .foregroundStyle(themeManager.currentTheme.getSecondaryTextColor(for: colorScheme))
             }
             .padding(.horizontal, 18)
             .padding(.vertical, 14)
             .background(
                 RoundedRectangle(cornerRadius: 22, style: .continuous)
-                    .fill(themeManager.currentTheme.cardBackground(for: colorScheme))
+                    .fill(themeManager.currentTheme.getCardBackground(for: colorScheme))
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 22, style: .continuous)
-                    .stroke(themeManager.currentTheme.cardStroke(for: colorScheme), lineWidth: 1)
+                    .stroke(themeManager.currentTheme.getCardStroke(for: colorScheme), lineWidth: 1)
             )
         }
         .buttonStyle(.plain)

@@ -16,7 +16,7 @@ struct RootView: View {
 
     var body: some View {
         ZStack {
-            themeManager.currentTheme.backgroundGradient(for: colorScheme)
+            themeManager.currentTheme.getBackgroundGradient(for: colorScheme)
                 .ignoresSafeArea()
 
             // Content fills the screen; tab bar overlays with translucent glass effect

@@ -11,7 +11,7 @@ struct CategoryPieChart: View {
             ZStack {
                 if categoryStats.isEmpty {
                     Circle()
-                        .fill(themeManager.currentTheme.cardBackground(for: colorScheme))
+                        .fill(themeManager.currentTheme.getCardBackground(for: colorScheme))
                         .frame(width: 160, height: 160)
                 } else {
                     PieSlices(stats: categoryStats)
@@ -30,16 +30,16 @@ struct CategoryPieChart: View {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(stat.category.displayName)
                                 .font(.subheadline.weight(.medium))
-                                .foregroundStyle(themeManager.currentTheme.primaryTextColor(for: colorScheme))
+                                .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
                             
                             HStack(spacing: 8) {
                                 Text(String(format: "%.1fh", stat.hours))
                                     .font(.caption2)
-                                    .foregroundStyle(themeManager.currentTheme.secondaryTextColor(for: colorScheme))
+                                    .foregroundStyle(themeManager.currentTheme.getSecondaryTextColor(for: colorScheme))
                                 
                                 Text(String(format: "%.0f%%", stat.percentage))
                                     .font(.caption2.weight(.semibold))
-                                    .foregroundStyle(themeManager.currentTheme.secondaryTextColor(for: colorScheme))
+                                    .foregroundStyle(themeManager.currentTheme.getSecondaryTextColor(for: colorScheme))
                             }
                         }
                         

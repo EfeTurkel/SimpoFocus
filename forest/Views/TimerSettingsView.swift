@@ -28,7 +28,7 @@ struct TimerSettingsView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                themeManager.currentTheme.backgroundGradient(for: colorScheme)
+                themeManager.currentTheme.getBackgroundGradient(for: colorScheme)
                     .ignoresSafeArea()
 
                 VStack(spacing: 24) {
@@ -146,7 +146,7 @@ struct TimerSettingsView: View {
 
                                     Text(loc("SETTINGS_LANGUAGE_NOTE"))
                                         .font(.footnote)
-                                        .foregroundStyle(themeManager.currentTheme.secondaryTextColor(for: colorScheme))
+                                        .foregroundStyle(themeManager.currentTheme.getSecondaryTextColor(for: colorScheme))
                                 }
                             }
 
@@ -214,10 +214,10 @@ struct TimerSettingsView: View {
             } label: {
                 Label(loc("SETTINGS_BUTTON_CANCEL"), systemImage: "xmark")
                     .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(themeManager.currentTheme.primaryTextColor(for: colorScheme))
+                    .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
                     .padding(.vertical, 16)
                     .frame(maxWidth: .infinity)
-                    .background(themeManager.currentTheme.cardBackground(for: colorScheme), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                    .background(themeManager.currentTheme.getCardBackground(for: colorScheme), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
             }
 
             Button {
@@ -253,7 +253,7 @@ struct TimerSettingsView: View {
         .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 24)
-                .stroke(themeManager.currentTheme.cardStroke(for: colorScheme), lineWidth: 1)
+                .stroke(themeManager.currentTheme.getCardStroke(for: colorScheme), lineWidth: 1)
         )
         .shadow(color: .black.opacity(0.2), radius: 20, y: 12)
     }
@@ -323,11 +323,11 @@ private struct NotificationStatusCard: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text(loc(backgroundRefreshEnabled && isEnabled ? "SETTINGS_BACKGROUND_READY_TITLE" : "SETTINGS_BACKGROUND_ALERT_TITLE"))
                     .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(themeManager.currentTheme.primaryTextColor(for: colorScheme))
+                    .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
 
                 Text(descriptionText)
                     .font(.footnote)
-                    .foregroundStyle(themeManager.currentTheme.secondaryTextColor(for: colorScheme))
+                    .foregroundStyle(themeManager.currentTheme.getSecondaryTextColor(for: colorScheme))
             }
         }
     }
@@ -460,18 +460,18 @@ private struct SettingsHeaderCard: View {
                 VStack(alignment: .leading, spacing: 6) {
                     Text(loc("SETTINGS_HEADER_TITLE"))
                         .font(.title2.weight(.semibold))
-                        .foregroundStyle(themeManager.currentTheme.primaryTextColor(for: colorScheme))
+                        .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
                     Text(loc("SETTINGS_HEADER_SUBTITLE"))
                         .font(.footnote)
-                        .foregroundStyle(themeManager.currentTheme.secondaryTextColor(for: colorScheme))
+                        .foregroundStyle(themeManager.currentTheme.getSecondaryTextColor(for: colorScheme))
                 }
                 Spacer()
                 Text(loc("SETTINGS_HEADER_ACTION"))
                     .font(.caption2.weight(.semibold))
-                    .foregroundStyle(themeManager.currentTheme.secondaryTextColor(for: colorScheme))
+                    .foregroundStyle(themeManager.currentTheme.getSecondaryTextColor(for: colorScheme))
                     .padding(.horizontal, 16)
                     .padding(.vertical, 8)
-                    .background(themeManager.currentTheme.cardBackground(for: colorScheme), in: Capsule())
+                    .background(themeManager.currentTheme.getCardBackground(for: colorScheme), in: Capsule())
             }
 
             HStack(spacing: 16) {
@@ -482,10 +482,10 @@ private struct SettingsHeaderCard: View {
         }
         .padding(28)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(themeManager.currentTheme.cardBackground(for: colorScheme).opacity(0.8), in: RoundedRectangle(cornerRadius: 36, style: .continuous))
+        .background(themeManager.currentTheme.getCardBackground(for: colorScheme).opacity(0.8), in: RoundedRectangle(cornerRadius: 36, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 36)
-                .stroke(themeManager.currentTheme.cardStroke(for: colorScheme), lineWidth: 1)
+                .stroke(themeManager.currentTheme.getCardStroke(for: colorScheme), lineWidth: 1)
         )
     }
 
@@ -513,14 +513,14 @@ private struct SummaryTile: View {
 
             Text(value)
                 .font(.title3.weight(.semibold))
-                .foregroundStyle(themeManager.currentTheme.primaryTextColor(for: colorScheme))
+                .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
             Text(title)
                 .font(.caption.weight(.semibold))
-                .foregroundStyle(themeManager.currentTheme.secondaryTextColor(for: colorScheme))
+                .foregroundStyle(themeManager.currentTheme.getSecondaryTextColor(for: colorScheme))
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(18)
-        .background(themeManager.currentTheme.cardBackground(for: colorScheme).opacity(0.5), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .background(themeManager.currentTheme.getCardBackground(for: colorScheme).opacity(0.5), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
     }
 }
 
@@ -537,17 +537,17 @@ private struct GlassSection<Content: View>: View {
             HStack(spacing: 14) {
                 Image(systemName: icon)
                     .font(.title3.weight(.semibold))
-                    .foregroundStyle(themeManager.currentTheme.primaryTextColor(for: colorScheme))
+                    .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
                     .frame(width: 46, height: 46)
-                    .background(themeManager.currentTheme.cardBackground(for: colorScheme), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    .background(themeManager.currentTheme.getCardBackground(for: colorScheme), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
 
                 VStack(alignment: .leading, spacing: 4) {
                     Text(title)
                         .font(.headline)
-                        .foregroundStyle(themeManager.currentTheme.primaryTextColor(for: colorScheme))
+                        .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
                     Text(subtitle)
                         .font(.caption)
-                        .foregroundStyle(themeManager.currentTheme.secondaryTextColor(for: colorScheme))
+                        .foregroundStyle(themeManager.currentTheme.getSecondaryTextColor(for: colorScheme))
                 }
             }
 
@@ -555,10 +555,10 @@ private struct GlassSection<Content: View>: View {
         }
         .padding(24)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(themeManager.currentTheme.cardBackground(for: colorScheme).opacity(0.6), in: RoundedRectangle(cornerRadius: 32, style: .continuous))
+        .background(themeManager.currentTheme.getCardBackground(for: colorScheme).opacity(0.6), in: RoundedRectangle(cornerRadius: 32, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 32)
-                .stroke(themeManager.currentTheme.cardStroke(for: colorScheme), lineWidth: 1)
+                .stroke(themeManager.currentTheme.getCardStroke(for: colorScheme), lineWidth: 1)
         )
     }
 }
@@ -578,7 +578,7 @@ private struct DurationSlider: View {
             HStack {
                 Text(title)
                     .font(.subheadline.weight(.medium))
-                    .foregroundStyle(themeManager.currentTheme.primaryTextColor(for: colorScheme))
+                    .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
                 Spacer()
                 Text(loc("SETTINGS_DURATION_FORMAT", Int(value)))
                     .font(.subheadline.weight(.semibold))
@@ -608,17 +608,17 @@ private struct ToggleSetting: View {
         HStack(spacing: 16) {
             Image(systemName: icon)
                 .font(.headline)
-                .foregroundStyle(themeManager.currentTheme.primaryTextColor(for: colorScheme))
+                .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
                 .frame(width: 40, height: 40)
-                .background(themeManager.currentTheme.cardBackground(for: colorScheme), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .background(themeManager.currentTheme.getCardBackground(for: colorScheme), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(title)
                     .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(themeManager.currentTheme.primaryTextColor(for: colorScheme))
+                    .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
                 Text(description)
                     .font(.caption)
-                    .foregroundStyle(themeManager.currentTheme.secondaryTextColor(for: colorScheme))
+                    .foregroundStyle(themeManager.currentTheme.getSecondaryTextColor(for: colorScheme))
             }
 
             Spacer()
@@ -643,11 +643,11 @@ private struct StepperSetting: View {
         VStack(alignment: .leading, spacing: 8) {
             Text(title)
                 .font(.subheadline.weight(.medium))
-                .foregroundStyle(themeManager.currentTheme.primaryTextColor(for: colorScheme))
+                .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
             Stepper(value: $value, in: range, step: step) {
                 Text(loc("SETTINGS_STEPPER_VALUE_SESSIONS", Int(value)))
                     .font(.headline)
-                    .foregroundStyle(themeManager.currentTheme.primaryTextColor(for: colorScheme))
+                    .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
             }
         }
     }
@@ -669,14 +669,14 @@ private struct TargetProgressPreview: View {
         VStack(alignment: .leading, spacing: 8) {
             Text(title)
                 .font(.caption)
-                .foregroundStyle(themeManager.currentTheme.secondaryTextColor(for: colorScheme))
+                .foregroundStyle(themeManager.currentTheme.getSecondaryTextColor(for: colorScheme))
             ProgressView(value: min(Double(value) / 8.0, 1.0))
                 .tint(Color("ForestGreen"))
                 .frame(height: 12)
-                .background(themeManager.currentTheme.cardBackground(for: colorScheme), in: Capsule())
+                .background(themeManager.currentTheme.getCardBackground(for: colorScheme), in: Capsule())
             Text(loc("SETTINGS_TARGET_LABEL", value, unit))
                 .font(.caption2)
-                .foregroundStyle(themeManager.currentTheme.secondaryTextColor(for: colorScheme))
+                .foregroundStyle(themeManager.currentTheme.getSecondaryTextColor(for: colorScheme))
         }
     }
 
@@ -696,11 +696,11 @@ private struct VolumeSlider: View {
             HStack {
                 Text(loc("SETTINGS_VOLUME_LABEL"))
                     .font(.subheadline.weight(.medium))
-                    .foregroundStyle(themeManager.currentTheme.primaryTextColor(for: colorScheme))
+                    .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
                 Spacer()
                 Text(loc("SETTINGS_PERCENT_FORMAT", Int(value * 100)))
                     .font(.caption)
-                    .foregroundStyle(themeManager.currentTheme.secondaryTextColor(for: colorScheme))
+                    .foregroundStyle(themeManager.currentTheme.getSecondaryTextColor(for: colorScheme))
             }
             Slider(value: $value, in: 0.2...1.0)
                 .tint(Color("ForestGreen"))

@@ -388,7 +388,10 @@ final class PomodoroTimerService: ObservableObject {
                 // Note: totalFocusMinutes is kept for backward compatibility but not updated anymore
                 // All new data goes into sessionHistory
                 let day = calendar.startOfDay(for: start)
-                focusDays.insert(day)
+                // Update focusDays in a way that properly triggers @Published
+                var updatedFocusDays = focusDays
+                updatedFocusDays.insert(day)
+                focusDays = updatedFocusDays
                 
                 // Create and save session history with actual duration
                 let coinsEarned = rewardAmountForCurrentStreak()
@@ -398,7 +401,10 @@ final class PomodoroTimerService: ObservableObject {
                     category: selectedCategory,
                     coinsEarned: coinsEarned
                 )
-                sessionHistory.append(session)
+                // Update sessionHistory in a way that properly triggers @Published
+                var updatedHistory = sessionHistory
+                updatedHistory.append(session)
+                sessionHistory = updatedHistory
             }
             streak += 1
             let reward = FocusReward(

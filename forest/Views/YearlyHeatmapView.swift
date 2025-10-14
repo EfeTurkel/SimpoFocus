@@ -29,11 +29,11 @@ struct YearlyHeatmapView: View {
                             VStack(spacing: 2) {
                                 Text(monthNames[targetMonth.month - 1])
                                     .font(.caption2)
-                                    .foregroundStyle(themeManager.currentTheme.secondaryTextColor(for: colorScheme))
+                                    .foregroundStyle(themeManager.currentTheme.getSecondaryTextColor(for: colorScheme))
                                 
                                 Text(formatMonthHours(targetMonth.month, year: targetMonth.year))
                                     .font(.caption2)
-                                    .foregroundStyle(themeManager.currentTheme.secondaryTextColor(for: colorScheme))
+                                    .foregroundStyle(themeManager.currentTheme.getSecondaryTextColor(for: colorScheme))
                             }
                         }
                     }
@@ -177,10 +177,10 @@ private struct DayCell: View {
                 VStack(spacing: 4) {
                     Text(formattedDate)
                         .font(.caption2.weight(.medium))
-                        .foregroundStyle(themeManager.currentTheme.primaryTextColor(for: colorScheme))
+                        .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
                     Text(String(format: "%.1fh", hours))
                         .font(.caption.weight(.bold))
-                        .foregroundStyle(themeManager.currentTheme.primaryTextColor(for: colorScheme))
+                        .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
                 }
                 .padding(8)
                 .presentationCompactAdaptation(.popover)
