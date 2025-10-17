@@ -13,6 +13,7 @@ struct RootView: View {
     @AppStorage("onboardingCompleted") private var onboardingCompleted: Bool = false
     @AppStorage("userName") private var userName: String = ""
     @State private var showingOnboarding = false
+    @State private var hasCheckedOnboarding = false
 
     var body: some View {
         ZStack {
@@ -31,12 +32,13 @@ struct RootView: View {
                 .padding(.top, 0)
                 .transition(.opacity.combined(with: .move(edge: .trailing)))
 
-            // Bottom bar overlay (thin style)
+            // Bottom bar overlay (iOS 26 native style)
             VStack { Spacer() }
                 .overlay(alignment: .bottom) {
                     ModernTabBar(selectedTab: $rootViewModel.selectedTab)
-                        .padding(.horizontal, 24)
-                        .padding(.bottom, 12)
+                        .padding(.horizontal, 20)
+                        .padding(.bottom, 8)
+                        .padding(.top, 4)
                 }
                 .ignoresSafeArea(.container, edges: .bottom)
         }
@@ -45,8 +47,12 @@ struct RootView: View {
             wallet.applyPassiveBoost(reward.passiveBoost)
         }
         .onAppear {
-            if !onboardingCompleted {
-                showingOnboarding = true
+            // Only check onboarding status once per app launch
+            if !hasCheckedOnboarding {
+                hasCheckedOnboarding = true
+                if !onboardingCompleted {
+                    showingOnboarding = true
+                }
             }
         }
         .sheet(isPresented: $showingOnboarding) {
@@ -96,42 +102,17 @@ private struct ModernTabBar: View {
         .padding(.vertical, 12)
         .padding(.horizontal, 16)
         .background(
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .fill(tabBarBackground)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 24, style: .continuous)
-                        .stroke(tabBarStroke, lineWidth: 0.5)
-                )
+            RoundedRectangle(cornerRadius: 28, style: .continuous)
+                .fill(.clear)
         )
-        .shadow(color: .black.opacity(0.1), radius: 10, y: 5)
-    }
-    
-    private var tabBarBackground: Color {
-        let theme = themeManager.currentTheme
-        switch theme {
-        case .system:
-            return colorScheme == .dark ? Color.black.opacity(0.8) : Color.white.opacity(0.95)
-        case .gradient:
-            return Color("ForestGreen").opacity(0.7)
-        case .oledDark:
-            return Color.black.opacity(0.8)
-        case .light:
-            return Color.white.opacity(0.95)
-        }
-    }
-    
-    private var tabBarStroke: Color {
-        let theme = themeManager.currentTheme
-        switch theme {
-        case .system:
-            return colorScheme == .dark ? Color.white.opacity(0.2) : Color.black.opacity(0.25)
-        case .gradient:
-            return Color("LakeBlue").opacity(0.4)
-        case .oledDark:
-            return Color.white.opacity(0.2)
-        case .light:
-            return Color.black.opacity(0.25)
-        }
+        .liquidGlass(.system, edgeMask: [.all])
+        .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 28, style: .continuous)
+                .stroke(themeManager.currentTheme.glassStroke(for: colorScheme), lineWidth: 0.5)
+        )
+        .shadow(color: .black.opacity(0.05), radius: 20, y: 8)
+        .shadow(color: .black.opacity(0.1), radius: 1, y: 1)
     }
 }
 
@@ -149,7 +130,7 @@ private extension ModernTabBar {
                 .overlay(tabIcon(for: tab, isSelected: isSelected))
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 8)
+        .padding(.vertical, 10)
         .contentShape(Rectangle())
     }
 
@@ -157,77 +138,34 @@ private extension ModernTabBar {
     func tabBackground(isSelected: Bool) -> some View {
         ZStack {
             if isSelected {
-                let theme = themeManager.currentTheme
-                let bgColors: [Color] = {
-                    switch theme {
-                    case .system:
-                        return colorScheme == .dark 
-                            ? [Color.white.opacity(0.25), Color.white.opacity(0.1)]
-                            : [Color.black.opacity(0.18), Color.black.opacity(0.08)]
-                    case .gradient:
-                        return [Color("LakeBlue").opacity(0.4), Color("ForestGreen").opacity(0.3)]
-                    case .oledDark:
-                        return [Color.white.opacity(0.25), Color.white.opacity(0.1)]
-                    case .light:
-                        return [Color.black.opacity(0.18), Color.black.opacity(0.08)]
-                    }
-                }()
-                
-                let strokeColor: Color = {
-                    switch theme {
-                    case .system:
-                        return colorScheme == .dark ? Color.white.opacity(0.3) : Color.black.opacity(0.3)
-                    case .gradient:
-                        return Color.white.opacity(0.5)
-                    case .oledDark:
-                        return Color.white.opacity(0.3)
-                    case .light:
-                        return Color.black.opacity(0.3)
-                    }
-                }()
-                
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .fill(
-                        LinearGradient(
-                            colors: bgColors,
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
+                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    .fill(.clear)
+                    .liquidGlass(.card, edgeMask: [.all])
+                    .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
                     .overlay(
-                        RoundedRectangle(cornerRadius: 16, style: .continuous)
-                            .stroke(strokeColor, lineWidth: 0.5)
+                        RoundedRectangle(cornerRadius: 20, style: .continuous)
+                            .stroke(themeManager.currentTheme.glassStroke(for: colorScheme), lineWidth: 0.5)
                     )
                     .matchedGeometryEffect(id: "selection", in: selectionAnimation)
             }
         }
-        .frame(width: 50, height: 44)
+        .frame(width: 60, height: 50)
     }
 
     func tabIcon(for tab: AppTab, isSelected: Bool) -> some View {
-        let theme = themeManager.currentTheme
         let iconColor: Color = {
-            switch theme {
-            case .system:
-                if isSelected {
-                    return colorScheme == .dark ? .white : .black
-                } else {
-                    return colorScheme == .dark ? Color.white.opacity(0.6) : Color.black.opacity(0.55)
-                }
-            case .gradient:
-                return isSelected ? .white : Color.white.opacity(0.7)
-            case .oledDark:
-                return isSelected ? .white : Color.white.opacity(0.6)
-            case .light:
-                return isSelected ? .black : Color.black.opacity(0.55)
+            if isSelected {
+                return themeManager.currentTheme.glassPrimaryText(for: colorScheme)
+            } else {
+                return themeManager.currentTheme.glassSecondaryText(for: colorScheme)
             }
         }()
         
         return Image(systemName: tab.icon)
-            .font(.system(size: 20, weight: .medium))
+            .font(.system(size: 22, weight: isSelected ? .semibold : .medium))
             .foregroundStyle(iconColor)
-            .scaleEffect(isSelected ? 1.1 : 1.0)
-            .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isSelected)
+            .scaleEffect(isSelected ? 1.05 : 1.0)
+            .animation(.spring(response: 0.35, dampingFraction: 0.78), value: isSelected)
     }
 
     func loc(_ key: String, fallback: String) -> String {

@@ -52,7 +52,7 @@ enum AppTheme: String, Codable, CaseIterable, Identifiable {
         case .gradient, .oledDark:
             return .white
         case .light:
-            return .black
+            return .black.opacity(0.9)
         }
     }
     
@@ -63,7 +63,7 @@ enum AppTheme: String, Codable, CaseIterable, Identifiable {
         case .gradient, .oledDark:
             return .white
         case .light:
-            return .black
+            return .black.opacity(0.9)
         }
     }
     
@@ -76,7 +76,7 @@ enum AppTheme: String, Codable, CaseIterable, Identifiable {
         case .gradient, .oledDark:
             return .white.opacity(0.7)
         case .light:
-            return .black.opacity(0.65)
+            return .black.opacity(0.7)
         }
     }
     
@@ -87,7 +87,7 @@ enum AppTheme: String, Codable, CaseIterable, Identifiable {
         case .gradient, .oledDark:
             return .white.opacity(0.7)
         case .light:
-            return .black.opacity(0.65)
+            return .black.opacity(0.7)
         }
     }
     
@@ -102,7 +102,7 @@ enum AppTheme: String, Codable, CaseIterable, Identifiable {
         case .oledDark:
             return .white.opacity(0.05)
         case .light:
-            return .black.opacity(0.08)
+            return .white.opacity(0.95)
         }
     }
     
@@ -115,7 +115,7 @@ enum AppTheme: String, Codable, CaseIterable, Identifiable {
         case .oledDark:
             return .white.opacity(0.05)
         case .light:
-            return .black.opacity(0.08)
+            return .white.opacity(0.95)
         }
     }
     
@@ -130,7 +130,7 @@ enum AppTheme: String, Codable, CaseIterable, Identifiable {
         case .oledDark:
             return .white.opacity(0.1)
         case .light:
-            return .black.opacity(0.25)
+            return .black.opacity(0.15)
         }
     }
     
@@ -143,7 +143,7 @@ enum AppTheme: String, Codable, CaseIterable, Identifiable {
         case .oledDark:
             return .white.opacity(0.1)
         case .light:
-            return .black.opacity(0.25)
+            return .black.opacity(0.15)
         }
     }
 }
@@ -215,6 +215,47 @@ extension AppTheme {
         case .gradient, .oledDark, .light:
             // For non-system themes, ignore colorScheme and use theme-specific gradients
             return backgroundGradient(for: .light) // Pass .light as dummy, will be ignored
+        }
+    }
+}
+
+// MARK: - Liquid Glass aware theme colors
+extension AppTheme {
+    /// Primary text/icon color tuned for readability over Liquid Glass
+    func glassPrimaryText(for colorScheme: ColorScheme) -> Color {
+        switch self {
+        case .system:
+            return colorScheme == .dark ? .white : .black
+        case .gradient, .oledDark:
+            return .white
+        case .light:
+            return .black.opacity(0.9)
+        }
+    }
+
+    /// Secondary text/icon color tuned for readability over Liquid Glass
+    func glassSecondaryText(for colorScheme: ColorScheme) -> Color {
+        switch self {
+        case .system:
+            return colorScheme == .dark ? Color.white.opacity(0.7) : Color.black.opacity(0.65)
+        case .gradient, .oledDark:
+            return Color.white.opacity(0.75)
+        case .light:
+            return Color.black.opacity(0.7)
+        }
+    }
+
+    /// Subtle stroke color to outline glass elements when needed
+    func glassStroke(for colorScheme: ColorScheme) -> Color {
+        switch self {
+        case .system:
+            return colorScheme == .dark ? Color.white.opacity(0.22) : Color.black.opacity(0.2)
+        case .gradient:
+            return Color.white.opacity(0.18)
+        case .oledDark:
+            return Color.white.opacity(0.14)
+        case .light:
+            return Color.black.opacity(0.12)
         }
     }
 }

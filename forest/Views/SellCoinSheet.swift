@@ -3,6 +3,7 @@ import SwiftUI
 struct SellCoinSheet: View {
     @EnvironmentObject private var market: MarketViewModel
     @EnvironmentObject private var wallet: WalletViewModel
+    @EnvironmentObject private var localization: LocalizationManager
     @Environment(\.dismiss) private var dismiss
     @State private var selectedSymbol: String?
     @State private var quantity: Double = 0
@@ -33,15 +34,16 @@ struct SellCoinSheet: View {
 
                         VStack(spacing: 18) {
                             QuantitySlider(quantity: $quantity, maxQuantity: coin.quantity, price: coin.currentPrice)
+                                .environmentObject(localization)
 
-                            StatTile(title: "Piyasa Değeri", value: CurrencyFormatter.abbreviatedCurrency(coin.marketValue), icon: "chart.line.uptrend.xyaxis")
+                            StatTile(title: loc("SELL_COIN_MARKET_VALUE"), value: CurrencyFormatter.abbreviatedCurrency(coin.marketValue), icon: "chart.line.uptrend.xyaxis")
                         }
                         .padding(22)
-                        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 28)
-                                .stroke(.white.opacity(0.08), lineWidth: 1)
+                        .background(
+                            RoundedRectangle(cornerRadius: 28, style: .continuous)
+                                .fill(Color.clear)
                         )
+                        .liquidGlass(.card, edgeMask: [.top, .bottom])
                     }
 
                     if let errorMessage {
@@ -53,42 +55,47 @@ struct SellCoinSheet: View {
             }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Kapat") { dismiss() }
+                    Button(loc("SELL_COIN_CLOSE")) { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Sat") {
+                    Button(loc("SELL_COIN_SELL")) {
                         guard let symbol = selectedSymbol else {
-                            errorMessage = "Coin seçiniz"
+                            errorMessage = loc("SELL_COIN_ERROR_SELECT")
                             return
                         }
                         guard quantity > 0 else {
-                            errorMessage = "Miktar sıfır olamaz"
+                            errorMessage = loc("SELL_COIN_ERROR_QUANTITY")
                             return
                         }
                         let success = market.sell(symbol: symbol, quantity: quantity, wallet: wallet)
                         if success {
                             dismiss()
                         } else {
-                            errorMessage = "Yetersiz coin"
+                            errorMessage = loc("SELL_COIN_ERROR_INSUFFICIENT")
                         }
                     }
                 }
             }
         }
     }
+    
+    private func loc(_ key: String, _ arguments: CVarArg...) -> String {
+        localization.translate(key, fallback: key, arguments: arguments)
+    }
 }
 
 private struct PickerCard: View {
     @Binding var selectedSymbol: String?
     let coins: [Coin]
+    @EnvironmentObject private var localization: LocalizationManager
     @ObservedObject private var themeManager = ThemeManager.shared
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Coin Seç")
+            Text(loc("SELL_COIN_SELECT"))
                 .font(.headline)
             Picker("Coin", selection: $selectedSymbol) {
-                Text("Seçiniz").tag(String?.none)
+                Text(loc("SELL_COIN_SELECT_PLACEHOLDER")).tag(String?.none)
                 ForEach(coins) { coin in
                     Text("\(coin.symbol) - \(coin.quantity, format: .number.precision(.fractionLength(2))) adet")
                         .tag(String?.some(coin.symbol))
@@ -104,7 +111,11 @@ private struct PickerCard: View {
                 : LinearGradient(colors: [Color("LakeBlue"), Color("LakeNight")], startPoint: .topLeading, endPoint: .bottomTrailing),
             in: RoundedRectangle(cornerRadius: 24, style: .continuous)
         )
-        .foregroundStyle(.white)
+        .onGlassPrimary()
+    }
+    
+    private func loc(_ key: String, _ arguments: CVarArg...) -> String {
+        localization.translate(key, fallback: key, arguments: arguments)
     }
 }
 
@@ -113,6 +124,7 @@ private struct CoinOverview: View {
     @Binding var quickSelection: Double?
     let action: (Double) -> Void
     @EnvironmentObject private var market: MarketViewModel
+    @EnvironmentObject private var localization: LocalizationManager
     @ObservedObject private var themeManager = ThemeManager.shared
 
     private var quickOptions: [Double] {
@@ -131,7 +143,7 @@ private struct CoinOverview: View {
                         RoundedRectangle(cornerRadius: 20)
                             .stroke(.white.opacity(0.3), lineWidth: 1)
                     )
-                    .foregroundStyle(.white)
+                    .onGlassPrimary()
 
                 VStack(alignment: .leading, spacing: 4) {
                     HStack(spacing: 8) {
@@ -148,14 +160,14 @@ private struct CoinOverview: View {
                                 .foregroundStyle(stats.change >= 0 ? Color.green : Color.red)
                         }
                     }
-                    Text("Mevcut: \(coin.quantity, format: .number.precision(.fractionLength(2)))")
+                    Text(loc("SELL_COIN_AVAILABLE", coin.quantity.formatted(.number.precision(.fractionLength(2)))))
                         .font(.caption)
-                        .foregroundStyle(.white.opacity(0.7))
+                        .onGlassSecondary()
                     Text(coin.currentPrice, format: .currency(code: "TRY"))
                         .font(.headline)
-                        .foregroundStyle(.white)
+                        .onGlassPrimary()
                 }
-                .foregroundStyle(.white)
+                .onGlassPrimary()
 
                 Spacer()
             }
@@ -198,17 +210,22 @@ private struct CoinOverview: View {
                 .shadow(color: .black.opacity(0.25), radius: 24, y: 12)
         )
     }
+    
+    private func loc(_ key: String, _ arguments: CVarArg...) -> String {
+        localization.translate(key, fallback: key, arguments: arguments)
+    }
 }
 
 private struct QuantitySlider: View {
     @Binding var quantity: Double
     let maxQuantity: Double
     let price: Double
+    @EnvironmentObject private var localization: LocalizationManager
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text("Miktar")
+                Text(loc("SELL_COIN_QUANTITY"))
                     .font(.headline)
                 Spacer()
                 Text(quantity, format: .number.precision(.fractionLength(4)))
@@ -222,6 +239,10 @@ private struct QuantitySlider: View {
                     .font(.subheadline.weight(.medium))
             }
         }
+    }
+    
+    private func loc(_ key: String, _ arguments: CVarArg...) -> String {
+        localization.translate(key, fallback: key, arguments: arguments)
     }
 }
 
@@ -239,10 +260,10 @@ private struct StatTile: View {
                     .font(.headline)
                 Text(title)
                     .font(.caption)
-                    .foregroundStyle(.white.opacity(0.7))
+                    .onGlassSecondary()
             }
         }
-        .foregroundStyle(.white)
+        .onGlassPrimary()
         .padding(.vertical, 14)
         .padding(.horizontal, 16)
         .background(.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 22, style: .continuous))

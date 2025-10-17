@@ -16,10 +16,10 @@ struct FocusView: View {
                 VStack(alignment: .leading, spacing: 6) {
                     Text(loc("FOCUS_NOW"))
                         .font(.footnote.weight(.medium))
-                        .foregroundStyle(themeManager.currentTheme.getSecondaryTextColor(for: colorScheme))
+                        .onGlassSecondary()
                     Text(timer.phase.displayName(using: localization))
                         .font(.title.weight(.bold))
-                        .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
+                        .onGlassPrimary()
                 }
 
                 Spacer()
@@ -30,10 +30,13 @@ struct FocusView: View {
                     } label: {
                         Image(systemName: "chart.bar.xaxis")
                             .font(.title3.weight(.semibold))
-                            .foregroundStyle(.black)
+                            .onGlassPrimary()
                             .padding(12)
-                            .background(.white.opacity(0.85), in: Circle())
-                            .overlay(Circle().stroke(.white.opacity(0.4)))
+                            .background(
+                                Circle().fill(Color.clear)
+                            )
+                            .liquidGlass(.card, edgeMask: [.all])
+                            .clipShape(Circle())
                     }
 
                     Button {
@@ -41,10 +44,13 @@ struct FocusView: View {
                     } label: {
                         Image(systemName: "slider.horizontal.3")
                             .font(.title3.weight(.semibold))
-                            .foregroundStyle(.black)
+                            .onGlassPrimary()
                             .padding(12)
-                            .background(.white.opacity(0.85), in: Circle())
-                            .overlay(Circle().stroke(.white.opacity(0.4)))
+                            .background(
+                                Circle().fill(Color.clear)
+                            )
+                            .liquidGlass(.card, edgeMask: [.all])
+                            .clipShape(Circle())
                     }
                 }
             }
@@ -125,13 +131,13 @@ private struct BackgroundRefreshPrompt: View {
                     .font(.title3)
                 Text(loc("FOCUS_BACKGROUND_REFRESH_TITLE"))
                     .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.white)
+                .onGlassPrimary()
                 Spacer()
             }
 
             Text(loc("FOCUS_BACKGROUND_REFRESH_MESSAGE"))
                 .font(.footnote)
-                .foregroundStyle(.white.opacity(0.7))
+                .onGlassSecondary()
 
             Button {
                 openSettings()
@@ -139,7 +145,7 @@ private struct BackgroundRefreshPrompt: View {
             } label: {
                 Text(loc("FOCUS_BACKGROUND_REFRESH_BUTTON"))
                     .font(.footnote.weight(.semibold))
-                    .foregroundStyle(.black)
+                            .onGlassPrimary()
                     .padding(.vertical, 10)
                     .frame(maxWidth: .infinity)
                     .background(Color("LakeBlue"), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
@@ -175,24 +181,21 @@ private struct TimerCard: View {
             Text(formattedTime(remainingSeconds))
                 .font(.system(size: 64, weight: .heavy, design: .rounded))
                 .monospacedDigit()
-                .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
+                .onGlassPrimary()
                 .shadow(radius: 12)
 
             Text(subtitle)
                 .font(.footnote.weight(.medium))
-                .foregroundStyle(themeManager.currentTheme.getSecondaryTextColor(for: colorScheme))
+                .onGlassSecondary()
         }
         .padding(.vertical, 36)
         .frame(maxWidth: .infinity)
         .background(
             RoundedRectangle(cornerRadius: 32, style: .continuous)
-                .fill(themeManager.currentTheme.getCardBackground(for: colorScheme).opacity(themeManager.currentTheme == .gradient ? 2.5 : 1))
-                .shadow(color: .black.opacity(0.25), radius: 24, y: 16)
+                .fill(.clear)
         )
-        .overlay(
-            RoundedRectangle(cornerRadius: 32, style: .continuous)
-                .stroke(themeManager.currentTheme.getCardStroke(for: colorScheme), lineWidth: 1)
-        )
+        .liquidGlass(.card, edgeMask: [.all])
+        .clipShape(RoundedRectangle(cornerRadius: 32, style: .continuous))
     }
 
     private func formattedTime(_ seconds: Int) -> String {
@@ -215,17 +218,22 @@ private struct CompactSoundToggle: View {
         HStack(spacing: 12) {
             Image(systemName: isOn ? "speaker.wave.2.fill" : "speaker.slash.fill")
                 .font(.title3.weight(.semibold))
-                .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
-                .frame(width: 44, height: 44)
-                .background(themeManager.currentTheme.getCardBackground(for: colorScheme).opacity(1.5), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .onGlassPrimary()
+                .frame(width: 48, height: 48)
+                .background(
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .fill(Color.clear)
+                )
+                .liquidGlass(.card, edgeMask: [.all])
+                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
                     .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
+                    .onGlassPrimary()
                 Text(isOn ? onText : offText)
                     .font(.caption)
-                    .foregroundStyle(themeManager.currentTheme.getSecondaryTextColor(for: colorScheme))
+                    .onGlassSecondary()
             }
 
             Spacer()
@@ -233,14 +241,22 @@ private struct CompactSoundToggle: View {
             Toggle("", isOn: $isOn)
                 .labelsHidden()
                 .tint(Color("ForestGreen"))
+                .frame(width: 50, height: 30)
+                .background(
+                    RoundedRectangle(cornerRadius: 15, style: .continuous)
+                        .fill(Color.clear)
+                )
+                .liquidGlass(.card, edgeMask: [.all])
+                .clipShape(RoundedRectangle(cornerRadius: 15, style: .continuous))
         }
         .padding(.horizontal, 18)
         .padding(.vertical, 14)
-        .background(themeManager.currentTheme.getCardBackground(for: colorScheme), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
-        .overlay(
+        .background(
             RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .stroke(themeManager.currentTheme.getCardStroke(for: colorScheme), lineWidth: 1)
+                .fill(Color.clear)
         )
+        .liquidGlass(.card, edgeMask: [.all])
+        .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
     }
 }
 
@@ -296,38 +312,24 @@ private struct ControlButton: View {
             .foregroundStyle(textColor)
             .padding(.vertical, 16)
             .frame(maxWidth: .infinity)
-            .background(background)
-            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-            .shadow(color: .black.opacity(0.2), radius: 18, y: 8)
+            .background(
+                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    .fill(Color.clear)
+            )
+            .liquidGlass(.card, edgeMask: [.all])
+            .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
         }
     }
 
     private var textColor: Color {
         switch style {
         case .primary:
-            // Primary button always has gradient background which is dark, so text is white
-            return .white
+            return themeManager.currentTheme.glassPrimaryText(for: colorScheme)
         case .secondary, .tertiary:
-            return themeManager.currentTheme.getPrimaryTextColor(for: colorScheme)
+            return themeManager.currentTheme.glassPrimaryText(for: colorScheme)
         }
     }
 
-    private var background: some View {
-        Group {
-            switch style {
-            case .primary:
-                LinearGradient(colors: [Color("ForestGreen"), Color("LakeBlue")], startPoint: .topLeading, endPoint: .bottomTrailing)
-            case .secondary:
-                themeManager.currentTheme.getCardBackground(for: colorScheme)
-            case .tertiary:
-                if themeManager.currentTheme == .gradient {
-                    LinearGradient(colors: [Color("LakeNight"), Color("ForestGreen")], startPoint: .topLeading, endPoint: .bottomTrailing)
-                } else {
-                    themeManager.currentTheme.getCardBackground(for: colorScheme)
-                }
-            }
-        }
-    }
 }
 
 private struct ProgressSection: View {
@@ -341,22 +343,23 @@ private struct ProgressSection: View {
     @Environment(\.colorScheme) var colorScheme
 
     var body: some View {
-        VStack(spacing: 18) {
+        VStack(spacing: 20) {
             GoalProgressView(phase: phase,
                               timer: timer)
 
-            HStack(spacing: 18) {
+            HStack(spacing: 16) {
                 StatCard(titleKey: "STAT_STREAK", value: loc("STAT_STREAK_VALUE", fallback: "x%d", arguments: streak), icon: "flame.fill")
                 StatCard(titleKey: "STAT_SESSIONS", value: "\(completed)", icon: "leaf.fill")
                 StatCard(titleKey: "STAT_PHASE", value: phaseDisplayName, icon: phaseIcon)
             }
         }
-        .padding(20)
-        .background(themeManager.currentTheme.getCardBackground(for: colorScheme), in: RoundedRectangle(cornerRadius: 28, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .stroke(themeManager.currentTheme.getCardStroke(for: colorScheme), lineWidth: 1)
+        .padding(24)
+        .background(
+            RoundedRectangle(cornerRadius: 32, style: .continuous)
+                .fill(Color.clear)
         )
+        .liquidGlass(.card, edgeMask: [.all])
+        .clipShape(RoundedRectangle(cornerRadius: 32, style: .continuous))
     }
 
     private var phaseIcon: String {
@@ -441,43 +444,50 @@ private struct GoalProgressView: View {
     }
 
     var body: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: 16) {
             HStack {
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: 4) {
                     Text(loc("FOCUS_PHASE_PROGRESS"))
-                        .font(.footnote.weight(.medium))
-                        .foregroundStyle(themeManager.currentTheme.getSecondaryTextColor(for: colorScheme))
+                        .font(.caption.weight(.medium))
+                        .onGlassSecondary()
                     Text(phasePercentText)
-                        .font(.title3.weight(.semibold))
-                        .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
+                        .font(.title2.weight(.bold))
+                        .onGlassPrimary()
                 }
                 Spacer()
-                VStack(alignment: .trailing, spacing: 2) {
+                VStack(alignment: .trailing, spacing: 4) {
                     Text(loc("HOME_STATS_TITLE"))
-                        .font(.footnote.weight(.medium))
-                        .foregroundStyle(themeManager.currentTheme.getSecondaryTextColor(for: colorScheme))
+                        .font(.caption.weight(.medium))
+                        .onGlassSecondary()
                     Text(goalStatus)
-                        .font(.headline)
-                        .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
+                        .font(.headline.weight(.semibold))
+                        .onGlassPrimary()
                 }
             }
 
             ZStack(alignment: .leading) {
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .fill(themeManager.currentTheme.getCardBackground(for: colorScheme))
-                    .frame(height: 16)
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .fill(Color.clear)
+                    .liquidGlass(.card, edgeMask: [.all])
+                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    .frame(height: 20)
 
                 GeometryReader { geometry in
                     let width = geometry.size.width * normalizedProgress
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
                         .fill(LinearGradient(colors: [Color("ForestGreen"), Color("LakeBlue")], startPoint: .leading, endPoint: .trailing))
-                        .frame(width: max(width, 6), height: 16)
+                        .frame(width: max(width, 8), height: 20)
                 }
-                .frame(height: 16)
+                .frame(height: 20)
             }
         }
-        .padding(16)
-        .background(themeManager.currentTheme.getCardBackground(for: colorScheme).opacity(0.5), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .padding(20)
+        .background(
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .fill(Color.clear)
+        )
+        .liquidGlass(.card, edgeMask: [.all])
+        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
     }
 
     private func loc(_ key: String) -> String {
@@ -494,19 +504,35 @@ private struct StatCard: View {
     @Environment(\.colorScheme) var colorScheme
 
     var body: some View {
-        VStack(spacing: 6) {
+        VStack(spacing: 8) {
             Image(systemName: icon)
-                .font(.headline)
-            Text(value)
-                .font(.subheadline.weight(.semibold))
-            Text(loc(titleKey))
-                .font(.caption2)
-                .foregroundStyle(themeManager.currentTheme.getSecondaryTextColor(for: colorScheme))
+                .font(.title3.weight(.semibold))
+                .onGlassPrimary()
+                .padding(12)
+                .background(
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .fill(Color.clear)
+                )
+                .liquidGlass(.card, edgeMask: [.all])
+                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            
+            VStack(spacing: 4) {
+                Text(value)
+                    .font(.headline.weight(.bold))
+                    .onGlassPrimary()
+                Text(loc(titleKey))
+                    .font(.caption)
+                    .onGlassSecondary()
+            }
         }
-        .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 16)
-        .background(themeManager.currentTheme.getCardBackground(for: colorScheme).opacity(0.6), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .padding(16)
+        .background(
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .fill(Color.clear)
+        )
+        .liquidGlass(.card, edgeMask: [.all])
+        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
     }
 
     private func loc(_ key: String) -> String {
@@ -536,24 +562,22 @@ private struct CategorySelector: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(loc("CATEGORY_TITLE"))
                         .font(.caption)
-                        .foregroundStyle(themeManager.currentTheme.getSecondaryTextColor(for: colorScheme))
+                        .onGlassSecondary()
                     Text(selectedCategory.displayName)
                         .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
+                        .onGlassPrimary()
                 }
                 
                 Spacer()
                 
                 Image(systemName: "chevron.right")
                     .font(.caption.weight(.semibold))
-                    .foregroundStyle(themeManager.currentTheme.getSecondaryTextColor(for: colorScheme))
+                    .onGlassSecondary()
             }
             .padding(.horizontal, 18)
             .padding(.vertical, 14)
-            .background(
-                RoundedRectangle(cornerRadius: 22, style: .continuous)
-                    .fill(themeManager.currentTheme.getCardBackground(for: colorScheme))
-            )
+            .liquidGlass(.card, edgeMask: .all)
+            .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: 22, style: .continuous)
                     .stroke(themeManager.currentTheme.getCardStroke(for: colorScheme), lineWidth: 1)

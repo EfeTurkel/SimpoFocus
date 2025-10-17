@@ -26,11 +26,12 @@ struct MarketView: View {
                     }
                 }
                 .padding(18)
-                .background(themeManager.currentTheme.getCardBackground(for: colorScheme).opacity(0.8), in: RoundedRectangle(cornerRadius: 28, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 28)
-                        .stroke(themeManager.currentTheme.getCardStroke(for: colorScheme), lineWidth: 1)
+                .background(
+                    RoundedRectangle(cornerRadius: 28, style: .continuous)
+                        .fill(Color.clear)
                 )
+                .liquidGlass(.card, edgeMask: [.all])
+                .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
             }
             .padding(24)
         }
@@ -69,23 +70,22 @@ private struct MarketHeader: View {
         VStack(alignment: .leading, spacing: 14) {
             Text(title)
                 .font(.subheadline.weight(.medium))
-                .foregroundStyle(.white.opacity(0.7))
+                .onGlassSecondary()
 
             Text(balance, format: .currency(code: "TRY"))
                 .font(.system(size: 46, weight: .bold, design: .rounded))
-                .foregroundStyle(.white)
+                .onGlassPrimary()
                 .shadow(color: .black.opacity(0.35), radius: 18, y: 10)
 
             Text(subtitle)
                 .font(.caption)
-                .foregroundStyle(.white.opacity(0.75))
+                .onGlassSecondary()
         }
         .padding()
         .frame(maxWidth: .infinity)
         .background(
             RoundedRectangle(cornerRadius: 32, style: .continuous)
                 .fill(LinearGradient(colors: [Color("ForestGreen"), Color("LakeBlue")], startPoint: .topLeading, endPoint: .bottomTrailing))
-                .shadow(color: .black.opacity(0.25), radius: 24, y: 12)
         )
     }
 }
@@ -122,30 +122,36 @@ private struct CoinCard: View {
             HStack(spacing: 16) {
                 Image(systemName: coin.iconName)
                     .font(.title2)
-                    .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
+                    .onGlassPrimary()
                     .frame(width: 54, height: 54)
-                    .background(themeManager.currentTheme.getCardBackground(for: colorScheme), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 16)
-                            .stroke(themeManager.currentTheme.getCardStroke(for: colorScheme), lineWidth: 1)
+                    .background(
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .fill(Color.clear)
                     )
+                    .liquidGlass(.card, edgeMask: [.all])
+                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
 
                 VStack(alignment: .leading, spacing: 6) {
                     Text(coin.name)
                         .font(.headline)
-                        .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
+                        .onGlassPrimary()
                     Text(coin.currentPrice, format: .currency(code: "TRY"))
                         .font(.title3.weight(.semibold))
-                        .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
+                        .onGlassPrimary()
                 }
 
                 Spacer()
 
                 Image(systemName: "chevron.right")
-                    .foregroundStyle(themeManager.currentTheme.getSecondaryTextColor(for: colorScheme))
+                    .onGlassSecondary()
             }
             .padding(18)
-            .background(themeManager.currentTheme.getCardBackground(for: colorScheme).opacity(0.5), in: RoundedRectangle(cornerRadius: 26, style: .continuous))
+            .background(
+                RoundedRectangle(cornerRadius: 26, style: .continuous)
+                    .fill(Color.clear)
+            )
+            .liquidGlass(.card, edgeMask: [.all])
+            .clipShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
         }
     }
 }
@@ -195,7 +201,7 @@ private struct MiniSparkline: View {
                     if let last = points.last {
                         Circle()
                             .strokeBorder(color.opacity(0.4), lineWidth: 2)
-                            .background(Circle().fill(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme)))
+                            .background(Circle().fill(themeManager.currentTheme.glassPrimaryText(for: colorScheme)))
                             .frame(width: 6, height: 6)
                             .position(last)
                     }

@@ -54,7 +54,7 @@ private struct CoinsMarketSection: View {
                 } label: {
                     Label(loc("MARKET_SELL"), systemImage: "chart.line.downtrend.xyaxis")
                         .font(.subheadline.weight(.medium))
-                        .foregroundStyle(.white)
+                        .onGlassPrimary()
                 }
                 .buttonStyle(.borderedProminent)
                 .tint(.red.opacity(0.8))
@@ -95,7 +95,7 @@ private struct CoinBuyCard: View {
             HStack(spacing: 16) {
                 Image(systemName: coin.iconName)
                     .font(.title2)
-                    .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
+                    .onGlassPrimary()
                     .frame(width: 54, height: 54)
                     .background(themeManager.currentTheme.getCardBackground(for: colorScheme), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
                     .overlay(
@@ -106,16 +106,16 @@ private struct CoinBuyCard: View {
                 VStack(alignment: .leading, spacing: 6) {
                     Text(coin.name)
                         .font(.headline)
-                        .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
+                        .onGlassPrimary()
                     Text(coin.currentPrice, format: .currency(code: "TRY"))
                         .font(.title3.weight(.semibold))
-                        .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
+                        .onGlassPrimary()
                 }
 
                 Spacer()
 
                 Image(systemName: "chevron.right")
-                    .foregroundStyle(themeManager.currentTheme.getSecondaryTextColor(for: colorScheme))
+                    .onGlassSecondary()
             }
             .padding(18)
             .background(themeManager.currentTheme.getCardBackground(for: colorScheme).opacity(0.5), in: RoundedRectangle(cornerRadius: 26, style: .continuous))
@@ -129,6 +129,7 @@ struct WalletView: View {
     @EnvironmentObject private var localization: LocalizationManager
     @State private var selectedCoin: Coin?
     @State private var showingSellSheet = false
+    @State private var buyAmount: Double = 100
     @ObservedObject private var themeManager = ThemeManager.shared
     @Environment(\.colorScheme) var colorScheme
 
@@ -147,7 +148,7 @@ struct WalletView: View {
                 VStack(alignment: .leading, spacing: 16) {
                     Text(loc("WALLET_TRANSACTIONS"))
                         .font(.title3.bold())
-                        .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
+        .onGlassPrimary()
 
                     if wallet.transactions.isEmpty {
                         EmptyTransactionsView()
@@ -172,7 +173,7 @@ struct WalletView: View {
         }
         .scrollIndicators(.never)
         .sheet(item: $selectedCoin) { coin in
-            BuyCoinSheet(coin: coin, amount: .constant(100))
+            BuyCoinSheet(coin: coin, amount: $buyAmount)
                 .environmentObject(market)
                 .environmentObject(wallet)
         }
@@ -224,13 +225,10 @@ private struct WalletSummaryCard: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
             RoundedRectangle(cornerRadius: 32, style: .continuous)
-                .fill(themeManager.currentTheme.getCardBackground(for: colorScheme))
-                .shadow(color: .black.opacity(0.25), radius: 24, y: 12)
+                .fill(Color.clear)
         )
-        .overlay(
-            RoundedRectangle(cornerRadius: 32, style: .continuous)
-                .stroke(themeManager.currentTheme.getCardStroke(for: colorScheme), lineWidth: 1)
-        )
+        .liquidGlass(.card, edgeMask: [.all])
+        .clipShape(RoundedRectangle(cornerRadius: 32, style: .continuous))
     }
 
     private func loc(_ key: String, _ arguments: CVarArg...) -> String {
@@ -261,11 +259,12 @@ private struct PassiveIncomeRow: View {
             .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
         }
         .padding(16)
-        .background(themeManager.currentTheme.getCardBackground(for: colorScheme).opacity(0.8), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 20)
-                .stroke(themeManager.currentTheme.getCardStroke(for: colorScheme), lineWidth: 1)
+        .background(
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .fill(Color.clear)
         )
+        .liquidGlass(.card, edgeMask: [.all])
+        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
     }
 
     private func loc(_ key: String, _ arguments: CVarArg...) -> String {
@@ -290,10 +289,10 @@ private struct TransactionCard: View {
             VStack(alignment: .leading, spacing: 6) {
                 Text(localizedDescription)
                     .font(.headline)
-                    .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
+                    .onGlassPrimary()
                 Text(transaction.date, style: .time)
                     .font(.caption)
-                    .foregroundStyle(themeManager.currentTheme.getSecondaryTextColor(for: colorScheme))
+                    .onGlassSecondary()
             }
 
             Spacer()
@@ -303,7 +302,12 @@ private struct TransactionCard: View {
                 .foregroundStyle(transaction.amount >= 0 ? .green : .red)
         }
         .padding(16)
-        .background(themeManager.currentTheme.getCardBackground(for: colorScheme).opacity(0.5), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .background(
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .fill(Color.clear)
+        )
+        .liquidGlass(.card, edgeMask: [.all])
+        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
     }
 
     private var iconName: String {
@@ -414,9 +418,9 @@ private struct EmptyTransactionsView: View {
         VStack(spacing: 12) {
             Image(systemName: "tray")
                 .font(.title)
-                .foregroundStyle(themeManager.currentTheme.getSecondaryTextColor(for: colorScheme))
+                .onGlassSecondary()
             Text(loc("WALLET_EMPTY_TRANSACTIONS"))
-                .foregroundStyle(themeManager.currentTheme.getSecondaryTextColor(for: colorScheme))
+                .onGlassSecondary()
         }
         .frame(maxWidth: .infinity)
         .padding(24)

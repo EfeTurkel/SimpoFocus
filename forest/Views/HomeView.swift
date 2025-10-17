@@ -97,14 +97,14 @@ struct HomeView: View {
                 } label: {
                     Label(loc("HOME_BUTTON_INVENTORY"), systemImage: "tray.full")
                         .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
+                        .onGlassPrimary()
                         .padding(.vertical, 10)
                         .padding(.horizontal, 14)
-                        .background(.ultraThinMaterial, in: Capsule())
-                        .overlay(
-                            Capsule()
-                                .stroke(themeManager.currentTheme.getCardStroke(for: colorScheme), lineWidth: 1)
+                        .background(
+                            Capsule().fill(Color.clear)
                         )
+                        .liquidGlass(.card, edgeMask: [.all])
+                        .clipShape(Capsule())
                 }
             }
 
@@ -116,11 +116,12 @@ struct HomeView: View {
             }
         }
         .padding(24)
-        .background(themeManager.currentTheme.getCardBackground(for: colorScheme).opacity(0.8), in: RoundedRectangle(cornerRadius: 32, style: .continuous))
-        .overlay(
+        .background(
             RoundedRectangle(cornerRadius: 32, style: .continuous)
-                .stroke(themeManager.currentTheme.getCardStroke(for: colorScheme), lineWidth: 1)
+                .fill(.clear)
         )
+        .liquidGlass(.header, edgeMask: [.all])
+        .clipShape(RoundedRectangle(cornerRadius: 32, style: .continuous))
     }
 
     private var segmentedControl: some View {
@@ -133,7 +134,11 @@ struct HomeView: View {
                 } label: {
                     Text(loc(segment.titleKey))
                         .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(selectedSegment == segment ? themeManager.currentTheme.getPrimaryTextColor(for: colorScheme) : themeManager.currentTheme.getSecondaryTextColor(for: colorScheme))
+                        .foregroundStyle(
+                            selectedSegment == segment
+                            ? themeManager.currentTheme.glassPrimaryText(for: colorScheme)
+                            : themeManager.currentTheme.glassSecondaryText(for: colorScheme)
+                        )
                         .frame(maxWidth: .infinity)
                         .frame(height: 44)
                         .background(
@@ -150,11 +155,12 @@ struct HomeView: View {
             }
         }
         .padding(6)
-        .background(themeManager.currentTheme.getCardBackground(for: colorScheme).opacity(0.6), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-        .overlay(
+        .background(
             RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .stroke(themeManager.currentTheme.getCardStroke(for: colorScheme), lineWidth: 1)
+                .fill(.clear)
         )
+        .liquidGlass(.card, edgeMask: [.all])
+        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
     }
 
     @ViewBuilder
@@ -187,10 +193,14 @@ struct HomeView: View {
                     } label: {
                         Label(loc("HOME_ACTIVE_THEME_BUTTON"), systemImage: "paintpalette")
                             .font(.footnote.weight(.semibold))
-                            .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
+                            .onGlassPrimary()
                             .padding(.vertical, 8)
                             .padding(.horizontal, 14)
-                            .background(themeManager.currentTheme.getCardBackground(for: colorScheme), in: Capsule())
+                            .background(
+                                Capsule().fill(Color.clear)
+                            )
+                            .liquidGlass(.card, edgeMask: [.all])
+                            .clipShape(Capsule())
                     }
                 }
             }
@@ -243,10 +253,14 @@ struct HomeView: View {
                 } label: {
                     Label(loc("HOME_BUTTON_INVENTORY"), systemImage: "capsule")
                         .font(.footnote.weight(.semibold))
-                        .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
+                        .onGlassPrimary()
                         .padding(.vertical, 8)
                         .padding(.horizontal, 14)
-                        .background(themeManager.currentTheme.getCardBackground(for: colorScheme), in: Capsule())
+                        .background(
+                            Capsule().fill(Color.clear)
+                        )
+                        .liquidGlass(.card, edgeMask: [.all])
+                        .clipShape(Capsule())
                 }
             }
 
@@ -266,11 +280,12 @@ struct HomeView: View {
             }
         }
         .padding(22)
-        .background(themeManager.currentTheme.getCardBackground(for: colorScheme).opacity(0.8), in: RoundedRectangle(cornerRadius: 28, style: .continuous))
-        .overlay(
+        .background(
             RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .stroke(themeManager.currentTheme.getCardStroke(for: colorScheme), lineWidth: 1)
+                .fill(.clear)
         )
+        .liquidGlass(.card, edgeMask: [.all])
+        .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
     }
 
     private var marketSection: some View {
@@ -278,7 +293,7 @@ struct HomeView: View {
             VStack(alignment: .leading, spacing: 6) {
                 Text(loc("HOME_MARKET_TITLE"))
                     .font(.title3.weight(.semibold))
-                    .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
+                    .onGlassPrimary()
                 Text(loc("HOME_MARKET_SUBTITLE"))
                     .font(.footnote)
                     .foregroundStyle(themeManager.currentTheme.getSecondaryTextColor(for: colorScheme))
@@ -293,11 +308,12 @@ struct HomeView: View {
             }
         }
         .padding(24)
-        .background(themeManager.currentTheme.cardBackground(for: colorScheme).opacity(0.8), in: RoundedRectangle(cornerRadius: 32, style: .continuous))
-        .overlay(
+        .background(
             RoundedRectangle(cornerRadius: 32, style: .continuous)
-                .stroke(themeManager.currentTheme.getCardStroke(for: colorScheme), lineWidth: 1)
+                .fill(.clear)
         )
+        .liquidGlass(.card, edgeMask: [.all])
+        .clipShape(RoundedRectangle(cornerRadius: 32, style: .continuous))
     }
 
     private enum Segment: CaseIterable {
@@ -334,53 +350,32 @@ private struct BalanceCard: View {
         VStack(alignment: .leading, spacing: 16) {
             Image(systemName: icon)
                 .font(.title2.weight(.semibold))
-                .foregroundStyle(
-                    colorScheme == .dark ? 
-                    Color.white.opacity(0.8) : 
-                    themeManager.currentTheme.getPrimaryTextColor(for: colorScheme)
-                )
+                .onGlassPrimary()
                 .padding(12)
                 .background(
-                    colorScheme == .dark ? 
-                    Color.white.opacity(0.08) : 
-                    themeManager.currentTheme.getCardBackground(for: colorScheme), 
-                    in: RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .fill(Color.clear)
                 )
+                .liquidGlass(.card, edgeMask: [.all])
+                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(value, format: .currency(code: "TRY"))
                     .font(.title2.weight(.bold))
-                    .foregroundStyle(
-                        colorScheme == .dark ? 
-                        Color.white.opacity(0.9) : 
-                        themeManager.currentTheme.getPrimaryTextColor(for: colorScheme)
-                    )
+                    .onGlassPrimary()
                 Text(title)
                     .font(.caption)
-                    .foregroundStyle(
-                        colorScheme == .dark ? 
-                        Color.white.opacity(0.6) : 
-                        themeManager.currentTheme.getSecondaryTextColor(for: colorScheme)
-                    )
+                    .onGlassSecondary()
             }
         }
         .padding(20)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
-            colorScheme == .dark ? 
-            tint.opacity(0.4) : 
-            tint.opacity(0.65), 
-            in: RoundedRectangle(cornerRadius: 28, style: .continuous)
-        )
-        .overlay(
             RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .stroke(
-                    colorScheme == .dark ? 
-                    Color.white.opacity(0.1) : 
-                    themeManager.currentTheme.getCardStroke(for: colorScheme), 
-                    lineWidth: 1
-                )
+                .fill(Color.clear)
         )
+        .liquidGlass(.card, edgeMask: [.all])
+        .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
     }
 }
 
@@ -397,17 +392,21 @@ private struct GlassCard<Content: View>: View {
             HStack(spacing: 14) {
                 Image(systemName: icon)
                     .font(.title3.weight(.semibold))
-                    .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
+                            .onGlassPrimary()
                     .padding(12)
-                    .background(themeManager.currentTheme.getCardBackground(for: colorScheme), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    .background(
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .fill(.clear)
+                    )
+                    .liquidGlass(.card, edgeMask: [.all])
 
                 VStack(alignment: .leading, spacing: 4) {
                     Text(title)
                         .font(.headline)
-                        .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
+                        .onGlassPrimary()
                     Text(subtitle)
                         .font(.caption)
-                        .foregroundStyle(themeManager.currentTheme.getSecondaryTextColor(for: colorScheme))
+                        .onGlassSecondary()
                 }
 
                 Spacer()
@@ -416,11 +415,12 @@ private struct GlassCard<Content: View>: View {
             content
         }
         .padding(22)
-        .background(themeManager.currentTheme.getCardBackground(for: colorScheme).opacity(0.8), in: RoundedRectangle(cornerRadius: 28, style: .continuous))
-        .overlay(
+        .background(
             RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .stroke(themeManager.currentTheme.getCardStroke(for: colorScheme), lineWidth: 1)
+                .fill(.clear)
         )
+        .liquidGlass(.card, edgeMask: [.all])
+        .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
     }
 }
 
@@ -434,14 +434,19 @@ private struct StatTile: View {
         VStack(alignment: .leading, spacing: 8) {
             Text(value)
                 .font(.headline)
-                .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
+                .onGlassPrimary()
             Text(title)
                 .font(.caption)
-                .foregroundStyle(themeManager.currentTheme.getSecondaryTextColor(for: colorScheme))
+                .onGlassSecondary()
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(14)
-        .background(themeManager.currentTheme.getCardBackground(for: colorScheme), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .background(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(.clear)
+        )
+        .liquidGlass(.card, edgeMask: [.all])
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 }
 
@@ -463,7 +468,12 @@ private struct EmptyStateView: View {
         }
         .padding(24)
         .frame(maxWidth: .infinity)
-        .background(themeManager.currentTheme.getCardBackground(for: colorScheme).opacity(0.5), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .background(
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .fill(.clear)
+        )
+        .liquidGlass(.card, edgeMask: [.all])
+        .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
     }
 }
 
@@ -478,37 +488,46 @@ private struct DecorCard: View {
         VStack(spacing: 14) {
             Image(systemName: asset.iconName)
                 .font(.system(size: 34, weight: .semibold))
-                .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
+                .onGlassPrimary()
                 .padding(18)
-                .background(themeManager.currentTheme.cardBackground(for: colorScheme), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                .background(
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .fill(.clear)
+                )
+                .liquidGlass(.card, edgeMask: [.all])
 
             Text(localizedName)
                 .font(.headline)
-                .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
+                .onGlassPrimary()
                 .multilineTextAlignment(.center)
                 .lineLimit(2)
 
             Text(localizedDescription)
                 .font(.caption)
-                .foregroundStyle(themeManager.currentTheme.getSecondaryTextColor(for: colorScheme))
+                .onGlassSecondary()
                 .multilineTextAlignment(.center)
                 .lineLimit(2)
 
             Button(role: .destructive, action: removeAction) {
                 Label(loc("HOME_DECOR_REMOVE"), systemImage: "trash")
                     .font(.caption.weight(.semibold))
+                    .onGlassPrimary()
                     .padding(.vertical, 6)
                     .padding(.horizontal, 12)
-                    .background(themeManager.currentTheme.cardBackground(for: colorScheme), in: Capsule())
+                    .background(
+                        Capsule().fill(.clear)
+                    )
+                    .liquidGlass(.card, edgeMask: [.all])
             }
         }
         .padding(18)
         .frame(maxWidth: .infinity)
-        .background(themeManager.currentTheme.cardBackground(for: colorScheme).opacity(0.6), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
-        .overlay(
+        .background(
             RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .stroke(themeManager.currentTheme.getCardStroke(for: colorScheme), lineWidth: 1)
+                .fill(.clear)
         )
+        .liquidGlass(.card, edgeMask: [.all])
+        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
     }
 
     private var localizedName: String {
@@ -537,24 +556,28 @@ private struct MarketItemCard: View {
             VStack(spacing: 14) {
                 Image(systemName: asset.iconName)
                     .font(.title.weight(.semibold))
-                    .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
+                    .onGlassPrimary()
                     .padding(16)
-                    .background(themeManager.currentTheme.cardBackground(for: colorScheme), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                    .background(
+                        RoundedRectangle(cornerRadius: 18, style: .continuous)
+                            .fill(.clear)
+                    )
+                    .liquidGlass(.card, edgeMask: [.all])
 
                 VStack(spacing: 6) {
                     Text(localizedName)
                         .font(.headline.weight(.semibold))
-                        .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
+                        .onGlassPrimary()
                         .multilineTextAlignment(.center)
                         .lineLimit(2)
 
                     Text(asset.price, format: .currency(code: "TRY"))
                         .font(.subheadline)
-                        .foregroundStyle(themeManager.currentTheme.getSecondaryTextColor(for: colorScheme))
+                        .onGlassSecondary()
 
                     Text(localizedDescription)
                         .font(.caption)
-                        .foregroundStyle(themeManager.currentTheme.getSecondaryTextColor(for: colorScheme))
+                        .onGlassSecondary()
                         .multilineTextAlignment(.center)
                         .lineLimit(2)
                 }
@@ -568,11 +591,12 @@ private struct MarketItemCard: View {
             }
             .padding(18)
             .frame(maxWidth: .infinity)
-            .background(themeManager.currentTheme.cardBackground(for: colorScheme).opacity(0.7), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
-            .overlay(
+            .background(
                 RoundedRectangle(cornerRadius: 22, style: .continuous)
-                    .stroke(isUnlocked ? Color.green.opacity(0.4) : themeManager.currentTheme.cardStroke(for: colorScheme), lineWidth: 1)
+                    .fill(.clear)
             )
+            .liquidGlass(.card, edgeMask: [.all])
+            .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
         }
         .buttonStyle(.plain)
         .disabled(isUnlocked)
@@ -614,11 +638,12 @@ private struct MarketListSectionView: View {
             }
         }
         .padding(22)
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 26, style: .continuous))
-        .overlay(
+        .background(
             RoundedRectangle(cornerRadius: 26, style: .continuous)
-                .stroke(.white.opacity(0.14), lineWidth: 1)
+                .fill(.clear)
         )
+        .liquidGlass(.card, edgeMask: [.all])
+        .clipShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
     }
 
     private func loc(_ key: String, _ arguments: CVarArg...) -> String {

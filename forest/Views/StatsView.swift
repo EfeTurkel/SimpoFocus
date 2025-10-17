@@ -40,10 +40,10 @@ struct StatsView: View {
             VStack(spacing: 6) {
                 Text(loc("STATS_TOTAL_FOCUS_TIME"))
                     .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.white.opacity(0.75))
+                    .onGlassSecondary()
                 Text(formattedHours(totalHours))
                     .font(.system(size: 48, weight: .bold, design: .rounded))
-                    .foregroundStyle(.white)
+                    .onGlassPrimary()
                     .shadow(color: .black.opacity(0.4), radius: 16, y: 10)
             }
 
@@ -57,19 +57,16 @@ struct StatsView: View {
         .frame(maxWidth: .infinity)
         .background(
             RoundedRectangle(cornerRadius: 36, style: .continuous)
-                .fill(.ultraThinMaterial.opacity(0.45))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 36)
-                        .stroke(LinearGradient(colors: [.white.opacity(0.3), .white.opacity(0.05)], startPoint: .topLeading, endPoint: .bottomTrailing), lineWidth: 1)
-                )
+                .fill(.clear)
         )
+        .liquidGlass(.header, edgeMask: [.top])
     }
 
     private var analyticsStack: some View {
         VStack(alignment: .leading, spacing: 18) {
             Text(loc("STATS_PERFORMANCE_SUMMARY"))
                 .font(.headline)
-                .foregroundStyle(.white)
+                .onGlassPrimary()
 
             VStack(spacing: 18) {
                 AnalyticsRow(icon: "flame.fill", title: loc("STATS_BEST_STREAK"), detail: loc("STATS_STREAK_VALUE", timer.streak))
@@ -77,11 +74,11 @@ struct StatsView: View {
                 AnalyticsRow(icon: "bolt.heart", title: loc("STATS_LAST_FOCUS"), detail: lastFocusText)
             }
             .padding(20)
-            .background(.white.opacity(0.07), in: RoundedRectangle(cornerRadius: 28, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 28)
-                    .stroke(.white.opacity(0.08), lineWidth: 1)
+            .background(
+                RoundedRectangle(cornerRadius: 28, style: .continuous)
+                    .fill(.clear)
             )
+            .liquidGlass(.card, edgeMask: [.top, .bottom])
         }
     }
 
@@ -94,7 +91,7 @@ struct StatsView: View {
                 Text(loc("STATS_GOAL_VALUE", timer.completedFocusSessions, market.dailyTarget))
                     .font(.title3.weight(.semibold))
             }
-            .foregroundStyle(.white)
+            .onGlassPrimary()
 
             ProgressView(value: min(Double(timer.completedFocusSessions) / Double(max(market.dailyTarget, 1)), 1))
                 .tint(Color("ForestGreen"))
@@ -103,18 +100,15 @@ struct StatsView: View {
 
             Text(timer.completedFocusSessions >= market.dailyTarget ? loc("STATS_GOAL_COMPLETE") : loc("STATS_GOAL_PROGRESS"))
                 .font(.footnote)
-                .foregroundStyle(.white.opacity(0.7))
+                .onGlassSecondary()
         }
         .padding(24)
         .frame(maxWidth: .infinity)
         .background(
             RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .fill(.white.opacity(0.08))
+                .fill(.clear)
         )
-        .overlay(
-            RoundedRectangle(cornerRadius: 28)
-                .stroke(.white.opacity(0.1), lineWidth: 1)
-        )
+        .liquidGlass(.card, edgeMask: [.top, .bottom])
     }
 
     private var activityHeatmap: some View {
@@ -125,9 +119,9 @@ struct StatsView: View {
                 Spacer()
                 Text(loc("STATS_ACTIVITY_DAYS", historyDays))
                     .font(.footnote)
-                    .foregroundStyle(.white.opacity(0.6))
+                    .onGlassSecondary()
             }
-            .foregroundStyle(.white)
+            .onGlassPrimary()
 
             let dates = generateRecentDates()
             let columns = Array(repeating: GridItem(.flexible(), spacing: 12), count: 7)
@@ -142,11 +136,11 @@ struct StatsView: View {
         }
         .padding(24)
         .frame(maxWidth: .infinity)
-        .background(.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 28, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 28)
-                .stroke(.white.opacity(0.08), lineWidth: 1)
+        .background(
+            RoundedRectangle(cornerRadius: 28, style: .continuous)
+                .fill(.clear)
         )
+        .liquidGlass(.card, edgeMask: [.top, .bottom])
     }
 
     private var calendar: Calendar { Calendar.current }
@@ -202,17 +196,17 @@ private struct MetricChip: View {
         VStack(spacing: 6) {
             Image(systemName: icon)
                 .font(.callout.weight(.semibold))
-                .foregroundStyle(.white.opacity(0.9))
+                .onGlassPrimary()
                 .padding(10)
                 .background(.white.opacity(0.15), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
 
             Text(value)
                 .font(.headline)
-                .foregroundStyle(.white)
+                .onGlassPrimary()
 
             Text(title)
                 .font(.caption2)
-                .foregroundStyle(.white.opacity(0.6))
+                .onGlassSecondary()
         }
         .frame(maxWidth: .infinity)
         .padding(14)

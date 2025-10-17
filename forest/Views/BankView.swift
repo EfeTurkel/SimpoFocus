@@ -43,6 +43,7 @@ struct BankView: View {
             .padding(24)
         }
         .scrollIndicators(.never)
+        .ignoresSafeArea(.keyboard, edges: .bottom)
         .task {
             bank.applyDailyInterestIfNeeded(to: wallet)
             bank.updateWeeklyRateIfNeeded()
@@ -141,13 +142,13 @@ private struct ToastMessage: View {
         HStack(spacing: 12) {
             Image(systemName: "exclamationmark.triangle.fill")
                 .font(.headline)
-                .foregroundStyle(.white)
+                .onGlassPrimary()
                 .padding(10)
                 .background(.white.opacity(0.18), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
 
             Text(text)
                 .font(.callout.weight(.semibold))
-                .foregroundStyle(.white)
+                .onGlassPrimary()
                 .lineLimit(2)
                 .multilineTextAlignment(.leading)
 
@@ -176,7 +177,7 @@ private struct BankSummaryCard: View {
         VStack(alignment: .leading, spacing: 18) {
             Text(loc("BANK_ACCOUNT"))
                 .font(.callout.weight(.medium))
-                .foregroundStyle(themeManager.currentTheme.getSecondaryTextColor(for: colorScheme))
+                .onGlassSecondary()
 
             VStack(alignment: .leading, spacing: 12) {
                 SummaryRow(title: loc("BANK_AVAILABLE"), value: available)
@@ -193,13 +194,10 @@ private struct BankSummaryCard: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
             RoundedRectangle(cornerRadius: 32, style: .continuous)
-                .fill(themeManager.currentTheme.getCardBackground(for: colorScheme))
-                .shadow(color: .black.opacity(0.25), radius: 24, y: 12)
+                .fill(Color.clear)
         )
-        .overlay(
-            RoundedRectangle(cornerRadius: 32, style: .continuous)
-                .stroke(themeManager.currentTheme.getCardStroke(for: colorScheme), lineWidth: 1)
-        )
+        .liquidGlass(.card, edgeMask: [.all])
+        .clipShape(RoundedRectangle(cornerRadius: 32, style: .continuous))
     }
 
     private var ratePercent: String {
@@ -225,11 +223,11 @@ private struct SummaryRow: View {
     var body: some View {
         HStack {
             Text(title)
-                .foregroundStyle(themeManager.currentTheme.getSecondaryTextColor(for: colorScheme))
+                .onGlassSecondary()
             Spacer()
             Text(value, format: .currency(code: "TRY"))
                 .font(.title3.weight(highlight ? .bold : .medium))
-                .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
+                .onGlassPrimary()
         }
     }
 }
@@ -244,10 +242,10 @@ private struct InfoChip: View {
         VStack(alignment: .leading, spacing: 4) {
             Text(title)
                 .font(.caption2)
-                .foregroundStyle(themeManager.currentTheme.getSecondaryTextColor(for: colorScheme))
+                .onGlassSecondary()
             Text(value)
                 .font(.headline)
-                .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
+                .onGlassPrimary()
         }
         .padding(.vertical, 12)
         .padding(.horizontal, 16)
@@ -270,7 +268,7 @@ private struct BankActionsSection: View {
         VStack(alignment: .leading, spacing: 20) {
             Text(loc("BANK_ACTIONS"))
                 .font(.headline)
-                .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
+                .onGlassPrimary()
 
             VStack(spacing: 18) {
                 ActionCard(title: loc("BANK_DEPOSIT_TITLE"),
@@ -293,11 +291,12 @@ private struct BankActionsSection: View {
             }
         }
         .padding(24)
-        .background(themeManager.currentTheme.getCardBackground(for: colorScheme).opacity(0.8), in: RoundedRectangle(cornerRadius: 32, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 32)
-                .stroke(themeManager.currentTheme.getCardStroke(for: colorScheme), lineWidth: 1)
+        .background(
+            RoundedRectangle(cornerRadius: 32, style: .continuous)
+                .fill(Color.clear)
         )
+        .liquidGlass(.card, edgeMask: [.all])
+        .clipShape(RoundedRectangle(cornerRadius: 32, style: .continuous))
     }
 
     private func loc(_ key: String, _ arguments: CVarArg...) -> String {
@@ -357,17 +356,18 @@ private struct ActionCard: View {
                     .textFieldStyle(.plain)
                     .padding(.horizontal, 16)
                     .padding(.vertical, 14)
-                    .background(themeManager.currentTheme.getCardBackground(for: colorScheme), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-                    .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 20)
-                            .stroke(themeManager.currentTheme.getCardStroke(for: colorScheme).opacity(isFocused ? 1.5 : 1), lineWidth: 1)
+                    .background(
+                        RoundedRectangle(cornerRadius: 20, style: .continuous)
+                            .fill(Color.clear)
                     )
+                    .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
+                    .liquidGlass(.card, edgeMask: [.all])
+                    .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
 
                 Button(action: action) {
                     Text(loc(buttonTitle))
                         .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(.white)
+                        .onGlassPrimary()
                         .padding(.horizontal, 20)
                         .padding(.vertical, 12)
                         .background(
@@ -382,11 +382,12 @@ private struct ActionCard: View {
             }
         }
         .padding(22)
-        .background(themeManager.currentTheme.getCardBackground(for: colorScheme).opacity(0.6), in: RoundedRectangle(cornerRadius: 28, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 28)
-                .stroke(themeManager.currentTheme.getCardStroke(for: colorScheme), lineWidth: 1)
+        .background(
+            RoundedRectangle(cornerRadius: 28, style: .continuous)
+                .fill(Color.clear)
         )
+        .liquidGlass(.card, edgeMask: [.all])
+        .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
     }
 
     private func loc(_ key: String, _ arguments: CVarArg...) -> String {
@@ -419,7 +420,7 @@ private struct AmountControl: View {
                 Spacer()
                 Text(loc("BANK_MAX_FORMAT", maxAmount.formatted(.currency(code: "TRY"))))
                     .font(.caption)
-                    .foregroundStyle(.white.opacity(0.6))
+                    .onGlassSecondary()
             }
 
             HStack(spacing: 12) {
@@ -465,7 +466,7 @@ private struct BankInfoSection: View {
         VStack(alignment: .leading, spacing: 18) {
             Text(loc("BANK_INFO"))
                 .font(.headline)
-                .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
+                .onGlassPrimary()
 
             InfoRow(icon: "calendar.badge.clock",
                     title: loc("BANK_LAST_RATE"),
@@ -480,11 +481,12 @@ private struct BankInfoSection: View {
                 .environmentObject(localization)
         }
         .padding(24)
-        .background(themeManager.currentTheme.getCardBackground(for: colorScheme).opacity(0.8), in: RoundedRectangle(cornerRadius: 32, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 32)
-                .stroke(themeManager.currentTheme.getCardStroke(for: colorScheme), lineWidth: 1)
+        .background(
+            RoundedRectangle(cornerRadius: 32, style: .continuous)
+                .fill(Color.clear)
         )
+        .liquidGlass(.card, edgeMask: [.all])
+        .clipShape(RoundedRectangle(cornerRadius: 32, style: .continuous))
     }
 
     private func loc(_ key: String, _ arguments: CVarArg...) -> String {
@@ -504,20 +506,25 @@ private struct BankInfoSection: View {
             HStack(alignment: .top, spacing: 12) {
                 Image(systemName: icon)
                     .font(.headline)
-                    .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
+                    .onGlassPrimary()
                     .frame(width: 34, height: 34)
-                    .background(themeManager.currentTheme.getCardBackground(for: colorScheme), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    .background(
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .fill(Color.clear)
+                    )
+                    .liquidGlass(.card, edgeMask: [.all])
+                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
 
                 VStack(alignment: .leading, spacing: 4) {
                     Text(title)
                         .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
+                        .onGlassPrimary()
                     Text(description)
                         .font(.caption)
-                        .foregroundStyle(themeManager.currentTheme.getSecondaryTextColor(for: colorScheme))
+                        .onGlassSecondary()
                     Text(relative)
                         .font(.caption2)
-                        .foregroundStyle(themeManager.currentTheme.getSecondaryTextColor(for: colorScheme).opacity(0.7))
+                        .onGlassSecondary()
                 }
 
                 Spacer()

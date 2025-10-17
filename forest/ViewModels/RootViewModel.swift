@@ -2,7 +2,21 @@ import Foundation
 import Combine
 
 final class RootViewModel: ObservableObject {
-    @Published var selectedTab: AppTab = .forest
+    @Published var selectedTab: AppTab = .forest {
+        didSet {
+            UserDefaults.standard.set(selectedTab.rawValue, forKey: "selectedTab")
+        }
+    }
+    
+    private let storageKey = "selectedTab"
+    
+    init() {
+        // Restore selected tab from UserDefaults
+        if let savedTab = UserDefaults.standard.string(forKey: storageKey),
+           let tab = AppTab(rawValue: savedTab) {
+            selectedTab = tab
+        }
+    }
 }
 
 enum AppTab: String, CaseIterable, Identifiable {

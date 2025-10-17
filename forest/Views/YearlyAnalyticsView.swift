@@ -132,12 +132,10 @@ struct YearlyAnalyticsView: View {
         .padding(20)
         .background(
             RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .fill(themeManager.currentTheme.getCardBackground(for: colorScheme))
+                .fill(Color.clear)
         )
-        .overlay(
-            RoundedRectangle(cornerRadius: 28)
-                .stroke(themeManager.currentTheme.getCardStroke(for: colorScheme), lineWidth: 1)
-        )
+        .liquidGlass(.card, edgeMask: [.top, .bottom])
+        .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
     }
     
     private var bestRecordsSection: some View {
@@ -192,12 +190,10 @@ struct YearlyAnalyticsView: View {
         .padding(20)
         .background(
             RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .fill(themeManager.currentTheme.getCardBackground(for: colorScheme))
+                .fill(Color.clear)
         )
-        .overlay(
-            RoundedRectangle(cornerRadius: 28)
-                .stroke(themeManager.currentTheme.getCardStroke(for: colorScheme), lineWidth: 1)
-        )
+        .liquidGlass(.card, edgeMask: [.top, .bottom])
+        .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
     }
     
     private var heatmapSection: some View {
@@ -214,12 +210,10 @@ struct YearlyAnalyticsView: View {
         .padding(20)
         .background(
             RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .fill(themeManager.currentTheme.getCardBackground(for: colorScheme))
+                .fill(Color.clear)
         )
-        .overlay(
-            RoundedRectangle(cornerRadius: 28)
-                .stroke(themeManager.currentTheme.getCardStroke(for: colorScheme), lineWidth: 1)
-        )
+        .liquidGlass(.card, edgeMask: [.top, .bottom])
+        .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
     }
     
     // MARK: - Helper Functions
@@ -299,12 +293,10 @@ private struct StatCard: View {
         .padding(16)
         .background(
             RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .fill(themeManager.currentTheme.getCardBackground(for: colorScheme))
+                .fill(Color.clear)
         )
-        .overlay(
-            RoundedRectangle(cornerRadius: 20)
-                .stroke(color.opacity(0.3), lineWidth: 1)
-        )
+        .liquidGlass(.card, edgeMask: [.top, .bottom])
+        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
     }
     
     private func loc(_ key: String) -> String {
@@ -351,8 +343,10 @@ private struct BestRecordRow: View {
         .padding(12)
         .background(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(themeManager.currentTheme.getCardBackground(for: colorScheme))
+                .fill(Color.clear)
         )
+        .liquidGlass(.card, edgeMask: [.top, .bottom])
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 }
 

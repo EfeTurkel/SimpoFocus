@@ -6,6 +6,13 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		F773EC3F2EA28EB600782D69 /* AlarmKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F773EC3E2EA28EB500782D69 /* AlarmKit.framework */; settings = {ATTRIBUTES = (Weak, ); }; };
+		F773EC492EA2957D00782D69 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F773EC482EA2957D00782D69 /* WidgetKit.framework */; };
+		F773EC4B2EA2957D00782D69 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F773EC4A2EA2957D00782D69 /* SwiftUI.framework */; };
+		F773EC5C2EA2957F00782D69 /* SimpofocuswidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = F773EC472EA2957D00782D69 /* SimpofocuswidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		F72C95E52E8EDEAD004EDAEF /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -21,12 +28,38 @@
 			remoteGlobalIDString = F72C95D62E8EDEAA004EDAEF;
 			remoteInfo = forest;
 		};
+		F773EC5A2EA2957F00782D69 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = F72C95CF2E8EDEAA004EDAEF /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = F773EC462EA2957D00782D69;
+			remoteInfo = SimpofocuswidgetExtension;
+		};
 /* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		F773EC612EA2957F00782D69 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				F773EC5C2EA2957F00782D69 /* SimpofocuswidgetExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		F72C95D72E8EDEAA004EDAEF /* forest.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = forest.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		F72C95E42E8EDEAD004EDAEF /* forestTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = forestTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		F72C95EE2E8EDEAD004EDAEF /* forestUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = forestUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		F773EC3E2EA28EB500782D69 /* AlarmKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AlarmKit.framework; path = System/Library/Frameworks/AlarmKit.framework; sourceTree = SDKROOT; };
+		F773EC472EA2957D00782D69 /* SimpofocuswidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = SimpofocuswidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		F773EC482EA2957D00782D69 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
+		F773EC4A2EA2957D00782D69 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
+		F7983DB02EA2A7540035488C /* SimpofocuswidgetExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = SimpofocuswidgetExtension.entitlements; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -36,6 +69,13 @@
 				Info.plist,
 			);
 			target = F72C95D62E8EDEAA004EDAEF /* forest */;
+		};
+		F773EC602EA2957F00782D69 /* Exceptions for "Simpofocuswidget" folder in "SimpofocuswidgetExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = F773EC462EA2957D00782D69 /* SimpofocuswidgetExtension */;
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
@@ -58,6 +98,14 @@
 			path = forestUITests;
 			sourceTree = "<group>";
 		};
+		F773EC4C2EA2957D00782D69 /* Simpofocuswidget */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				F773EC602EA2957F00782D69 /* Exceptions for "Simpofocuswidget" folder in "SimpofocuswidgetExtension" target */,
+			);
+			path = Simpofocuswidget;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -65,6 +113,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				F773EC3F2EA28EB600782D69 /* AlarmKit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -82,15 +131,27 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		F773EC442EA2957D00782D69 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F773EC4B2EA2957D00782D69 /* SwiftUI.framework in Frameworks */,
+				F773EC492EA2957D00782D69 /* WidgetKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
 		F72C95CE2E8EDEAA004EDAEF = {
 			isa = PBXGroup;
 			children = (
+				F7983DB02EA2A7540035488C /* SimpofocuswidgetExtension.entitlements */,
 				F72C95D92E8EDEAA004EDAEF /* forest */,
 				F72C95E72E8EDEAD004EDAEF /* forestTests */,
 				F72C95F12E8EDEAD004EDAEF /* forestUITests */,
+				F773EC4C2EA2957D00782D69 /* Simpofocuswidget */,
+				F773EC3D2EA28EB500782D69 /* Frameworks */,
 				F72C95D82E8EDEAA004EDAEF /* Products */,
 			);
 			sourceTree = "<group>";
@@ -101,8 +162,19 @@
 				F72C95D72E8EDEAA004EDAEF /* forest.app */,
 				F72C95E42E8EDEAD004EDAEF /* forestTests.xctest */,
 				F72C95EE2E8EDEAD004EDAEF /* forestUITests.xctest */,
+				F773EC472EA2957D00782D69 /* SimpofocuswidgetExtension.appex */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		F773EC3D2EA28EB500782D69 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				F773EC3E2EA28EB500782D69 /* AlarmKit.framework */,
+				F773EC482EA2957D00782D69 /* WidgetKit.framework */,
+				F773EC4A2EA2957D00782D69 /* SwiftUI.framework */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -115,10 +187,12 @@
 				F72C95D32E8EDEAA004EDAEF /* Sources */,
 				F72C95D42E8EDEAA004EDAEF /* Frameworks */,
 				F72C95D52E8EDEAA004EDAEF /* Resources */,
+				F773EC612EA2957F00782D69 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				F773EC5B2EA2957F00782D69 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				F72C95D92E8EDEAA004EDAEF /* forest */,
@@ -176,6 +250,28 @@
 			productReference = F72C95EE2E8EDEAD004EDAEF /* forestUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		};
+		F773EC462EA2957D00782D69 /* SimpofocuswidgetExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = F773EC5D2EA2957F00782D69 /* Build configuration list for PBXNativeTarget "SimpofocuswidgetExtension" */;
+			buildPhases = (
+				F773EC432EA2957D00782D69 /* Sources */,
+				F773EC442EA2957D00782D69 /* Frameworks */,
+				F773EC452EA2957D00782D69 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				F773EC4C2EA2957D00782D69 /* Simpofocuswidget */,
+			);
+			name = SimpofocuswidgetExtension;
+			packageProductDependencies = (
+			);
+			productName = SimpofocuswidgetExtension;
+			productReference = F773EC472EA2957D00782D69 /* SimpofocuswidgetExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -183,8 +279,8 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
-				LastSwiftUpdateCheck = 1640;
-				LastUpgradeCheck = 1640;
+				LastSwiftUpdateCheck = 2600;
+				LastUpgradeCheck = 2600;
 				TargetAttributes = {
 					F72C95D62E8EDEAA004EDAEF = {
 						CreatedOnToolsVersion = 16.4;
@@ -196,6 +292,9 @@
 					F72C95ED2E8EDEAD004EDAEF = {
 						CreatedOnToolsVersion = 16.4;
 						TestTargetID = F72C95D62E8EDEAA004EDAEF;
+					};
+					F773EC462EA2957D00782D69 = {
+						CreatedOnToolsVersion = 26.0.1;
 					};
 				};
 			};
@@ -216,6 +315,7 @@
 				F72C95D62E8EDEAA004EDAEF /* forest */,
 				F72C95E32E8EDEAD004EDAEF /* forestTests */,
 				F72C95ED2E8EDEAD004EDAEF /* forestUITests */,
+				F773EC462EA2957D00782D69 /* SimpofocuswidgetExtension */,
 			);
 		};
 /* End PBXProject section */
@@ -236,6 +336,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		F72C95EC2E8EDEAD004EDAEF /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		F773EC452EA2957D00782D69 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -266,6 +373,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		F773EC432EA2957D00782D69 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -278,6 +392,11 @@
 			isa = PBXTargetDependency;
 			target = F72C95D62E8EDEAA004EDAEF /* forest */;
 			targetProxy = F72C95EF2E8EDEAD004EDAEF /* PBXContainerItemProxy */;
+		};
+		F773EC5B2EA2957F00782D69 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = F773EC462EA2957D00782D69 /* SimpofocuswidgetExtension */;
+			targetProxy = F773EC5A2EA2957F00782D69 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -341,6 +460,7 @@
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
@@ -398,6 +518,7 @@
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				VALIDATE_PRODUCT = YES;
 			};
@@ -409,6 +530,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
+				CODE_SIGN_ENTITLEMENTS = forest/forest.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = C3CEL28K79;
@@ -421,7 +543,7 @@
 				INFOPLIST_KEY_UIRequiredDeviceCapabilities = armv7;
 				INFOPLIST_KEY_UIRequiresFullScreen = YES;
 				INFOPLIST_KEY_UIStatusBarHidden = YES;
-				INFOPLIST_KEY_UIStatusBarStyle = UIStatusBarStyleDarkContent;
+				INFOPLIST_KEY_UIStatusBarStyle = UIStatusBarStyleBlackTranslucent;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
@@ -429,7 +551,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.efeturkel.simpoapp;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -448,6 +570,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
+				CODE_SIGN_ENTITLEMENTS = forest/forest.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = C3CEL28K79;
@@ -460,7 +583,7 @@
 				INFOPLIST_KEY_UIRequiredDeviceCapabilities = armv7;
 				INFOPLIST_KEY_UIRequiresFullScreen = YES;
 				INFOPLIST_KEY_UIStatusBarHidden = YES;
-				INFOPLIST_KEY_UIStatusBarStyle = UIStatusBarStyleDarkContent;
+				INFOPLIST_KEY_UIStatusBarStyle = UIStatusBarStyleBlackTranslucent;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
@@ -468,7 +591,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.efeturkel.simpoapp;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -490,7 +613,7 @@
 				DEVELOPMENT_TEAM = C3CEL28K79;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = Efetu.forestTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
@@ -509,7 +632,7 @@
 				DEVELOPMENT_TEAM = C3CEL28K79;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = Efetu.forestTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
@@ -526,7 +649,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = C3CEL28K79;
 				GENERATE_INFOPLIST_FILE = YES;
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = Efetu.forestUITests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
@@ -543,13 +666,85 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = C3CEL28K79;
 				GENERATE_INFOPLIST_FILE = YES;
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = Efetu.forestUITests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_TARGET_NAME = forest;
+			};
+			name = Release;
+		};
+		F773EC5E2EA2957F00782D69 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = SimpofocuswidgetExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = C3CEL28K79;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Simpofocuswidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Simpofocuswidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.6;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.1;
+				PRODUCT_BUNDLE_IDENTIFIER = com.efeturkel.simpoapp.Simpofocuswidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		F773EC5F2EA2957F00782D69 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = SimpofocuswidgetExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = C3CEL28K79;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Simpofocuswidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Simpofocuswidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.6;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.1;
+				PRODUCT_BUNDLE_IDENTIFIER = com.efeturkel.simpoapp.Simpofocuswidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Release;
 		};
@@ -588,6 +783,15 @@
 			buildConfigurations = (
 				F72C95FF2E8EDEAD004EDAEF /* Debug */,
 				F72C96002E8EDEAD004EDAEF /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		F773EC5D2EA2957F00782D69 /* Build configuration list for PBXNativeTarget "SimpofocuswidgetExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F773EC5E2EA2957F00782D69 /* Debug */,
+				F773EC5F2EA2957F00782D69 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

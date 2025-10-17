@@ -76,12 +76,9 @@ struct BuyCoinSheet: View {
         .padding(22)
         .background(
             RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .fill(.ultraThinMaterial)
+                .fill(.clear)
         )
-        .overlay(
-            RoundedRectangle(cornerRadius: 28)
-                .stroke(.white.opacity(0.08), lineWidth: 1)
-        )
+        .liquidGlass(.card, edgeMask: [.top, .bottom])
     }
 
     private func handlePurchase() {
@@ -149,10 +146,10 @@ private struct CoinDetailHeader: View {
 
                 VStack(alignment: .leading, spacing: 4) {
                     HStack(spacing: 8) {
-                        Text(coin.symbol)
-                            .font(.headline)
-                            .lineLimit(1)
-                            .layoutPriority(1)
+                    Text(coin.symbol)
+                        .font(.headline)
+                        .lineLimit(1)
+                        .layoutPriority(1)
 
                         if let stats = DetailedSparklineView.stats(for: history) {
                             Text(stats.changeBadge)
@@ -167,7 +164,7 @@ private struct CoinDetailHeader: View {
 
                     Text(coin.currentPrice, format: .currency(code: "TRY"))
                         .font(.title3.weight(.semibold))
-                        .foregroundStyle(.white)
+                        .onGlassPrimary()
                 }
 
                 Spacer()
@@ -206,6 +203,8 @@ private struct CoinDetailHeader: View {
 
 struct DetailedSparklineView: View {
     let history: [CoinPriceSnapshot]
+    @ObservedObject private var themeManager = ThemeManager.shared
+    @Environment(\.colorScheme) var colorScheme
 
     var body: some View {
         GeometryReader { proxy in
@@ -213,21 +212,21 @@ struct DetailedSparklineView: View {
             let points = makePoints(in: proxy.size)
             let fillPath = areaPath(using: points, height: proxy.size.height)
             let linePath = polyline(using: points)
-            let gradient = LinearGradient(colors: [Color.white.opacity(0.4), Color.white.opacity(0.05)], startPoint: .top, endPoint: .bottom)
+            let gradient = LinearGradient(colors: [themeManager.currentTheme.glassPrimaryText(for: colorScheme).opacity(0.4), themeManager.currentTheme.glassPrimaryText(for: colorScheme).opacity(0.05)], startPoint: .top, endPoint: .bottom)
 
             ZStack {
-                GridLines()
+                GridLines(themeManager: themeManager, colorScheme: colorScheme)
 
                 if !fillPath.isEmpty {
                     fillPath.fill(gradient)
                 }
 
                 linePath
-                    .stroke(Color.white, style: StrokeStyle(lineWidth: 2.5, lineCap: .round, lineJoin: .round))
+                    .stroke(themeManager.currentTheme.glassPrimaryText(for: colorScheme), style: StrokeStyle(lineWidth: 2.5, lineCap: .round, lineJoin: .round))
 
                 if let lastPoint = points.last {
                     Circle()
-                        .fill(Color.white)
+                        .fill(themeManager.currentTheme.glassPrimaryText(for: colorScheme))
                         .frame(width: 8, height: 8)
                         .position(lastPoint)
                 }
@@ -244,7 +243,7 @@ struct DetailedSparklineView: View {
                         Text(metrics.minString)
                     }
                     .font(.caption2)
-                    .foregroundStyle(.white.opacity(0.65))
+                    .foregroundStyle(themeManager.currentTheme.glassSecondaryText(for: colorScheme))
                     .padding(.vertical, 6)
                     .padding(.leading, 4)
                 }
@@ -253,7 +252,7 @@ struct DetailedSparklineView: View {
                 if let metrics = GraphMetrics(values: values) {
                     Text(metrics.latestString)
                         .font(.caption2.weight(.semibold))
-                        .foregroundStyle(.white)
+                        .onGlassPrimary()
                         .padding(.horizontal, 10)
                         .padding(.vertical, 6)
                         .background(.white.opacity(0.18), in: Capsule())
@@ -343,6 +342,9 @@ struct DetailedSparklineView: View {
     }
 
     private struct GridLines: View {
+        let themeManager: ThemeManager
+        let colorScheme: ColorScheme
+        
         var body: some View {
             GeometryReader { proxy in
                 Path { path in
@@ -353,7 +355,7 @@ struct DetailedSparklineView: View {
                         path.addLine(to: CGPoint(x: proxy.size.width, y: y))
                     }
                 }
-                .stroke(.white.opacity(0.1), lineWidth: 0.5)
+                .stroke(themeManager.currentTheme.glassSecondaryText(for: colorScheme).opacity(0.2), lineWidth: 0.5)
             }
         }
     }
@@ -393,6 +395,8 @@ struct DetailedSparklineView: View {
 private struct QuickAmountRow: View {
     @Binding var selected: Double?
     let action: (Double) -> Void
+    @ObservedObject private var themeManager = ThemeManager.shared
+    @Environment(\.colorScheme) private var colorScheme
 
     private let options: [Double] = [100, 250, 500, 750]
 
@@ -405,15 +409,26 @@ private struct QuickAmountRow: View {
                         action(option)
                     }
                 } label: {
+                    let isSelected = selected == option
+                    let bgFill = isSelected
+                        ? themeManager.currentTheme.glassPrimaryText(for: colorScheme).opacity(0.9)
+                        : themeManager.currentTheme.glassPrimaryText(for: colorScheme).opacity(0.12)
+                    let textColor = isSelected
+                        ? (colorScheme == .light ? Color.white : Color.black) // invert for contrast
+                        : themeManager.currentTheme.glassPrimaryText(for: colorScheme).opacity(0.9)
                     Text(formatted(option))
                         .font(.subheadline.weight(.semibold))
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 10)
                         .background(
                             RoundedRectangle(cornerRadius: 18, style: .continuous)
-                                .fill(selected == option ? Color.white.opacity(0.9) : Color.white.opacity(0.12))
+                                .fill(bgFill)
                         )
-                        .foregroundStyle(selected == option ? Color.black : Color.white.opacity(0.85))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                                .stroke(themeManager.currentTheme.glassStroke(for: colorScheme).opacity(0.6), lineWidth: 0.6)
+                        )
+                        .foregroundStyle(textColor)
                         .lineLimit(1)
                         .minimumScaleFactor(0.7)
                 }
@@ -572,7 +587,7 @@ private struct ToastMessage: View {
             Text(text)
                 .font(.callout.weight(.semibold))
                 .lineLimit(2)
-                .foregroundStyle(.white)
+                .onGlassPrimary()
 
             Spacer(minLength: 0)
         }

@@ -126,7 +126,7 @@ struct TimerSettingsView: View {
                                                 LinearGradient(colors: [Color("ForestGreen"), Color("LakeBlue")], startPoint: .topLeading, endPoint: .bottomTrailing),
                                                 in: RoundedRectangle(cornerRadius: 18, style: .continuous)
                                             )
-                                            .foregroundStyle(.white)
+                                            .onGlassPrimary()
                                     }
                                     .disabled(!tickingEnabled)
                                     .opacity(tickingEnabled ? 1 : 0.4)
@@ -243,18 +243,18 @@ struct TimerSettingsView: View {
             } label: {
                 Label(loc("SETTINGS_BUTTON_SAVE"), systemImage: "checkmark")
                     .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.black)
+                    .onGlassPrimary()
                     .padding(.vertical, 16)
                     .frame(maxWidth: .infinity)
                     .background(LinearGradient(colors: [Color("ForestGreen"), Color("LakeBlue")], startPoint: .topLeading, endPoint: .bottomTrailing), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
             }
         }
         .padding(18)
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 24)
-                .stroke(themeManager.currentTheme.getCardStroke(for: colorScheme), lineWidth: 1)
+        .background(
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .fill(Color.clear)
         )
+        .liquidGlass(.header, edgeMask: [.top])
         .shadow(color: .black.opacity(0.2), radius: 20, y: 12)
     }
 }
@@ -290,7 +290,7 @@ private struct NotificationStatusCard: View {
                     } label: {
                         Label(loc("SETTINGS_BACKGROUND_ALLOW_NOTIF"), systemImage: "bell.badge")
                             .font(.footnote.weight(.semibold))
-                            .foregroundStyle(.black)
+                            .onGlassPrimary()
                             .padding(.vertical, 10)
                             .frame(maxWidth: .infinity)
                             .background(Color("ForestGreen"), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
@@ -303,7 +303,7 @@ private struct NotificationStatusCard: View {
                     } label: {
                         Label(loc("SETTINGS_BACKGROUND_OPEN_SETTINGS"), systemImage: "gear")
                             .font(.footnote.weight(.semibold))
-                            .foregroundStyle(.black)
+                            .onGlassPrimary()
                             .padding(.vertical, 10)
                             .frame(maxWidth: .infinity)
                             .background(Color("LakeBlue"), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
@@ -378,7 +378,7 @@ private struct MakerSection: View {
                     Image(systemName: "envelope.fill")
                         .font(.title2.weight(.semibold))
                         .symbolRenderingMode(.hierarchical)
-                        .foregroundStyle(.white)
+                        .onGlassPrimary()
                 }
             }
         }
@@ -415,7 +415,7 @@ private struct MakerLinkButton<Label: View>: View {
                     .font(.footnote.weight(.semibold))
                     .lineLimit(1)
                     .minimumScaleFactor(0.85)
-                    .foregroundStyle(.white)
+                    .onGlassPrimary()
             }
             .padding(.vertical, 14)
             .frame(maxWidth: .infinity)
@@ -439,7 +439,7 @@ private struct LinkBadgeLabel: View {
             .padding(.horizontal, 10)
             .padding(.vertical, 6)
             .background(tint.opacity(0.9), in: Capsule())
-            .foregroundStyle(.white)
+            .onGlassPrimary()
     }
 }
 #endif

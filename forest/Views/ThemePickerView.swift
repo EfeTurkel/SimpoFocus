@@ -31,6 +31,11 @@ struct ThemePickerView: View {
                             }
                         }
                         .padding(.vertical, 8)
+                        .background(
+                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                .fill(Color.clear)
+                        )
+                        .liquidGlass(.card, edgeMask: [.top, .bottom])
                     }
                 }
             }

@@ -30,7 +30,22 @@
 		<string>remote-notification</string>
 		<string>processing</string>
 	</array>
+	<key>CFBundleShortVersionString</key>
+	<string>1.1</string>
 	<key>UILaunchScreen</key>
 	<dict/>
+	<key>NSSupportsLiveActivities</key>
+	<true/>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>forest</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>forest</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

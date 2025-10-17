@@ -3,9 +3,23 @@ import Combine
 import UIKit
 import AudioToolbox
 import UserNotifications
+#if canImport(AlarmKit)
+import AlarmKit
+#endif
 #if canImport(AVFoundation)
 import AVFoundation
 #endif
+#if canImport(WidgetKit)
+import WidgetKit
+#endif
+
+// MARK: - Notification Names for Live Activity
+extension Notification.Name {
+    static let startTimer = Notification.Name("startTimer")
+    static let pauseTimer = Notification.Name("pauseTimer")
+    static let resumeTimer = Notification.Name("resumeTimer")
+    static let resetTimer = Notification.Name("resetTimer")
+}
 
 enum PomodoroPhase: String {
     case idle
@@ -58,7 +72,7 @@ final class PomodoroTimerService: ObservableObject {
     @Published private(set) var backgroundRefreshAvailable: Bool = true
     @Published var shouldPromptBackgroundRefresh: Bool = false
     @Published private(set) var sessionHistory: [FocusSession] = []
-    @Published var selectedCategory: FocusCategory = .untagged
+    @Published var selectedCategory: FocusCategory = .predefined(.untagged)
 
     // MARK: - Configuration
     @Published var focusDuration: Int = 25 * 60
@@ -151,7 +165,7 @@ final class PomodoroTimerService: ObservableObject {
         let focusDays: [Date]
         let lastGoalReset: Date?
         let sessionHistory: [FocusSession]
-        let selectedCategory: FocusCategory.RawValue
+        let selectedCategory: FocusCategory
 
         init(focusDuration: Int,
              shortBreakDuration: Int,
@@ -173,7 +187,7 @@ final class PomodoroTimerService: ObservableObject {
              focusDays: [Date],
              lastGoalReset: Date? = nil,
              sessionHistory: [FocusSession] = [],
-             selectedCategory: FocusCategory.RawValue = FocusCategory.untagged.rawValue) {
+             selectedCategory: FocusCategory = .predefined(.untagged)) {
             self.focusDuration = focusDuration
             self.shortBreakDuration = shortBreakDuration
             self.longBreakDuration = longBreakDuration
@@ -220,7 +234,7 @@ final class PomodoroTimerService: ObservableObject {
             focusDays = Set(snapshot.focusDays)
             lastGoalReset = snapshot.lastGoalReset ?? calendar.startOfDay(for: Date())
             sessionHistory = snapshot.sessionHistory
-            selectedCategory = FocusCategory(rawValue: snapshot.selectedCategory) ?? .untagged
+            selectedCategory = snapshot.selectedCategory
             remainingSeconds = focusDuration
         } else {
             lastGoalReset = calendar.startOfDay(for: Date())
@@ -240,6 +254,24 @@ final class PomodoroTimerService: ObservableObject {
         promptForBackgroundRefreshIfNeeded()
 
         setupLifecycleObservers()
+        setupNotificationObservers()
+        
+        // Initialize shared data for widget
+        print("App init - Initial phase: \(phase), remainingSeconds: \(remainingSeconds), isRunning: \(isRunning)")
+        updateSharedData()
+        
+        // Test reading back the data
+        let sharedDefaults = UserDefaults(suiteName: "group.com.efeturkel.simpoapp")
+        let testPhase = sharedDefaults?.string(forKey: "currentPhase")
+        let testRemaining = sharedDefaults?.integer(forKey: "remainingSeconds")
+        let testRunning = sharedDefaults?.bool(forKey: "isRunning")
+        print("App init - Test read back - Phase: \(testPhase ?? "nil"), Remaining: \(testRemaining ?? -1), Running: \(testRunning ?? false)")
+        
+        // Force widget reload
+        #if canImport(WidgetKit)
+        WidgetCenter.shared.reloadAllTimelines()
+        print("App init - Forced widget reload")
+        #endif
         #endif
     }
 
@@ -256,15 +288,69 @@ final class PomodoroTimerService: ObservableObject {
         timerCancellable?.cancel()
         timerCancellable = nil
         isRunning = false
+        
+        // Update shared data for widget
+        updateSharedData()
+        
 #if canImport(UIKit)
         cancelScheduledNotifications()
 #endif
+        if #available(iOS 16.1, *) {
+            let currentLanguage = LocalizationManager.shared.language.rawValue
+            let phaseName: String
+            switch phase {
+            case .idle: 
+                phaseName = currentLanguage == "tr" ? "Hazır" : 
+                           currentLanguage == "de" ? "Bereit" : "Ready"
+            case .focus: 
+                phaseName = currentLanguage == "tr" ? "Odak" : 
+                           currentLanguage == "de" ? "Fokus" : "Focus"
+            case .shortBreak: 
+                phaseName = currentLanguage == "tr" ? "Kısa Mola" : 
+                           currentLanguage == "de" ? "Kurze Pause" : "Short Break"
+            case .longBreak: 
+                phaseName = currentLanguage == "tr" ? "Uzun Mola" : 
+                           currentLanguage == "de" ? "Lange Pause" : "Long Break"
+            }
+            
+            LiveActivityService.shared.pause(phase: phaseName, remainingSeconds: remainingSeconds)
+        }
     }
 
     func resume() {
         guard !isRunning, remainingSeconds > 0 else { return }
         remainingSeconds = min(remainingSeconds, duration(for: phase))
         beginTicking()
+        
+        // Update shared data for widget
+        updateSharedData()
+        
+        // Resume Live Activity
+        if #available(iOS 16.1, *) {
+            let currentLanguage = LocalizationManager.shared.language.rawValue
+            let phaseName: String
+            switch phase {
+            case .idle: 
+                phaseName = currentLanguage == "tr" ? "Hazır" : 
+                           currentLanguage == "de" ? "Bereit" : "Ready"
+            case .focus: 
+                phaseName = currentLanguage == "tr" ? "Odak" : 
+                           currentLanguage == "de" ? "Fokus" : "Focus"
+            case .shortBreak: 
+                phaseName = currentLanguage == "tr" ? "Kısa Mola" : 
+                           currentLanguage == "de" ? "Kurze Pause" : "Short Break"
+            case .longBreak: 
+                phaseName = currentLanguage == "tr" ? "Uzun Mola" : 
+                           currentLanguage == "de" ? "Lange Pause" : "Long Break"
+            }
+            
+            LiveActivityService.shared.startOrUpdate(
+                phase: phaseName,
+                endDate: Date().addingTimeInterval(TimeInterval(remainingSeconds)),
+                isPaused: false,
+                remainingSeconds: remainingSeconds
+            )
+        }
     }
 
     func skipPhase() {
@@ -295,6 +381,9 @@ final class PomodoroTimerService: ObservableObject {
 #if canImport(UIKit)
         cancelScheduledNotifications()
 #endif
+        if #available(iOS 16.1, *) {
+            LiveActivityService.shared.end()
+        }
     }
 
     func adjustDurations(focus: Int? = nil, shortBreak: Int? = nil, longBreak: Int? = nil) {
@@ -328,12 +417,56 @@ final class PomodoroTimerService: ObservableObject {
         configureAudioSession()
         prepareTickPlayer(for: selectedTickSound)
 #endif
+        // Update shared data for widget
+        updateSharedData()
+        
+        // Live Activity
+        if #available(iOS 16.1, *) {
+            let currentLanguage = LocalizationManager.shared.language.rawValue
+            let phaseName = currentLanguage == "tr" ? "Odak" : 
+                           currentLanguage == "de" ? "Fokus" : "Focus"
+            LiveActivityService.shared.startOrUpdate(
+                phase: phaseName,
+                endDate: Date().addingTimeInterval(TimeInterval(remainingSeconds)),
+                isPaused: false,
+                remainingSeconds: remainingSeconds
+            )
+        }
+        // AlarmKit countdown sync
+        #if canImport(AlarmKit)
+        if #available(iOS 18.0, *) {
+            let end = Date().addingTimeInterval(TimeInterval(remainingSeconds))
+            let label = LocalizationManager.shared.translate("TIMER_PHASE_FOCUS")
+            AlarmService.shared.startOrUpdateCountdown(start: Date(), end: end, label: label)
+        }
+        #endif
     }
 
     private func startBreak(long: Bool) {
         phase = long ? .longBreak : .shortBreak
         remainingSeconds = duration(for: phase)
         beginTicking()
+        
+        // Update shared data for widget
+        updateSharedData()
+        
+        if #available(iOS 16.1, *) {
+            let end = Date().addingTimeInterval(TimeInterval(remainingSeconds))
+            let label = long ? LocalizationManager.shared.translate("TIMER_PHASE_LONG") : LocalizationManager.shared.translate("TIMER_PHASE_SHORT")
+            LiveActivityService.shared.startOrUpdate(
+                phase: label,
+                endDate: end,
+                isPaused: false,
+                remainingSeconds: remainingSeconds
+            )
+        }
+        #if canImport(AlarmKit)
+        if #available(iOS 18.0, *) {
+            let end = Date().addingTimeInterval(TimeInterval(remainingSeconds))
+            let label = long ? LocalizationManager.shared.translate("TIMER_PHASE_LONG") : LocalizationManager.shared.translate("TIMER_PHASE_SHORT")
+            AlarmService.shared.startOrUpdateCountdown(start: Date(), end: end, label: label)
+        }
+        #endif
     }
 
     private func beginTicking() {
@@ -354,11 +487,47 @@ final class PomodoroTimerService: ObservableObject {
     }
 
     private func tick() {
+        guard isRunning else { return }
         guard remainingSeconds > 0 else {
             finishPhase()
             return
         }
         remainingSeconds -= 1
+        
+        // Update shared data for widget
+        updateSharedData()
+        
+        // Update Live Activity with current remaining time
+        if #available(iOS 16.1, *) {
+            let currentLanguage = LocalizationManager.shared.language.rawValue
+            let phaseName: String
+            switch phase {
+            case .idle: 
+                phaseName = currentLanguage == "tr" ? "Hazır" : 
+                           currentLanguage == "de" ? "Bereit" : "Ready"
+            case .focus: 
+                phaseName = currentLanguage == "tr" ? "Odak" : 
+                           currentLanguage == "de" ? "Fokus" : "Focus"
+            case .shortBreak: 
+                phaseName = currentLanguage == "tr" ? "Kısa Mola" : 
+                           currentLanguage == "de" ? "Kurze Pause" : "Short Break"
+            case .longBreak: 
+                phaseName = currentLanguage == "tr" ? "Uzun Mola" : 
+                           currentLanguage == "de" ? "Lange Pause" : "Long Break"
+            }
+            
+            LiveActivityService.shared.startOrUpdate(
+                phase: phaseName,
+                endDate: Date().addingTimeInterval(TimeInterval(remainingSeconds)),
+                isPaused: false,
+                remainingSeconds: remainingSeconds
+            )
+        }
+#if canImport(AlarmKit)
+        if #available(iOS 18.0, *) {
+            // Optional: could update alarm label or progress if AlarmKit supports live updates.
+        }
+#endif
 #if canImport(AVFoundation)
         if tickingEnabled, isRunning {
             playTickSound(for: selectedTickSound)
@@ -414,6 +583,11 @@ final class PomodoroTimerService: ObservableObject {
             rewardPublisher.send(reward)
             playCompletionCue()
             schedulePhaseNotification(for: .focus)
+            scheduleAlarmIfAvailable(for: .focus)
+        if #available(iOS 16.1, *) {
+            let label = phase.displayName(using: LocalizationManager.shared)
+            LiveActivityService.shared.pause(phase: label, remainingSeconds: remainingSeconds)
+        }
 
             let shouldLongBreak = completedFocusSessions % sessionsBeforeLongBreak == 0
             if autoStartBreaks {
@@ -427,6 +601,10 @@ final class PomodoroTimerService: ObservableObject {
         case .shortBreak, .longBreak:
             playPhaseTransitionCue()
             schedulePhaseNotification(for: phase)
+            scheduleAlarmIfAvailable(for: phase)
+            if #available(iOS 16.1, *) {
+                LiveActivityService.shared.end()
+            }
             if autoStartBreaks {
             startFocusSession()
             } else {
@@ -455,6 +633,74 @@ final class PomodoroTimerService: ObservableObject {
 
         NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)
             .sink { [weak self] _ in self?.handleDidBecomeActive() }
+            .store(in: &cancellables)
+    }
+    
+    private func setupNotificationObservers() {
+        NotificationCenter.default.publisher(for: .startTimer)
+            .sink { [weak self] _ in
+                print("App - Received startTimer notification")
+                DispatchQueue.main.async {
+                    print("App - Calling start() method")
+                    self?.start()
+                }
+            }
+            .store(in: &cancellables)
+        
+        // Also listen for direct notification
+        NotificationCenter.default.addObserver(
+            forName: .startTimer,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            print("App - Direct notification received for startTimer")
+            self?.start()
+        }
+        
+        // Listen for app becoming active to sync with widget
+        NotificationCenter.default.addObserver(
+            forName: UIApplication.didBecomeActiveNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            print("App - Became active, syncing with widget")
+            self?.updateSharedData()
+        }
+        
+        // Listen for language changes to update widget
+        LocalizationManager.shared.$language
+            .sink { [weak self] _ in
+                print("App - Language changed, updating widget")
+                DispatchQueue.main.async {
+                    self?.updateSharedData()
+                }
+            }
+            .store(in: &cancellables)
+        
+        NotificationCenter.default.publisher(for: .pauseTimer)
+            .sink { [weak self] _ in
+                print("App - Received pauseTimer notification")
+                DispatchQueue.main.async {
+                    print("App - Calling pause() method")
+                    self?.pause()
+                }
+            }
+            .store(in: &cancellables)
+        
+        NotificationCenter.default.publisher(for: .resumeTimer)
+            .sink { [weak self] _ in
+                DispatchQueue.main.async {
+                    self?.resume()
+                }
+            }
+            .store(in: &cancellables)
+        
+        NotificationCenter.default.publisher(for: .resetTimer)
+            .sink { [weak self] _ in
+                DispatchQueue.main.async {
+                    self?.reset()
+                }
+            }
             .store(in: &cancellables)
     }
 
@@ -510,6 +756,53 @@ final class PomodoroTimerService: ObservableObject {
     private func sanitizeDuration(_ seconds: Int, minimumMinutes: Int = 1) -> Int {
         let minutes = max(seconds / 60, minimumMinutes)
         return minutes * 60
+    }
+    
+    private func updateSharedData() {
+        let sharedDefaults = UserDefaults(suiteName: "group.com.efeturkel.simpoapp")
+        
+        // Get current language from LocalizationManager
+        let currentLanguage = LocalizationManager.shared.language.rawValue
+        
+        // Use localized phase names for widget compatibility
+        let phaseName: String
+        switch phase {
+        case .idle: 
+            phaseName = currentLanguage == "tr" ? "Hazır" : 
+                       currentLanguage == "de" ? "Bereit" : "Ready"
+        case .focus: 
+            phaseName = currentLanguage == "tr" ? "Odak" : 
+                       currentLanguage == "de" ? "Fokus" : "Focus"
+        case .shortBreak: 
+            phaseName = currentLanguage == "tr" ? "Kısa Mola" : 
+                       currentLanguage == "de" ? "Kurze Pause" : "Short Break"
+        case .longBreak: 
+            phaseName = currentLanguage == "tr" ? "Uzun Mola" : 
+                       currentLanguage == "de" ? "Lange Pause" : "Long Break"
+        }
+        
+        print("App updateSharedData - Language: \(currentLanguage), Phase: \(phaseName), Remaining: \(remainingSeconds), Running: \(isRunning)")
+        
+        sharedDefaults?.set(phaseName, forKey: "currentPhase")
+        sharedDefaults?.set(remainingSeconds, forKey: "remainingSeconds")
+        sharedDefaults?.set(isRunning, forKey: "isRunning")
+        sharedDefaults?.set(currentLanguage, forKey: "app_language")
+        
+        // Force synchronization
+        sharedDefaults?.synchronize()
+        
+        // Verify the data was written
+        let savedPhase = sharedDefaults?.string(forKey: "currentPhase")
+        let savedRemaining = sharedDefaults?.integer(forKey: "remainingSeconds")
+        let savedRunning = sharedDefaults?.bool(forKey: "isRunning")
+        let savedLanguage = sharedDefaults?.string(forKey: "app_language")
+        print("App verify - Saved Phase: \(savedPhase ?? "nil"), Remaining: \(savedRemaining ?? -1), Running: \(savedRunning ?? false), Language: \(savedLanguage ?? "nil")")
+        
+        // Update widget timeline
+        #if canImport(WidgetKit)
+        WidgetCenter.shared.reloadTimelines(ofKind: "Simpofocuswidget")
+        print("App - Widget timeline reloaded")
+        #endif
     }
 
     private func playCompletionCue() {
@@ -581,7 +874,7 @@ final class PomodoroTimerService: ObservableObject {
                  focusDays: Array(focusDays),
                  lastGoalReset: lastGoalReset,
                  sessionHistory: sessionHistory,
-                 selectedCategory: selectedCategory.rawValue)
+                 selectedCategory: selectedCategory)
     }
     
     private func notifyCompletion() {
@@ -670,6 +963,37 @@ final class PomodoroTimerService: ObservableObject {
         pendingNotificationPhase = completedPhase
         pendingNotificationFireDate = fireDate
 #endif
+    }
+
+    // MARK: - AlarmKit (iOS 18+ placeholder integration)
+    private func scheduleAlarmIfAvailable(for completedPhase: PomodoroPhase) {
+        #if canImport(AlarmKit)
+        if #available(iOS 18.0, *) {
+            guard notificationsEnabled else { return }
+            let interval: TimeInterval
+            if let entered = backgroundEnteredAt, isRunning == false {
+                let elapsed = Date().timeIntervalSince(entered)
+                let remaining = max(Double(remainingSeconds) - elapsed, 0)
+                interval = max(remaining, 0.5)
+            } else {
+                interval = 0.1
+            }
+            let fireDate = Date().addingTimeInterval(interval)
+            let title: String
+            let body: String
+            switch completedPhase {
+            case .focus:
+                title = LocalizationManager.shared.translate("NOTIF_FOCUS_DONE_TITLE")
+                body = LocalizationManager.shared.translate("NOTIF_FOCUS_DONE_BODY")
+            case .shortBreak, .longBreak:
+                title = LocalizationManager.shared.translate("NOTIF_BREAK_DONE_TITLE")
+                body = LocalizationManager.shared.translate("NOTIF_BREAK_DONE_BODY")
+            case .idle:
+                return
+            }
+            AlarmService.shared.scheduleAlarm(id: UUID().uuidString, date: fireDate, title: title, body: body)
+        }
+        #endif
     }
 
     private func handleLanguageChange() {

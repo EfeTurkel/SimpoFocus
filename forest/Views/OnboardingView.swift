@@ -141,10 +141,11 @@ struct OnboardingView: View {
             }
         }
         .padding(10)
-        .background(.ultraThinMaterial, in: Capsule())
-        .overlay(
-            Capsule().stroke(.white.opacity(0.18), lineWidth: 1)
+        .background(
+            Capsule().fill(Color.clear)
         )
+        .liquidGlass(.header, edgeMask: [.all])
+        .clipShape(Capsule())
     }
 
     private var primaryButton: some View {
@@ -159,7 +160,7 @@ struct OnboardingView: View {
                                    endPoint: .bottomTrailing),
                     in: RoundedRectangle(cornerRadius: 18, style: .continuous)
                 )
-                .foregroundStyle(.black)
+                .onGlassPrimary()
                 .overlay(
                     RoundedRectangle(cornerRadius: 18, style: .continuous)
                         .stroke(.white.opacity(0.25), lineWidth: 1)
@@ -182,13 +183,11 @@ struct OnboardingView: View {
             .padding(.horizontal, 20)
             .background(
                 RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .fill(.ultraThinMaterial)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 18, style: .continuous)
-                            .stroke(.white.opacity(0.25), lineWidth: 1)
-                    )
+                    .fill(Color.clear)
             )
-            .foregroundStyle(.white)
+            .liquidGlass(.card, edgeMask: [.all])
+            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .onGlassPrimary()
             .shadow(color: .black.opacity(0.15), radius: 12, y: 6)
         }
     }
@@ -321,12 +320,10 @@ struct OnboardingView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(
                 RoundedRectangle(cornerRadius: 24, style: .continuous)
-                    .fill(.ultraThinMaterial)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 24, style: .continuous)
-                            .stroke(.white.opacity(0.18), lineWidth: 1)
-                    )
+                    .fill(Color.clear)
             )
+            .liquidGlass(.card, edgeMask: [.all])
+            .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
             .shadow(color: .black.opacity(0.18), radius: 24, y: 12)
         }
     }
@@ -340,7 +337,7 @@ struct OnboardingView: View {
                 Text(loc("ONBOARD_WELCOME_DESC"))
                     .font(.title3.weight(.semibold))
                     .multilineTextAlignment(.center)
-                    .foregroundStyle(.white.opacity(0.9))
+                    .onGlassPrimary()
                     .padding()
                     .background(
                         RoundedRectangle(cornerRadius: 22, style: .continuous)
