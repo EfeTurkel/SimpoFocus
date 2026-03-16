@@ -4,101 +4,67 @@ struct FocusView: View {
     @EnvironmentObject private var timer: PomodoroTimerService
     @EnvironmentObject private var market: MarketViewModel
     @EnvironmentObject private var localization: LocalizationManager
+    @EnvironmentObject private var entitlements: EntitlementManager
     @ObservedObject private var themeManager = ThemeManager.shared
     @Environment(\.colorScheme) var colorScheme
     @State private var showingSettings = false
     @State private var showingStats = false
     @State private var showingCategoryPicker = false
+    @State private var showingPaywall = false
+    @State private var showProNudge = false
+    @AppStorage("sessionsSinceLastProNudge") private var sessionsSinceNudge: Int = 0
 
     var body: some View {
-        VStack(spacing: 20) {
-            HStack {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text(loc("FOCUS_NOW"))
-                        .font(.footnote.weight(.medium))
-                        .onGlassSecondary()
-                    Text(timer.phase.displayName(using: localization))
-                        .font(.title.weight(.bold))
-                        .onGlassPrimary()
-                }
-
-                Spacer()
-
-                HStack(spacing: 12) {
-                    Button {
-                        showingStats.toggle()
-                    } label: {
-                        Image(systemName: "chart.bar.xaxis")
-                            .font(.title3.weight(.semibold))
-                            .onGlassPrimary()
-                            .padding(12)
-                            .background(
-                                Circle().fill(Color.clear)
-                            )
-                            .liquidGlass(.card, edgeMask: [.all])
-                            .clipShape(Circle())
-                    }
-
-                    Button {
-                        showingSettings.toggle()
-                    } label: {
-                        Image(systemName: "slider.horizontal.3")
-                            .font(.title3.weight(.semibold))
-                            .onGlassPrimary()
-                            .padding(12)
-                            .background(
-                                Circle().fill(Color.clear)
-                            )
-                            .liquidGlass(.card, edgeMask: [.all])
-                            .clipShape(Circle())
-                    }
-                }
-            }
-
-            let subtitleKey = timer.phase.isFocus ? "FOCUS_SUBTITLE_FOCUS" : "FOCUS_SUBTITLE_BREAK"
-            TimerCard(remainingSeconds: timer.remainingSeconds,
-                      subtitle: loc(subtitleKey))
+        VStack(spacing: 0) {
+            headerBar
+                .padding(.horizontal, DS.Padding.screen)
                 .padding(.top, 8)
-            
-            // Category selector (only show during focus)
+
+            Spacer(minLength: 16)
+
+            CircularTimerView(
+                progress: phaseProgress,
+                timeText: formattedTime(timer.remainingSeconds),
+                subtitle: timer.phase.displayName(using: localization),
+                isRunning: timer.isRunning
+            )
+            .padding(.horizontal, DS.Padding.xl)
+
             if timer.phase == .focus {
-                CategorySelector(
-                    selectedCategory: timer.selectedCategory,
-                    onTap: { showingCategoryPicker = true }
-                )
-                .environmentObject(localization)
+                categoryPill
+                    .padding(.top, DS.Padding.section)
+                    .transition(.opacity.combined(with: .move(edge: .top)))
             }
 
-            CompactSoundToggle(isOn: Binding(get: { timer.tickingEnabled }, set: { timer.tickingEnabled = $0 }),
-                               title: loc("SOUND_TITLE"),
-                               onText: loc("STATE_ON"),
-                               offText: loc("STATE_OFF"))
+            Spacer(minLength: DS.Padding.section)
 
-#if canImport(UIKit)
-            if timer.shouldPromptBackgroundRefresh {
-                BackgroundRefreshPrompt()
-                    .environmentObject(timer)
-                    .environmentObject(localization)
+            controlButtons
+                .padding(.horizontal, DS.Padding.screen + DS.Padding.card)
+
+            if showProNudge {
+                proSessionNudge
+                    .padding(.top, 12)
+                    .transition(.asymmetric(
+                        insertion: .move(edge: .bottom).combined(with: .opacity),
+                        removal: .opacity
+                    ))
             }
-#endif
 
-            ControlStack(timer: timer)
+            Spacer(minLength: DS.Padding.section)
 
-            ProgressSection(streak: timer.streak,
-                            completed: timer.completedFocusSessions,
-                            phase: timer.phase,
-                            timer: timer,
-                            dailyTarget: market.dailyTarget)
+            dailyProgressBar
+                .padding(.horizontal, DS.Padding.screen)
 
-            Spacer(minLength: 12)
+            statsRow
+                .padding(.horizontal, DS.Padding.screen)
+                .padding(.top, DS.Padding.element)
+
+            Spacer(minLength: DS.Padding.section)
         }
-        .padding(.horizontal, 24)
-        .padding(.top, 8)
-        // Align bottom spacing with other tabs; root adds shared bottom padding
-        .padding(.bottom, 0)
-        .sheet(isPresented: $showingSettings) {
-            TimerSettingsView()
-        }
+        .animation(DS.Animation.defaultSpring, value: timer.phase)
+        .animation(.easeInOut(duration: 0.3), value: showProNudge)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .sheet(isPresented: $showingSettings) { TimerSettingsView() }
         .sheet(isPresented: $showingStats) {
             YearlyAnalyticsView()
                 .environmentObject(timer)
@@ -108,262 +74,201 @@ struct FocusView: View {
             CategoryPickerSheet(selectedCategory: $timer.selectedCategory)
                 .environmentObject(localization)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-    }
-}
-
-private extension FocusView {
-    func loc(_ key: String, fallback: String? = nil, arguments: CVarArg... ) -> String {
-        localization.translate(key, fallback: fallback, arguments: arguments)
-    }
-}
-
-#if canImport(UIKit)
-private struct BackgroundRefreshPrompt: View {
-    @EnvironmentObject private var timer: PomodoroTimerService
-    @EnvironmentObject private var localization: LocalizationManager
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 10) {
-                Image(systemName: "exclamationmark.triangle.fill")
-                    .foregroundStyle(Color("LakeBlue"))
-                    .font(.title3)
-                Text(loc("FOCUS_BACKGROUND_REFRESH_TITLE"))
-                    .font(.subheadline.weight(.semibold))
-                .onGlassPrimary()
-                Spacer()
-            }
-
-            Text(loc("FOCUS_BACKGROUND_REFRESH_MESSAGE"))
-                .font(.footnote)
-                .onGlassSecondary()
-
-            Button {
-                openSettings()
-                timer.acknowledgeBackgroundRefreshPrompt()
-            } label: {
-                Text(loc("FOCUS_BACKGROUND_REFRESH_BUTTON"))
-                    .font(.footnote.weight(.semibold))
-                            .onGlassPrimary()
-                    .padding(.vertical, 10)
-                    .frame(maxWidth: .infinity)
-                    .background(Color("LakeBlue"), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .sheet(isPresented: $showingPaywall) { PaywallView() }
+        .onChange(of: timer.completedFocusSessions) { _, _ in
+            guard !entitlements.isPro else { return }
+            sessionsSinceNudge += 1
+            if sessionsSinceNudge >= 3 {
+                sessionsSinceNudge = 0
+                withAnimation { showProNudge = true }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
+                    withAnimation { showProNudge = false }
+                }
             }
         }
-        .padding(16)
-        .background(.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .stroke(Color("LakeBlue").opacity(0.4), lineWidth: 1)
-        )
     }
 
-    private func loc(_ key: String, _ arguments: CVarArg...) -> String {
-        localization.translate(key, arguments: arguments)
-    }
+    // MARK: - Header
 
-    private func openSettings() {
-        guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
-        UIApplication.shared.open(url, options: [:], completionHandler: nil)
-    }
-}
-#endif
-
-private struct TimerCard: View {
-    let remainingSeconds: Int
-    let subtitle: String
-    @ObservedObject private var themeManager = ThemeManager.shared
-    @Environment(\.colorScheme) var colorScheme
-
-    var body: some View {
-        VStack(spacing: 18) {
-            Text(formattedTime(remainingSeconds))
-                .font(.system(size: 64, weight: .heavy, design: .rounded))
-                .monospacedDigit()
-                .onGlassPrimary()
-                .shadow(radius: 12)
-
-            Text(subtitle)
-                .font(.footnote.weight(.medium))
-                .onGlassSecondary()
-        }
-        .padding(.vertical, 36)
-        .frame(maxWidth: .infinity)
-        .background(
-            RoundedRectangle(cornerRadius: 32, style: .continuous)
-                .fill(.clear)
-        )
-        .liquidGlass(.card, edgeMask: [.all])
-        .clipShape(RoundedRectangle(cornerRadius: 32, style: .continuous))
-    }
-
-    private func formattedTime(_ seconds: Int) -> String {
-        guard seconds > 0 else { return "00:00" }
-        let minutes = seconds / 60
-        let remainingSeconds = seconds % 60
-        return String(format: "%02d:%02d", minutes, remainingSeconds)
-    }
-}
-
-private struct CompactSoundToggle: View {
-    @Binding var isOn: Bool
-    let title: String
-    let onText: String
-    let offText: String
-    @ObservedObject private var themeManager = ThemeManager.shared
-    @Environment(\.colorScheme) var colorScheme
-
-    var body: some View {
-        HStack(spacing: 12) {
-            Image(systemName: isOn ? "speaker.wave.2.fill" : "speaker.slash.fill")
-                .font(.title3.weight(.semibold))
-                .onGlassPrimary()
-                .frame(width: 48, height: 48)
-                .background(
-                    RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        .fill(Color.clear)
-                )
-                .liquidGlass(.card, edgeMask: [.all])
-                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-
+    private var headerBar: some View {
+        HStack {
             VStack(alignment: .leading, spacing: 2) {
-                Text(title)
-                    .font(.subheadline.weight(.semibold))
-                    .onGlassPrimary()
-                Text(isOn ? onText : offText)
-                    .font(.caption)
+                Text(loc("FOCUS_NOW"))
+                    .font(DS.Typography.caption)
                     .onGlassSecondary()
+                Text(timer.phase.displayName(using: localization))
+                    .font(DS.Typography.sectionTitle)
+                    .onGlassPrimary()
             }
 
             Spacer()
 
-            Toggle("", isOn: $isOn)
-                .labelsHidden()
-                .tint(Color("ForestGreen"))
-                .frame(width: 50, height: 30)
-                .background(
-                    RoundedRectangle(cornerRadius: 15, style: .continuous)
-                        .fill(Color.clear)
-                )
-                .liquidGlass(.card, edgeMask: [.all])
-                .clipShape(RoundedRectangle(cornerRadius: 15, style: .continuous))
-        }
-        .padding(.horizontal, 18)
-        .padding(.vertical, 14)
-        .background(
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .fill(Color.clear)
-        )
-        .liquidGlass(.card, edgeMask: [.all])
-        .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
-    }
-}
-
-private struct ControlStack: View {
-    @ObservedObject var timer: PomodoroTimerService
-    @EnvironmentObject private var localization: LocalizationManager
-
-    var body: some View {
-        HStack(spacing: 12) {
-            ControlButton(title: loc(timer.isRunning ? "CONTROL_PAUSE" : "CONTROL_START"), icon: timer.isRunning ? "pause.fill" : "play.fill", style: .primary) {
-                timer.isRunning ? timer.pause() : timer.start()
-            }
-
-            ControlButton(title: loc("CONTROL_SKIP"), icon: "forward.end.fill", style: .secondary) {
-                timer.skipPhase()
-            }
-
-            ControlButton(title: loc("CONTROL_RESET"), icon: "arrow.counterclockwise", style: .tertiary) {
-                timer.reset()
+            HStack(spacing: 10) {
+                if !entitlements.isPro {
+                    Button { showingPaywall = true } label: {
+                        Image(systemName: "crown.fill")
+                            .font(.body.weight(.medium))
+                            .foregroundStyle(.orange)
+                            .frame(width: 40, height: 40)
+                    }
+                }
+                Button { showingStats.toggle() } label: {
+                    Image(systemName: "chart.bar.xaxis")
+                        .font(.body.weight(.medium))
+                        .onGlassSecondary()
+                        .frame(width: 40, height: 40)
+                }
+                Button { showingSettings.toggle() } label: {
+                    Image(systemName: "gearshape")
+                        .font(.body.weight(.medium))
+                        .onGlassSecondary()
+                        .frame(width: 40, height: 40)
+                }
             }
         }
     }
 
-    private func loc(_ key: String, _ args: CVarArg...) -> String {
-        localization.translate(key, fallback: key, arguments: args)
-    }
-}
+    // MARK: - Category Pill
 
-private struct ControlButton: View {
-    enum Style {
-        case primary
-        case secondary
-        case tertiary
-    }
-
-    let title: String
-    let icon: String
-    let style: Style
-    let action: () -> Void
-    @ObservedObject private var themeManager = ThemeManager.shared
-    @Environment(\.colorScheme) var colorScheme
-
-    var body: some View {
-        Button(action: action) {
-            HStack(spacing: 12) {
-                Image(systemName: icon)
-                    .font(.callout.weight(.semibold))
-                Text(title)
-                    .font(.subheadline.weight(.semibold))
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.75)
+    private var categoryPill: some View {
+        Button { showingCategoryPicker = true } label: {
+            HStack(spacing: 8) {
+                Image(systemName: timer.selectedCategory.icon)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(timer.selectedCategory.color)
+                Text(timer.selectedCategory.displayName)
+                    .font(DS.Typography.caption)
+                    .onGlassPrimary()
+                Image(systemName: "chevron.right")
+                    .font(.caption2.weight(.semibold))
+                    .onGlassSecondary()
             }
-            .foregroundStyle(textColor)
-            .padding(.vertical, 16)
-            .frame(maxWidth: .infinity)
+            .padding(.horizontal, DS.Padding.section)
+            .padding(.vertical, 8)
             .background(
-                RoundedRectangle(cornerRadius: 20, style: .continuous)
-                    .fill(Color.clear)
+                Capsule().fill(timer.selectedCategory.color.opacity(0.1))
             )
-            .liquidGlass(.card, edgeMask: [.all])
-            .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
         }
+        .buttonStyle(.plain)
     }
 
-    private var textColor: Color {
-        switch style {
-        case .primary:
-            return themeManager.currentTheme.glassPrimaryText(for: colorScheme)
-        case .secondary, .tertiary:
-            return themeManager.currentTheme.glassPrimaryText(for: colorScheme)
-        }
-    }
+    // MARK: - Controls
 
-}
-
-private struct ProgressSection: View {
-    let streak: Int
-    let completed: Int
-    let phase: PomodoroPhase
-    @ObservedObject var timer: PomodoroTimerService
-    let dailyTarget: Int
-    @EnvironmentObject private var localization: LocalizationManager
-    @ObservedObject private var themeManager = ThemeManager.shared
-    @Environment(\.colorScheme) var colorScheme
-
-    var body: some View {
-        VStack(spacing: 20) {
-            GoalProgressView(phase: phase,
-                              timer: timer)
-
-            HStack(spacing: 16) {
-                StatCard(titleKey: "STAT_STREAK", value: loc("STAT_STREAK_VALUE", fallback: "x%d", arguments: streak), icon: "flame.fill")
-                StatCard(titleKey: "STAT_SESSIONS", value: "\(completed)", icon: "leaf.fill")
-                StatCard(titleKey: "STAT_PHASE", value: phaseDisplayName, icon: phaseIcon)
+    private var controlButtons: some View {
+        HStack(spacing: DS.Padding.card) {
+            Button {
+                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                timer.reset()
+            } label: {
+                Image(systemName: "arrow.counterclockwise")
+                    .font(.title3.weight(.medium))
+                    .onGlassSecondary()
             }
+            .buttonStyle(CircleButtonStyle(size: 52))
+
+            Button {
+                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                timer.isRunning ? timer.pause() : timer.start()
+            } label: {
+                Image(systemName: timer.isRunning ? "pause.fill" : "play.fill")
+                    .font(.title2.weight(.semibold))
+                    .foregroundStyle(.white)
+                    .contentTransition(.symbolEffect(.replace))
+            }
+            .buttonStyle(CircleButtonStyle(size: 72, filled: true))
+
+            Button {
+                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                timer.skipPhase()
+            } label: {
+                Image(systemName: "forward.end.fill")
+                    .font(.title3.weight(.medium))
+                    .onGlassSecondary()
+            }
+            .buttonStyle(CircleButtonStyle(size: 52))
         }
-        .padding(24)
+    }
+
+    // MARK: - Progress
+
+    private var dailyProgressBar: some View {
+        let target = market.dailyTarget
+        let progress = target > 0 ? min(Double(timer.completedFocusSessions) / Double(target), 1) : 0
+
+        return VStack(spacing: 6) {
+            HStack {
+                Text(loc("FOCUS_PHASE_PROGRESS"))
+                    .font(DS.Typography.micro)
+                    .onGlassSecondary()
+                Spacer()
+                Text("\(timer.completedFocusSessions)/\(target)")
+                    .font(DS.Typography.caption)
+                    .onGlassPrimary()
+            }
+
+            GeometryReader { geo in
+                ZStack(alignment: .leading) {
+                    Capsule()
+                        .fill(Color("ForestGreen").opacity(0.12))
+                    Capsule()
+                        .fill(Color("ForestGreen"))
+                        .frame(width: max(geo.size.width * progress, 6))
+                        .animation(DS.Animation.defaultSpring, value: progress)
+                }
+            }
+            .frame(height: 6)
+        }
+    }
+
+    // MARK: - Stats Row
+
+    private var statsRow: some View {
+        HStack(spacing: 0) {
+            statCell(icon: "flame.fill", value: "x\(timer.streak)", label: loc("STAT_STREAK"))
+            statCell(icon: "leaf.fill", value: "\(timer.completedFocusSessions)", label: loc("STAT_SESSIONS"))
+            statCell(icon: phaseIcon, value: phaseShort, label: loc("STAT_PHASE"))
+        }
+        .padding(.vertical, DS.Padding.element)
+        .padding(.horizontal, DS.Padding.section)
         .background(
-            RoundedRectangle(cornerRadius: 32, style: .continuous)
-                .fill(Color.clear)
+            RoundedRectangle(cornerRadius: DS.Radius.medium, style: .continuous)
+                .fill(.clear)
         )
-        .liquidGlass(.card, edgeMask: [.all])
-        .clipShape(RoundedRectangle(cornerRadius: 32, style: .continuous))
+        .liquidGlass(.card, edgeMask: [.top])
+        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.medium, style: .continuous))
+    }
+
+    private func statCell(icon: String, value: String, label: String) -> some View {
+        VStack(spacing: 2) {
+            Image(systemName: icon)
+                .font(DS.Typography.micro)
+                .onGlassSecondary()
+            Text(value)
+                .font(DS.Typography.caption)
+                .onGlassPrimary()
+            Text(label)
+                .font(DS.Typography.micro)
+                .onGlassSecondary()
+        }
+        .frame(maxWidth: .infinity)
+    }
+
+    // MARK: - Helpers
+
+    private var phaseProgress: Double {
+        let total: Double
+        switch timer.phase {
+        case .focus: total = Double(timer.focusDuration)
+        case .shortBreak: total = Double(timer.shortBreakDuration)
+        case .longBreak: total = Double(timer.longBreakDuration)
+        case .idle: return 0
+        }
+        guard total > 0 else { return 0 }
+        return min(max(1.0 - Double(timer.remainingSeconds) / total, 0), 1)
     }
 
     private var phaseIcon: String {
-        switch phase {
+        switch timer.phase {
         case .focus: return "timer"
         case .shortBreak: return "sun.max.fill"
         case .longBreak: return "moon.zzz"
@@ -371,8 +276,8 @@ private struct ProgressSection: View {
         }
     }
 
-    private var phaseDisplayName: String {
-        switch phase {
+    private var phaseShort: String {
+        switch timer.phase {
         case .focus: return loc("PHASE_FOCUS_LABEL")
         case .shortBreak: return loc("PHASE_SHORT_LABEL")
         case .longBreak: return loc("PHASE_LONG_LABEL")
@@ -380,23 +285,38 @@ private struct ProgressSection: View {
         }
     }
 
-    private func progressValue() -> Double {
-        let total: Double
-        switch phase {
-        case .focus:
-            total = Double(timer.focusDuration)
-        case .shortBreak:
-            total = Double(timer.shortBreakDuration)
-        case .longBreak:
-            total = Double(timer.longBreakDuration)
-        case .idle:
-            return 0
+    private func formattedTime(_ seconds: Int) -> String {
+        guard seconds > 0 else { return "00:00" }
+        return String(format: "%02d:%02d", seconds / 60, seconds % 60)
+    }
+
+    // MARK: - Pro Session Nudge
+
+    private var proSessionNudge: some View {
+        Button { showingPaywall = true } label: {
+            HStack(spacing: 8) {
+                Image(systemName: "crown.fill")
+                    .font(.system(size: 14))
+                    .foregroundStyle(.yellow)
+                Text(loc("PRO_SESSION_NUDGE", fallback: "Earn 2x coins with Pro"))
+                    .font(.system(size: 13, weight: .medium, design: .rounded))
+                    .onGlassPrimary()
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 10, weight: .semibold))
+                    .onGlassSecondary()
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+            .background(
+                Capsule(style: .continuous)
+                    .fill(themeManager.currentTheme.getCardBackground(for: colorScheme))
+                    .overlay(
+                        Capsule(style: .continuous)
+                            .strokeBorder(Color("ForestGreen").opacity(0.2), lineWidth: 1)
+                    )
+            )
         }
-        guard total > 0 else { return 0 }
-        let remaining = Double(timer.remainingSeconds)
-        let clampedRemaining = min(max(remaining, 0), total)
-        let progress = 1 - (clampedRemaining / total)
-        return min(max(progress, 0), 1)
+        .buttonStyle(.plain)
     }
 
     private func loc(_ key: String, fallback: String? = nil, arguments: CVarArg...) -> String {
@@ -404,190 +324,67 @@ private struct ProgressSection: View {
     }
 }
 
-private struct GoalProgressView: View {
-    let phase: PomodoroPhase
-    @ObservedObject var timer: PomodoroTimerService
-    @EnvironmentObject private var market: MarketViewModel
-    @EnvironmentObject private var localization: LocalizationManager
-    @ObservedObject private var themeManager = ThemeManager.shared
-    @Environment(\.colorScheme) var colorScheme
+// MARK: - Circular Timer View
 
-    private var normalizedProgress: Double {
-        let target = market.dailyTarget
-        guard target > 0 else { return 0 }
-        return min(Double(timer.completedFocusSessions) / Double(target), 1)
-    }
+private struct CircularTimerView: View {
+    let progress: Double
+    let timeText: String
+    let subtitle: String
+    let isRunning: Bool
+    @State private var breatheScale: CGFloat = 1.0
 
-    private var phaseCompletion: Double {
-        let totalSeconds: Double
-        switch phase {
-        case .focus:
-            totalSeconds = Double(timer.focusDuration)
-        case .shortBreak:
-            totalSeconds = Double(timer.shortBreakDuration)
-        case .longBreak:
-            totalSeconds = Double(timer.longBreakDuration)
-        case .idle:
-            totalSeconds = 0
-        }
-        guard totalSeconds > 0 else { return 0 }
-        let elapsed = totalSeconds - Double(timer.remainingSeconds)
-        return min(max(elapsed / totalSeconds, 0), 1)
-    }
-
-    private var phasePercentText: String {
-        String(format: "%%%.0f", phaseCompletion * 100)
-    }
-
-    private var goalStatus: String {
-        String(format: loc("STATS_GOAL_VALUE"), timer.completedFocusSessions, market.dailyTarget)
-    }
+    private let ringSize: CGFloat = 220
+    private let strokeWidth: CGFloat = 10
 
     var body: some View {
-        VStack(spacing: 16) {
-            HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(loc("FOCUS_PHASE_PROGRESS"))
-                        .font(.caption.weight(.medium))
-                        .onGlassSecondary()
-                    Text(phasePercentText)
-                        .font(.title2.weight(.bold))
-                        .onGlassPrimary()
-                }
-                Spacer()
-                VStack(alignment: .trailing, spacing: 4) {
-                    Text(loc("HOME_STATS_TITLE"))
-                        .font(.caption.weight(.medium))
-                        .onGlassSecondary()
-                    Text(goalStatus)
-                        .font(.headline.weight(.semibold))
-                        .onGlassPrimary()
-                }
-            }
+        ZStack {
+            Circle()
+                .stroke(Color("ForestGreen").opacity(0.1), lineWidth: strokeWidth)
+                .frame(width: ringSize, height: ringSize)
 
-            ZStack(alignment: .leading) {
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .fill(Color.clear)
-                    .liquidGlass(.card, edgeMask: [.all])
-                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-                    .frame(height: 20)
-
-                GeometryReader { geometry in
-                    let width = geometry.size.width * normalizedProgress
-                    RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        .fill(LinearGradient(colors: [Color("ForestGreen"), Color("LakeBlue")], startPoint: .leading, endPoint: .trailing))
-                        .frame(width: max(width, 8), height: 20)
-                }
-                .frame(height: 20)
-            }
-        }
-        .padding(20)
-        .background(
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .fill(Color.clear)
-        )
-        .liquidGlass(.card, edgeMask: [.all])
-        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
-    }
-
-    private func loc(_ key: String) -> String {
-        localization.translate(key, fallback: key)
-    }
-}
-
-private struct StatCard: View {
-    let titleKey: String
-    let value: String
-    let icon: String
-    @EnvironmentObject private var localization: LocalizationManager
-    @ObservedObject private var themeManager = ThemeManager.shared
-    @Environment(\.colorScheme) var colorScheme
-
-    var body: some View {
-        VStack(spacing: 8) {
-            Image(systemName: icon)
-                .font(.title3.weight(.semibold))
-                .onGlassPrimary()
-                .padding(12)
-                .background(
-                    RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        .fill(Color.clear)
+            Circle()
+                .trim(from: 0, to: progress)
+                .stroke(
+                    Color("ForestGreen"),
+                    style: StrokeStyle(lineWidth: strokeWidth, lineCap: .round)
                 )
-                .liquidGlass(.card, edgeMask: [.all])
-                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-            
+                .frame(width: ringSize, height: ringSize)
+                .rotationEffect(.degrees(-90))
+                .animation(DS.Animation.defaultSpring, value: progress)
+
             VStack(spacing: 4) {
-                Text(value)
-                    .font(.headline.weight(.bold))
+                Text(timeText)
+                    .font(DS.Typography.heroTimer)
+                    .monospacedDigit()
+                    .contentTransition(.numericText())
+                    .animation(DS.Animation.quickSpring, value: timeText)
                     .onGlassPrimary()
-                Text(loc(titleKey))
-                    .font(.caption)
+
+                Text(subtitle)
+                    .font(DS.Typography.caption)
                     .onGlassSecondary()
             }
         }
-        .frame(maxWidth: .infinity)
-        .padding(16)
-        .background(
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .fill(Color.clear)
-        )
-        .liquidGlass(.card, edgeMask: [.all])
-        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
-    }
-
-    private func loc(_ key: String) -> String {
-        localization.translate(key, fallback: key)
-    }
-}
-
-private struct CategorySelector: View {
-    let selectedCategory: FocusCategory
-    let onTap: () -> Void
-    @EnvironmentObject private var localization: LocalizationManager
-    @ObservedObject private var themeManager = ThemeManager.shared
-    @Environment(\.colorScheme) var colorScheme
-    
-    var body: some View {
-        Button(action: onTap) {
-            HStack(spacing: 12) {
-                Image(systemName: selectedCategory.icon)
-                    .font(.title3)
-                    .foregroundStyle(selectedCategory.color)
-                    .frame(width: 44, height: 44)
-                    .background(
-                        RoundedRectangle(cornerRadius: 14, style: .continuous)
-                            .fill(selectedCategory.color.opacity(0.2))
-                    )
-                
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(loc("CATEGORY_TITLE"))
-                        .font(.caption)
-                        .onGlassSecondary()
-                    Text(selectedCategory.displayName)
-                        .font(.subheadline.weight(.semibold))
-                        .onGlassPrimary()
+        .scaleEffect(breatheScale)
+        .onChange(of: isRunning) { _, running in
+            if running {
+                withAnimation(DS.Animation.breathing) {
+                    breatheScale = 1.02
                 }
-                
-                Spacer()
-                
-                Image(systemName: "chevron.right")
-                    .font(.caption.weight(.semibold))
-                    .onGlassSecondary()
+            } else {
+                withAnimation(DS.Animation.quickSpring) {
+                    breatheScale = 1.0
+                }
             }
-            .padding(.horizontal, 18)
-            .padding(.vertical, 14)
-            .liquidGlass(.card, edgeMask: .all)
-            .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 22, style: .continuous)
-                    .stroke(themeManager.currentTheme.getCardStroke(for: colorScheme), lineWidth: 1)
-            )
         }
-        .buttonStyle(.plain)
-    }
-    
-    private func loc(_ key: String) -> String {
-        localization.translate(key, fallback: key)
+        .onAppear {
+            if isRunning {
+                withAnimation(DS.Animation.breathing) {
+                    breatheScale = 1.02
+                }
+            }
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(timeText) remaining, \(subtitle)")
     }
 }
-

@@ -5,15 +5,23 @@ struct RoomView: View {
     @EnvironmentObject private var wallet: WalletViewModel
     @EnvironmentObject private var localization: LocalizationManager
     @State private var showingThemePicker = false
+    @State private var appeared = false
 
     var body: some View {
         ScrollView {
-            VStack(spacing: 24) {
+            VStack(spacing: DS.Padding.card) {
                 header
+                    .opacity(appeared ? 1 : 0)
+                    .offset(y: appeared ? 0 : 12)
                 currentThemePreview
+                    .opacity(appeared ? 1 : 0)
+                    .offset(y: appeared ? 0 : 20)
                 themeActions
+                    .opacity(appeared ? 1 : 0)
+                    .offset(y: appeared ? 0 : 28)
             }
-            .padding(24)
+            .padding(.horizontal, DS.Padding.screen)
+            .padding(.vertical, DS.Padding.card)
         }
         .scrollIndicators(.never)
         .background(room.currentTheme.background.ignoresSafeArea())
@@ -21,89 +29,86 @@ struct RoomView: View {
             ThemePickerView()
                 .environmentObject(room)
         }
+        .onAppear {
+            withAnimation(DS.Animation.defaultSpring.delay(0.1)) {
+                appeared = true
+            }
+        }
     }
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Ev Temaları")
-                .font(.title2.weight(.semibold))
-                .foregroundStyle(.white)
+        GlassSection(cornerRadius: DS.Radius.xl) {
+            VStack(alignment: .leading, spacing: DS.Padding.element) {
+                Text(loc("ROOM_HEADER_TITLE"))
+                    .font(.title2.weight(.semibold))
+                    .onGlassPrimary()
 
-            Text("Temaları keşfet, yeni atmosferler aç ve odanı motivasyonuna göre şekillendir.")
-                .font(.callout)
-                .foregroundStyle(.white.opacity(0.75))
+                Text(loc("ROOM_HEADER_DESC"))
+                    .font(.callout)
+                    .onGlassSecondary()
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(24)
-        .background(.black.opacity(0.22), in: RoundedRectangle(cornerRadius: 32, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 32, style: .continuous)
-                .stroke(.white.opacity(0.12), lineWidth: 1)
-        )
     }
 
     private var currentThemePreview: some View {
-        VStack(spacing: 18) {
-            HStack(alignment: .top, spacing: 16) {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("AKTİF TEMA")
-                        .font(.caption2.weight(.medium))
-                        .foregroundStyle(.white.opacity(0.55))
-                        .textCase(.uppercase)
+        GlassSection(cornerRadius: DS.Radius.xl) {
+            VStack(spacing: DS.Padding.section) {
+                HStack(alignment: .top, spacing: DS.Padding.section) {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text(loc("ROOM_ACTIVE_THEME"))
+                            .font(.caption2.weight(.medium))
+                            .onGlassSecondary()
+                            .textCase(.uppercase)
 
-                    Text(room.currentTheme.name)
-                        .font(.headline.weight(.semibold))
-                        .foregroundStyle(.white)
+                        Text(room.currentTheme.name)
+                            .font(.headline.weight(.semibold))
+                            .onGlassPrimary()
 
-                    Text("Temanın odaklanmana etkisi: +%\(min(Int(wallet.passiveIncomeBoost * 100), 100))")
-                        .font(.caption)
-                        .foregroundStyle(.white.opacity(0.65))
+                        Text(loc("ROOM_THEME_EFFECT", min(Int(wallet.passiveIncomeBoost * 100), 100)))
+                            .font(.caption)
+                            .onGlassSecondary()
+                    }
+
+                    Spacer()
+
+                    Image(systemName: "paintbrush.pointed.fill")
+                        .font(.title2)
+                        .onGlassPrimary()
                 }
 
-                Spacer()
-
-                Image(systemName: "paintbrush.pointed.fill")
-                    .font(.title2)
-                    .foregroundStyle(.white)
-                    .padding(12)
-                    .background(.white.opacity(0.12), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-            }
-
-            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 16) {
-                ForEach(room.currentTheme.assets) { asset in
-                    themeAssetCard(asset)
+                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: DS.Padding.section) {
+                    ForEach(room.currentTheme.assets) { asset in
+                        themeAssetCard(asset)
+                    }
                 }
             }
         }
-        .padding(22)
-        .background(.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 32, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 32, style: .continuous)
-                .stroke(.white.opacity(0.12), lineWidth: 1)
-        )
     }
 
     private func themeAssetCard(_ asset: RoomAsset) -> some View {
         VStack(spacing: 8) {
             Image(systemName: asset.iconName)
                 .font(.title2)
-                .foregroundStyle(.white)
+                .onGlassPrimary()
                 .frame(width: 54, height: 54)
-                .background(.white.opacity(0.18), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
 
             Text(localizedName(for: asset))
                 .font(.subheadline.weight(.semibold))
-                .foregroundStyle(.white)
+                .onGlassPrimary()
                 .multilineTextAlignment(.center)
                 .lineLimit(2)
 
             Text(localizedDescription(for: asset))
                 .font(.caption)
-                .foregroundStyle(.white.opacity(0.65))
+                .onGlassSecondary()
                 .multilineTextAlignment(.center)
         }
-        .padding(14)
-        .background(.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .padding(DS.Padding.section)
+    }
+
+    private func loc(_ key: String, _ arguments: CVarArg...) -> String {
+        localization.translate(key, fallback: key, arguments: arguments)
     }
 
     private func localizedName(for asset: RoomAsset) -> String {
@@ -115,31 +120,20 @@ struct RoomView: View {
     }
 
     private var themeActions: some View {
-        VStack(spacing: 18) {
-            Button {
-                showingThemePicker = true
-            } label: {
-                Label("Tema Seç", systemImage: "sparkles")
-                    .font(.headline.weight(.semibold))
-                    .foregroundStyle(.black)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 16)
-                    .background(
-                        LinearGradient(colors: [Color("ForestGreen"), Color("LakeBlue")], startPoint: .topLeading, endPoint: .bottomTrailing),
-                        in: RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    )
-            }
+        GlassSection(cornerRadius: DS.Radius.large) {
+            VStack(spacing: DS.Padding.section) {
+                Button {
+                    showingThemePicker = true
+                } label: {
+                    Label(loc("ROOM_CHOOSE_THEME"), systemImage: "sparkles")
+                }
+                .buttonStyle(PrimaryCTAStyle())
 
-            Text("Yeni temalar açtıkça ev sekmesinde dekorasyon seçeneklerin artar.")
-                .font(.footnote)
-                .foregroundStyle(.white.opacity(0.7))
-                .multilineTextAlignment(.center)
+                Text(loc("ROOM_UNLOCK_HINT"))
+                    .font(.footnote)
+                    .onGlassSecondary()
+                    .multilineTextAlignment(.center)
+            }
         }
-        .padding(20)
-        .background(.black.opacity(0.18), in: RoundedRectangle(cornerRadius: 28, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .stroke(.white.opacity(0.1), lineWidth: 1)
-        )
     }
-} 
+}

@@ -7,6 +7,8 @@ struct BuyCoinSheet: View {
     @Binding var amount: Double
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var localization: LocalizationManager
+    @ObservedObject private var themeManager = ThemeManager.shared
+    @Environment(\.colorScheme) var colorScheme
     @State private var errorMessage: String?
     @State private var selectedQuickAmount: Double?
     @State private var showConfetti = false
@@ -17,34 +19,42 @@ struct BuyCoinSheet: View {
 
     var body: some View {
         NavigationStack {
-            content
+            ZStack {
+                themeManager.currentTheme.getBackgroundGradient(for: colorScheme)
+                    .ignoresSafeArea()
+
+                content
+            }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(loc("BUY_CLOSE")) { dismiss() }
+                        .onGlassPrimary()
                 }
-
                 ToolbarItem(placement: .confirmationAction) {
                     Button(loc("BUY_CONFIRM")) {
-                            handlePurchase()
-                        }
+                        handlePurchase()
                     }
+                    .onGlassPrimary()
                 }
+            }
         }
     }
 
     @ViewBuilder
     private var content: some View {
-        ScrollView {
-            VStack(spacing: 24) {
+        ScrollView(showsIndicators: false) {
+            VStack(spacing: DS.Padding.card) {
                 if let errorMessage {
                     ToastMessage(text: errorMessage)
+                        .transition(.move(edge: .top).combined(with: .opacity))
                 }
 
                 CoinDetailHeader(coin: coin, history: history)
                 quickAmountSection
                 purchaseSummary
             }
-            .padding(24)
+            .padding(.horizontal, DS.Padding.screen)
+            .padding(.vertical, DS.Padding.section)
         }
         .overlay(alignment: .top) {
             if showConfetti {
@@ -61,39 +71,40 @@ struct BuyCoinSheet: View {
     }
 
     private var purchaseSummary: some View {
-        VStack(spacing: 18) {
-            AmountSlider(amount: $amount)
-                .environmentObject(localization)
+        GlassSection(cornerRadius: DS.Radius.large) {
+            VStack(spacing: DS.Padding.section) {
+                AmountSlider(amount: $amount)
+                    .environmentObject(localization)
 
-            BuyAmountSection(amount: $amount,
-                              price: coin.currentPrice,
-                              symbol: coin.symbol)
-                .environmentObject(localization)
+                BuyAmountSection(amount: $amount,
+                                  price: coin.currentPrice,
+                                  symbol: coin.symbol)
+                    .environmentObject(localization)
 
-            StatRow(coin: coin)
-                .environmentObject(localization)
+                StatRow(coin: coin)
+                    .environmentObject(localization)
+            }
         }
-        .padding(22)
-        .background(
-            RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .fill(.clear)
-        )
-        .liquidGlass(.card, edgeMask: [.top, .bottom])
     }
 
     private func handlePurchase() {
         if let spent = market.buy(symbol: coin.symbol, amount: amount, wallet: wallet) {
-            withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
+            withAnimation(DS.Animation.quickSpring) {
                 let formatted = CurrencyFormatter.abbreviatedCurrency(spent)
                 errorMessage = loc("BUY_CONFIRM_SUCCESS", formatted, coin.symbol)
             }
             showConfetti = true
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
-                showConfetti = false
+                withAnimation { showConfetti = false }
                 dismiss()
             }
         } else {
-            errorMessage = loc("BUY_INSUFFICIENT")
+            withAnimation(DS.Animation.quickSpring) {
+                errorMessage = loc("BUY_INSUFFICIENT")
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                withAnimation { errorMessage = nil }
+            }
         }
     }
 
@@ -108,7 +119,7 @@ private struct ConfettiView: View {
             Canvas { context, size in
                 let colors: [Color] = [.pink, .green, .orange, .yellow, .blue, .purple]
                 let t = timeline.date.timeIntervalSinceReferenceDate
-                let count = 120
+                let count = 30
 
                 for index in 0..<count {
                     var seed = SystemRandomNumberGenerator()
@@ -130,26 +141,30 @@ private struct CoinDetailHeader: View {
     let history: [CoinPriceSnapshot]
     @EnvironmentObject private var localization: LocalizationManager
     @ObservedObject private var themeManager = ThemeManager.shared
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
-        VStack(spacing: 18) {
-            HStack(alignment: .center, spacing: 16) {
+        VStack(spacing: DS.Padding.section) {
+            HStack(alignment: .center, spacing: DS.Padding.section) {
                 Image(systemName: coin.iconName)
                     .font(.system(size: 30))
                     .frame(width: 64, height: 64)
-                    .background(.white.opacity(0.18), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 18)
-                            .stroke(.white.opacity(0.25), lineWidth: 1)
+                    .background(
+                        RoundedRectangle(cornerRadius: DS.Radius.medium - 2, style: .continuous)
+                            .fill(themeManager.currentTheme.getCardBackground(for: colorScheme))
                     )
-                    .foregroundStyle(.white)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: DS.Radius.medium - 2, style: .continuous)
+                            .stroke(themeManager.currentTheme.getCardStroke(for: colorScheme), lineWidth: 1)
+                    )
+                    .onGlassPrimary()
 
                 VStack(alignment: .leading, spacing: 4) {
                     HStack(spacing: 8) {
-                    Text(coin.symbol)
-                        .font(.headline)
-                        .lineLimit(1)
-                        .layoutPriority(1)
+                        Text(coin.symbol)
+                            .font(.headline)
+                            .lineLimit(1)
+                            .layoutPriority(1)
 
                         if let stats = DetailedSparklineView.stats(for: history) {
                             Text(stats.changeBadge)
@@ -172,10 +187,10 @@ private struct CoinDetailHeader: View {
                 VStack(alignment: .trailing, spacing: 4) {
                     Text(loc("BUY_MARKET_CAP"))
                         .font(.caption2)
-                        .foregroundStyle(.white.opacity(0.5))
+                        .onGlassSecondary()
                     Text(CurrencyFormatter.abbreviatedCurrency(coin.marketValue))
                         .font(.subheadline.weight(.medium))
-                        .foregroundStyle(.white)
+                        .onGlassPrimary()
                 }
             }
 
@@ -183,16 +198,13 @@ private struct CoinDetailHeader: View {
                 .frame(height: 100)
                 .padding(.bottom, 4)
         }
-        .padding(24)
+        .padding(DS.Padding.screen)
         .background(
-            RoundedRectangle(cornerRadius: 32, style: .continuous)
-                .fill(
-                    themeManager.currentTheme == .light
-                        ? LinearGradient(colors: [Color("ForestGreen").opacity(0.8), Color("LakeBlue").opacity(0.8)], startPoint: .topLeading, endPoint: .bottomTrailing)
-                        : LinearGradient(colors: [Color("ForestGreen"), Color("LakeBlue")], startPoint: .topLeading, endPoint: .bottomTrailing)
-                )
-                .shadow(color: .black.opacity(0.25), radius: 24, y: 12)
+            RoundedRectangle(cornerRadius: DS.Radius.xl, style: .continuous)
+                .fill(.clear)
         )
+        .liquidGlass(.card, edgeMask: [.top])
+        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.xl, style: .continuous))
     }
 
     private func loc(_ key: String, _ arguments: CVarArg...) -> String {
@@ -255,7 +267,7 @@ struct DetailedSparklineView: View {
                         .onGlassPrimary()
                         .padding(.horizontal, 10)
                         .padding(.vertical, 6)
-                        .background(.white.opacity(0.18), in: Capsule())
+                        .background(themeManager.currentTheme.getCardBackground(for: colorScheme), in: Capsule())
                         .padding([.top, .trailing], 8)
                 }
             }
@@ -268,42 +280,34 @@ struct DetailedSparklineView: View {
 
     private func makePoints(in size: CGSize) -> [CGPoint] {
         let values = history.map { $0.price }
-        if values.isEmpty {
-            return []
-        }
+        if values.isEmpty { return [] }
 
         if values.count == 1 {
             let y = size.height / 2
-            return [
-                CGPoint(x: 0, y: y),
-                CGPoint(x: size.width, y: y)
-            ]
+            return [CGPoint(x: 0, y: y), CGPoint(x: size.width, y: y)]
         }
 
         guard let min = values.min(), let max = values.max(), max - min > 0 else {
             return values.enumerated().map { index, _ in
                 let x = size.width * CGFloat(index) / CGFloat(values.count - 1)
-                let y = size.height / 2
-                return CGPoint(x: x, y: y)
+                return CGPoint(x: x, y: size.height / 2)
             }
         }
 
         return values.enumerated().map { index, value in
             let progress = Double(index) / Double(values.count - 1)
             let normalized = (value - min) / (max - min)
-            let x = CGFloat(progress) * size.width
-            let y = size.height * CGFloat(1 - normalized)
-            return CGPoint(x: x, y: y)
+            return CGPoint(x: CGFloat(progress) * size.width, y: size.height * CGFloat(1 - normalized))
         }
     }
 
     private func areaPath(using points: [CGPoint], height: CGFloat) -> Path {
         guard points.count > 1 else { return Path() }
-
         var path = Path()
-        path.move(to: CGPoint(x: points.first!.x, y: height))
+        guard let first = points.first, let last = points.last else { return path }
+        path.move(to: CGPoint(x: first.x, y: height))
         points.forEach { path.addLine(to: $0) }
-        path.addLine(to: CGPoint(x: points.last!.x, y: height))
+        path.addLine(to: CGPoint(x: last.x, y: height))
         path.closeSubpath()
         return path
     }
@@ -328,23 +332,15 @@ struct DetailedSparklineView: View {
             percentage = first > 0 ? (change / first) * 100 : 0
         }
 
-        var changeString: String {
-            String(format: "%+.2f", change)
-        }
-
-        var badgeText: String {
-            String(format: "%+.2f%%", percentage)
-        }
-
-        var changeBadge: String {
-            percentage.isFinite ? badgeText : "0%"
-        }
+        var changeString: String { String(format: "%+.2f", change) }
+        var badgeText: String { String(format: "%+.2f%%", percentage) }
+        var changeBadge: String { percentage.isFinite ? badgeText : "0%" }
     }
 
     private struct GridLines: View {
         let themeManager: ThemeManager
         let colorScheme: ColorScheme
-        
+
         var body: some View {
             GeometryReader { proxy in
                 Path { path in
@@ -373,12 +369,12 @@ struct DetailedSparklineView: View {
         }
 
         private static let currencyFormatter: NumberFormatter = {
-            let formatter = NumberFormatter()
-            formatter.numberStyle = .currency
-            formatter.currencyCode = "TRY"
-            formatter.maximumFractionDigits = 2
-            formatter.minimumFractionDigits = 0
-            return formatter
+            let f = NumberFormatter()
+            f.numberStyle = .currency
+            f.currencyCode = "TRY"
+            f.maximumFractionDigits = 2
+            f.minimumFractionDigits = 0
+            return f
         }()
 
         private func format(_ value: Double) -> String {
@@ -401,37 +397,34 @@ private struct QuickAmountRow: View {
     private let options: [Double] = [100, 250, 500, 750]
 
     var body: some View {
-        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: options.count), spacing: 12) {
+        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: DS.Padding.element), count: options.count), spacing: DS.Padding.element) {
             ForEach(options, id: \.self) { option in
                 Button {
-                    withAnimation(.spring(response: 0.35, dampingFraction: 0.7)) {
+                    withAnimation(DS.Animation.quickSpring) {
                         selected = option
                         action(option)
                     }
                 } label: {
                     let isSelected = selected == option
-                    let bgFill = isSelected
-                        ? themeManager.currentTheme.glassPrimaryText(for: colorScheme).opacity(0.9)
-                        : themeManager.currentTheme.glassPrimaryText(for: colorScheme).opacity(0.12)
-                    let textColor = isSelected
-                        ? (colorScheme == .light ? Color.white : Color.black) // invert for contrast
-                        : themeManager.currentTheme.glassPrimaryText(for: colorScheme).opacity(0.9)
+                    let bgFill = themeManager.currentTheme.chipBackground(selected: isSelected, for: colorScheme)
+                    let textColor = themeManager.currentTheme.chipTextColor(selected: isSelected, for: colorScheme)
                     Text(formatted(option))
                         .font(.subheadline.weight(.semibold))
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 10)
                         .background(
-                            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                            RoundedRectangle(cornerRadius: DS.Radius.medium - 2, style: .continuous)
                                 .fill(bgFill)
                         )
                         .overlay(
-                            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                            RoundedRectangle(cornerRadius: DS.Radius.medium - 2, style: .continuous)
                                 .stroke(themeManager.currentTheme.glassStroke(for: colorScheme).opacity(0.6), lineWidth: 0.6)
                         )
                         .foregroundStyle(textColor)
                         .lineLimit(1)
                         .minimumScaleFactor(0.7)
                 }
+                .buttonStyle(ScaleButtonStyle())
             }
         }
     }
@@ -451,13 +444,15 @@ private struct AmountSlider: View {
     @EnvironmentObject private var localization: LocalizationManager
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: DS.Padding.element) {
             HStack {
                 Text(loc("BUY_AMOUNT_LABEL"))
                     .font(.headline)
+                    .onGlassPrimary()
                 Spacer()
                 Text(amount, format: .currency(code: "TRY"))
                     .font(.headline)
+                    .onGlassPrimary()
             }
 
             Slider(value: $amount, in: 50...1000, step: 10)
@@ -474,11 +469,8 @@ private struct StatTile: View {
     let title: String
     let value: String
     let icon: String
-    @EnvironmentObject private var localization: LocalizationManager
-    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
-        let isLightMode = colorScheme == .light
         VStack(spacing: 8) {
             Image(systemName: icon)
                 .font(.headline)
@@ -486,12 +478,11 @@ private struct StatTile: View {
                 .font(.headline)
             Text(title)
                 .font(.caption)
-                .foregroundStyle(isLightMode ? Color.black.opacity(0.6) : Color.white.opacity(0.6))
+                .onGlassSecondary()
         }
-        .foregroundStyle(isLightMode ? Color.black : Color.white)
+        .onGlassPrimary()
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 12)
-        .background(.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .padding(.vertical, DS.Padding.element)
     }
 }
 
@@ -500,13 +491,10 @@ private struct StatRow: View {
     @EnvironmentObject private var localization: LocalizationManager
 
     var body: some View {
-        HStack(spacing: 16) {
+        HStack(spacing: DS.Padding.section) {
             StatTile(title: loc("BUY_STATS_HELD"), value: coin.quantity.formatted(.number.precision(.fractionLength(2))), icon: "cube")
-                .environmentObject(localization)
             StatTile(title: loc("BUY_STATS_AVERAGE"), value: coin.averagePrice.formatted(.currency(code: "TRY")), icon: "chart.bar")
-                .environmentObject(localization)
             StatTile(title: loc("BUY_STATS_MARKET"), value: CurrencyFormatter.abbreviatedCurrency(coin.marketValue), icon: "chart.line.uptrend.xyaxis")
-                .environmentObject(localization)
         }
     }
 
@@ -527,12 +515,12 @@ private struct BuyAmountSection: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: DS.Padding.element) {
             Text(loc("BUY_TOTAL_TITLE"))
                 .font(.footnote.weight(.medium))
-                .foregroundStyle(.secondary)
+                .onGlassSecondary()
 
-            VStack(spacing: 12) {
+            VStack(spacing: DS.Padding.element) {
                 AmountDisplayRow(label: "TRY", value: amount.formatted(.currency(code: "TRY")))
                 AmountDisplayRow(label: symbol, value: tokenQuantity.formatted(.number.precision(.fractionLength(4))))
             }
@@ -547,42 +535,49 @@ private struct BuyAmountSection: View {
 private struct AmountDisplayRow: View {
     let label: String
     let value: String
-    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
-        let isLightMode = colorScheme == .light
-        HStack(spacing: 12) {
+        HStack(spacing: DS.Padding.element) {
             Text(label)
                 .font(.caption.weight(.semibold))
-                .foregroundStyle(isLightMode ? Color.black.opacity(0.85) : Color.white.opacity(0.85))
+                .onGlassPrimary()
                 .padding(.vertical, 6)
-                .padding(.horizontal, 12)
-                .background(.white.opacity(0.12), in: Capsule())
+                .padding(.horizontal, DS.Padding.element)
 
             Spacer()
 
             Text(value)
                 .font(.title3.weight(.semibold))
-                .foregroundStyle(isLightMode ? Color.black : Color.white)
+                .onGlassPrimary()
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 12)
-        .background(.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .padding(.horizontal, DS.Padding.section)
+        .padding(.vertical, DS.Padding.element)
+        .background(
+            RoundedRectangle(cornerRadius: DS.Radius.medium, style: .continuous)
+                .fill(.clear)
+        )
+        .liquidGlass(.card, edgeMask: [.all])
+        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.medium, style: .continuous))
     }
 }
 
 private struct ToastMessage: View {
     let text: String
+    @ObservedObject private var themeManager = ThemeManager.shared
+    @Environment(\.colorScheme) var colorScheme
 
     var body: some View {
-        HStack(alignment: .center, spacing: 12) {
+        HStack(alignment: .center, spacing: DS.Padding.element) {
             Image(systemName: "exclamationmark.triangle.fill")
                 .font(.headline)
                 .foregroundStyle(.white)
                 .padding(10)
-                .background(.white.opacity(0.18), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .background(
+                    RoundedRectangle(cornerRadius: DS.Radius.small + 2, style: .continuous)
+                        .fill(themeManager.currentTheme.getCardBackground(for: colorScheme))
+                )
 
             Text(text)
                 .font(.callout.weight(.semibold))
@@ -591,13 +586,11 @@ private struct ToastMessage: View {
 
             Spacer(minLength: 0)
         }
-        .padding(.horizontal, 18)
+        .padding(.horizontal, DS.Padding.section)
         .padding(.vertical, 14)
         .background(
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
+            RoundedRectangle(cornerRadius: DS.Radius.large, style: .continuous)
                 .fill(LinearGradient(colors: [Color.red.opacity(0.9), Color.red.opacity(0.6)], startPoint: .topLeading, endPoint: .bottomTrailing))
-                .shadow(color: .black.opacity(0.2), radius: 18, y: 10)
         )
     }
 }
-

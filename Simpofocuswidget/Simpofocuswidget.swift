@@ -28,22 +28,30 @@ struct Provider: AppIntentTimelineProvider {
         let isRunning = sharedDefaults?.bool(forKey: "isRunning") ?? false
         
         // Debug log
+        #if DEBUG
         print("Widget Timeline - SharedDefaults: \(sharedDefaults != nil), Phase: \(phase), Remaining: \(remainingSeconds), Running: \(isRunning)")
+        #endif
         
         // Test if we can write to shared defaults
         sharedDefaults?.set("Test", forKey: "testKey")
         let testValue = sharedDefaults?.string(forKey: "testKey")
+        #if DEBUG
         print("Widget Test Write/Read: \(testValue ?? "nil")")
+        #endif
         
         // Test reading all keys
         let allKeys = sharedDefaults?.dictionaryRepresentation().keys
+        #if DEBUG
         print("Widget - All keys in shared defaults: \(allKeys.map { Array($0) } ?? [])")
+        #endif
         
         // Test reading specific keys
         let testPhase = sharedDefaults?.string(forKey: "currentPhase")
         let testRemaining = sharedDefaults?.integer(forKey: "remainingSeconds")
         let testRunning = sharedDefaults?.bool(forKey: "isRunning")
+        #if DEBUG
         print("Widget - Direct read - Phase: \(testPhase ?? "nil"), Remaining: \(testRemaining ?? -1), Running: \(testRunning ?? false)")
+        #endif
         
         let currentDate = Date()
         let entry = SimpleEntry(date: currentDate, configuration: configuration, phase: phase, remainingSeconds: remainingSeconds, isRunning: isRunning)
@@ -52,7 +60,7 @@ struct Provider: AppIntentTimelineProvider {
         // If timer is running, update every second for real-time countdown
         if isRunning && remainingSeconds > 0 {
             for i in 1...min(remainingSeconds, 300) { // Update for next 300 seconds (5 minutes) max
-                let nextDate = Calendar.current.date(byAdding: .second, value: i, to: currentDate)!
+                guard let nextDate = Calendar.current.date(byAdding: .second, value: i, to: currentDate) else { continue }
                 let nextEntry = SimpleEntry(
                     date: nextDate, 
                     configuration: configuration, 
@@ -64,12 +72,14 @@ struct Provider: AppIntentTimelineProvider {
             }
         } else {
             // If not running, update every 5 seconds for faster response
-            let nextUpdate = Calendar.current.date(byAdding: .second, value: 5, to: currentDate)!
+            let nextUpdate = Calendar.current.date(byAdding: .second, value: 5, to: currentDate) ?? currentDate.addingTimeInterval(5)
             let nextEntry = SimpleEntry(date: nextUpdate, configuration: configuration, phase: phase, remainingSeconds: remainingSeconds, isRunning: isRunning)
             entries.append(nextEntry)
         }
         
+        #if DEBUG
         print("Widget Timeline - Final entries count: \(entries.count), First entry remainingSeconds: \(entries.first?.remainingSeconds ?? -1)")
+        #endif
 
         return Timeline(entries: entries, policy: .atEnd)
     }
@@ -158,7 +168,9 @@ struct SimpofocuswidgetEntryView : View {
                     .font(.system(size: 24, weight: .bold, design: .monospaced))
                     .foregroundColor(.primary)
                     .onAppear {
+                        #if DEBUG
                         print("Widget UI - entry.remainingSeconds: \(entry.remainingSeconds)")
+                        #endif
                     }
                 
                 // Progress bar
@@ -194,7 +206,9 @@ struct SimpofocuswidgetEntryView : View {
                 .tint(.orange)
                 .controlSize(.small)
                 .onTapGesture {
+                    #if DEBUG
                     print("Widget - Pause button tapped (onTapGesture)")
+                    #endif
                 }
             } else {
                     Button(intent: StartTimerIntent()) {
@@ -209,7 +223,9 @@ struct SimpofocuswidgetEntryView : View {
                 .tint(.green)
                 .controlSize(.small)
                 .onTapGesture {
+                    #if DEBUG
                     print("Widget - Start button tapped (onTapGesture)")
+                    #endif
                 }
             }
         }
@@ -228,7 +244,9 @@ struct SimpofocuswidgetEntryView : View {
             let m = seconds / 60
             let s = seconds % 60
             let timeString = String(format: "%02d:%02d", m, s)
+            #if DEBUG
             print("Widget timeString - seconds: \(seconds), result: \(timeString)")
+            #endif
             return timeString
         }
     

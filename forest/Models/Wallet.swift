@@ -85,6 +85,11 @@ final class WalletViewModel: ObservableObject {
         stakingAccruedInterest = 0
     }
 
+    func addPurchasedCoins(amount: Double) {
+        balance += amount
+        append(amount: amount, type: .earned, descriptionKey: "TXN_COIN_PACK_PURCHASED")
+    }
+
     var availableBalance: Double {
         balance
     }

@@ -1,0 +1,200 @@
+{
+  "identifier" : "F7B3C2A1-8E4D-4F2B-9A1C-5D6E7F8A9B0C",
+  "type" : "Configuration",
+  "version" : 2,
+  "products" : [
+    {
+      "displayPrice" : "0.99",
+      "familyShareable" : false,
+      "internalID" : "PRO_WEEKLY_001",
+      "localizations" : [
+        {
+          "description" : "Unlock all premium features weekly",
+          "displayName" : "SimpoFocus Pro Weekly",
+          "locale" : "en_US"
+        },
+        {
+          "description" : "Tüm premium özellikleri haftalık aç",
+          "displayName" : "SimpoFocus Pro Haftalık",
+          "locale" : "tr"
+        },
+        {
+          "description" : "Alle Premium-Funktionen wöchentlich freischalten",
+          "displayName" : "SimpoFocus Pro Wöchentlich",
+          "locale" : "de"
+        }
+      ],
+      "productID" : "com.efeturkel.simpoapp.pro.weekly",
+      "referenceName" : "Pro Weekly",
+      "subscriptionGroupID" : "SIMPO_PRO_GROUP",
+      "type" : "RecurringSubscription",
+      "subscription" : {
+        "adHocOffers" : [],
+        "groupLevel" : 1,
+        "introductoryOffer" : {
+          "displayPrice" : "0.00",
+          "internalID" : "WEEKLY_FREE_TRIAL",
+          "paymentMode" : "free",
+          "subscriptionPeriod" : "P3D"
+        },
+        "subscriptionPeriod" : "P1W"
+      }
+    },
+    {
+      "displayPrice" : "2.99",
+      "familyShareable" : false,
+      "internalID" : "PRO_MONTHLY_001",
+      "localizations" : [
+        {
+          "description" : "Unlock all premium features monthly",
+          "displayName" : "SimpoFocus Pro Monthly",
+          "locale" : "en_US"
+        },
+        {
+          "description" : "Tüm premium özellikleri aylık aç",
+          "displayName" : "SimpoFocus Pro Aylık",
+          "locale" : "tr"
+        },
+        {
+          "description" : "Alle Premium-Funktionen monatlich freischalten",
+          "displayName" : "SimpoFocus Pro Monatlich",
+          "locale" : "de"
+        }
+      ],
+      "productID" : "com.efeturkel.simpoapp.pro.monthly",
+      "referenceName" : "Pro Monthly",
+      "subscriptionGroupID" : "SIMPO_PRO_GROUP",
+      "type" : "RecurringSubscription",
+      "subscription" : {
+        "adHocOffers" : [],
+        "groupLevel" : 1,
+        "introductoryOffer" : null,
+        "subscriptionPeriod" : "P1M"
+      }
+    },
+    {
+      "displayPrice" : "19.99",
+      "familyShareable" : false,
+      "internalID" : "PRO_YEARLY_001",
+      "localizations" : [
+        {
+          "description" : "Unlock all premium features yearly — best value",
+          "displayName" : "SimpoFocus Pro Yearly",
+          "locale" : "en_US"
+        },
+        {
+          "description" : "Tüm premium özellikleri yıllık aç — en avantajlı",
+          "displayName" : "SimpoFocus Pro Yıllık",
+          "locale" : "tr"
+        },
+        {
+          "description" : "Alle Premium-Funktionen jährlich freischalten — bester Wert",
+          "displayName" : "SimpoFocus Pro Jährlich",
+          "locale" : "de"
+        }
+      ],
+      "productID" : "com.efeturkel.simpoapp.pro.yearly",
+      "referenceName" : "Pro Yearly",
+      "subscriptionGroupID" : "SIMPO_PRO_GROUP",
+      "type" : "RecurringSubscription",
+      "subscription" : {
+        "adHocOffers" : [],
+        "groupLevel" : 1,
+        "introductoryOffer" : null,
+        "subscriptionPeriod" : "P1Y"
+      }
+    },
+    {
+      "displayPrice" : "0.99",
+      "familyShareable" : false,
+      "internalID" : "COINS_SMALL_001",
+      "localizations" : [
+        {
+          "description" : "500 coins to spend in the app",
+          "displayName" : "Small Coin Pack",
+          "locale" : "en_US"
+        },
+        {
+          "description" : "Uygulamada harcamak için 500 coin",
+          "displayName" : "Küçük Coin Paketi",
+          "locale" : "tr"
+        },
+        {
+          "description" : "500 Coins zum Ausgeben in der App",
+          "displayName" : "Kleines Coin-Paket",
+          "locale" : "de"
+        }
+      ],
+      "productID" : "com.efeturkel.simpoapp.coins.small",
+      "referenceName" : "Coins Small",
+      "type" : "Consumable"
+    },
+    {
+      "displayPrice" : "1.99",
+      "familyShareable" : false,
+      "internalID" : "COINS_MEDIUM_001",
+      "localizations" : [
+        {
+          "description" : "1500 coins to spend in the app",
+          "displayName" : "Medium Coin Pack",
+          "locale" : "en_US"
+        },
+        {
+          "description" : "Uygulamada harcamak için 1500 coin",
+          "displayName" : "Orta Coin Paketi",
+          "locale" : "tr"
+        },
+        {
+          "description" : "1500 Coins zum Ausgeben in der App",
+          "displayName" : "Mittleres Coin-Paket",
+          "locale" : "de"
+        }
+      ],
+      "productID" : "com.efeturkel.simpoapp.coins.medium",
+      "referenceName" : "Coins Medium",
+      "type" : "Consumable"
+    },
+    {
+      "displayPrice" : "4.99",
+      "familyShareable" : false,
+      "internalID" : "COINS_LARGE_001",
+      "localizations" : [
+        {
+          "description" : "5000 coins to spend in the app",
+          "displayName" : "Large Coin Pack",
+          "locale" : "en_US"
+        },
+        {
+          "description" : "Uygulamada harcamak için 5000 coin",
+          "displayName" : "Büyük Coin Paketi",
+          "locale" : "tr"
+        },
+        {
+          "description" : "5000 Coins zum Ausgeben in der App",
+          "displayName" : "Großes Coin-Paket",
+          "locale" : "de"
+        }
+      ],
+      "productID" : "com.efeturkel.simpoapp.coins.large",
+      "referenceName" : "Coins Large",
+      "type" : "Consumable"
+    }
+  ],
+  "subscriptionGroups" : [
+    {
+      "id" : "SIMPO_PRO_GROUP",
+      "localizations" : [
+        {
+          "description" : "SimpoFocus Pro subscription",
+          "displayName" : "SimpoFocus Pro",
+          "locale" : "en_US"
+        }
+      ],
+      "name" : "SimpoFocus Pro"
+    }
+  ],
+  "settings" : {
+    "_applicationInternalID" : "SIMPO_APP_001",
+    "_developerTeamID" : ""
+  }
+}

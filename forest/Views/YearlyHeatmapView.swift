@@ -8,7 +8,9 @@ struct YearlyHeatmapView: View {
     @Environment(\.colorScheme) var colorScheme
     
     private let calendar = Calendar.current
-    private let monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+    private var monthNames: [String] {
+        Calendar.current.shortMonthSymbols
+    }
     
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -29,11 +31,11 @@ struct YearlyHeatmapView: View {
                             VStack(spacing: 2) {
                                 Text(monthNames[targetMonth.month - 1])
                                     .font(.caption2)
-                                    .foregroundStyle(themeManager.currentTheme.getSecondaryTextColor(for: colorScheme))
+                                    .onGlassSecondary()
                                 
                                 Text(formatMonthHours(targetMonth.month, year: targetMonth.year))
                                     .font(.caption2)
-                                    .foregroundStyle(themeManager.currentTheme.getSecondaryTextColor(for: colorScheme))
+                                    .onGlassSecondary()
                             }
                         }
                     }
@@ -122,7 +124,7 @@ private struct MonthColumn: View {
         }
         
         for day in range {
-            let date = calendar.date(from: DateComponents(year: year, month: month, day: day))!
+            guard let date = calendar.date(from: DateComponents(year: year, month: month, day: day)) else { continue }
             currentWeek.append(date)
             
             if currentWeek.count == 7 {

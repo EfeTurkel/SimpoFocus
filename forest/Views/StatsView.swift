@@ -3,6 +3,11 @@ import SwiftUI
 struct StatsView: View {
     @EnvironmentObject private var timer: PomodoroTimerService
     @EnvironmentObject private var market: MarketViewModel
+    @EnvironmentObject private var entitlements: EntitlementManager
+
+    @ObservedObject private var themeManager = ThemeManager.shared
+    @Environment(\.colorScheme) var colorScheme
+    @State private var showingPaywall = false
 
     private var totalHours: Double {
         timer.totalFocusMinutes / 60
@@ -21,94 +26,97 @@ struct StatsView: View {
 
     var body: some View {
         ScrollView(showsIndicators: false) {
-            VStack(spacing: 28) {
+            VStack(spacing: DS.Padding.card) {
                 heroCard
-                analyticsStack
+                proGatedSection(analyticsStack)
                 dailyGoalCard
-                activityHeatmap
+                proGatedSection(activityHeatmap)
             }
-            .padding(24)
+            .padding(.horizontal, DS.Padding.screen)
+            .padding(.vertical, DS.Padding.section)
+        }
+        .sheet(isPresented: $showingPaywall) {
+            PaywallView()
         }
         .background(
-            LinearGradient(colors: [Color("LakeNight").opacity(0.7), Color("ForestGreen").opacity(0.4)], startPoint: .topLeading, endPoint: .bottomTrailing)
+            themeManager.currentTheme.getBackgroundGradient(for: colorScheme)
                 .ignoresSafeArea()
         )
     }
 
     private var heroCard: some View {
-        VStack(spacing: 22) {
+        VStack(spacing: DS.Padding.card) {
             VStack(spacing: 6) {
                 Text(loc("STATS_TOTAL_FOCUS_TIME"))
-                    .font(.subheadline.weight(.semibold))
+                    .font(DS.Typography.caption)
                     .onGlassSecondary()
                 Text(formattedHours(totalHours))
-                    .font(.system(size: 48, weight: .bold, design: .rounded))
+                    .font(.system(size: 44, weight: .bold, design: .rounded))
                     .onGlassPrimary()
-                    .shadow(color: .black.opacity(0.4), radius: 16, y: 10)
             }
 
-            HStack(spacing: 18) {
+            HStack(spacing: 0) {
                 MetricChip(icon: "timer", title: loc("STATS_TOTAL_SESSIONS"), value: "\(timer.totalCompletedSessions)")
+                Divider().frame(height: 32)
                 MetricChip(icon: "calendar", title: loc("STATS_ACTIVE_DAYS"), value: "\(activeDaysCount)")
+                Divider().frame(height: 32)
                 MetricChip(icon: "chart.bar", title: loc("STATS_AVERAGE_SESSION"), value: formattedMinutes(averageMinutesPerSession))
             }
         }
-        .padding(28)
+        .padding(DS.Padding.card)
         .frame(maxWidth: .infinity)
         .background(
-            RoundedRectangle(cornerRadius: 36, style: .continuous)
+            RoundedRectangle(cornerRadius: DS.Radius.xl, style: .continuous)
                 .fill(.clear)
         )
-        .liquidGlass(.header, edgeMask: [.top])
+        .liquidGlass(.hero, edgeMask: [.top])
     }
 
     private var analyticsStack: some View {
-        VStack(alignment: .leading, spacing: 18) {
+        VStack(alignment: .leading, spacing: DS.Padding.section) {
             Text(loc("STATS_PERFORMANCE_SUMMARY"))
-                .font(.headline)
+                .font(.subheadline.weight(.semibold))
                 .onGlassPrimary()
 
-            VStack(spacing: 18) {
+            VStack(spacing: DS.Padding.section) {
                 AnalyticsRow(icon: "flame.fill", title: loc("STATS_BEST_STREAK"), detail: loc("STATS_STREAK_VALUE", timer.streak))
                 AnalyticsRow(icon: "clock.arrow.circlepath", title: loc("STATS_DAILY_AVERAGE"), detail: formattedMinutes(timer.totalFocusMinutes / Double(max(activeDaysCount, 1))))
                 AnalyticsRow(icon: "bolt.heart", title: loc("STATS_LAST_FOCUS"), detail: lastFocusText)
             }
-            .padding(20)
+            .padding(DS.Padding.card)
             .background(
-                RoundedRectangle(cornerRadius: 28, style: .continuous)
+                RoundedRectangle(cornerRadius: DS.Radius.large, style: .continuous)
                     .fill(.clear)
             )
-            .liquidGlass(.card, edgeMask: [.top, .bottom])
+            .liquidGlass(.card, edgeMask: [.top])
         }
     }
 
     private var dailyGoalCard: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: DS.Padding.section) {
             HStack {
                 Text(loc("STATS_DAILY_GOAL"))
-                    .font(.headline)
+                    .font(.subheadline.weight(.semibold))
                 Spacer()
                 Text(loc("STATS_GOAL_VALUE", timer.completedFocusSessions, market.dailyTarget))
-                    .font(.title3.weight(.semibold))
+                    .font(.subheadline.weight(.bold))
             }
             .onGlassPrimary()
 
             ProgressView(value: min(Double(timer.completedFocusSessions) / Double(max(market.dailyTarget, 1)), 1))
                 .tint(Color("ForestGreen"))
-                .frame(height: 12)
-                .background(Color.white.opacity(0.08), in: Capsule())
 
             Text(timer.completedFocusSessions >= market.dailyTarget ? loc("STATS_GOAL_COMPLETE") : loc("STATS_GOAL_PROGRESS"))
-                .font(.footnote)
+                .font(.caption)
                 .onGlassSecondary()
         }
-        .padding(24)
+        .padding(DS.Padding.card)
         .frame(maxWidth: .infinity)
         .background(
-            RoundedRectangle(cornerRadius: 28, style: .continuous)
+            RoundedRectangle(cornerRadius: DS.Radius.large, style: .continuous)
                 .fill(.clear)
         )
-        .liquidGlass(.card, edgeMask: [.top, .bottom])
+        .liquidGlass(.card, edgeMask: [.top])
     }
 
     private var activityHeatmap: some View {
@@ -134,13 +142,13 @@ struct StatsView: View {
                 }
             }
         }
-        .padding(24)
+        .padding(DS.Padding.card)
         .frame(maxWidth: .infinity)
         .background(
-            RoundedRectangle(cornerRadius: 28, style: .continuous)
+            RoundedRectangle(cornerRadius: DS.Radius.large, style: .continuous)
                 .fill(.clear)
         )
-        .liquidGlass(.card, edgeMask: [.top, .bottom])
+        .liquidGlass(.card, edgeMask: [.top])
     }
 
     private var calendar: Calendar { Calendar.current }
@@ -182,6 +190,44 @@ struct StatsView: View {
         return loc("STATS_MINUTES_FORMAT", Int(minutes))
     }
 
+    @ViewBuilder
+    private func proGatedSection<Content: View>(_ content: Content) -> some View {
+        if entitlements.hasAdvancedAnalytics {
+            content
+        } else {
+            content
+                .blur(radius: 6)
+                .overlay(
+                    VStack(spacing: DS.Padding.element) {
+                        Image(systemName: "crown.fill")
+                            .font(.system(size: 36))
+                            .foregroundStyle(Color("ForestGreen"))
+                        Text(loc("PRO_GATE_ANALYTICS"))
+                            .font(DS.Typography.cardTitle)
+                            .onGlassPrimary()
+                            .multilineTextAlignment(.center)
+                        Button {
+                            showingPaywall = true
+                        } label: {
+                            Text(loc("PRO_GATE_UNLOCK"))
+                                .font(DS.Typography.caption)
+                                .foregroundStyle(.white)
+                                .padding(.horizontal, DS.Padding.card)
+                                .padding(.vertical, 10)
+                                .background(Color("ForestGreen"), in: Capsule())
+                        }
+                    }
+                    .padding(DS.Padding.card)
+                )
+                .allowsHitTesting(false)
+                .overlay(
+                    Color.clear
+                        .contentShape(Rectangle())
+                        .onTapGesture { showingPaywall = true }
+                )
+        }
+    }
+
     private func loc(_ key: String, _ arguments: CVarArg...) -> String {
         localization.translate(key, fallback: key, arguments: arguments)
     }
@@ -195,22 +241,17 @@ private struct MetricChip: View {
     var body: some View {
         VStack(spacing: 6) {
             Image(systemName: icon)
-                .font(.callout.weight(.semibold))
-                .onGlassPrimary()
-                .padding(10)
-                .background(.white.opacity(0.15), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-
+                .font(DS.Typography.caption)
+                .onGlassSecondary()
             Text(value)
-                .font(.headline)
+                .font(DS.Typography.cardTitle)
                 .onGlassPrimary()
-
             Text(title)
-                .font(.caption2)
+                .font(DS.Typography.micro)
                 .onGlassSecondary()
         }
+        .padding(.vertical, 4)
         .frame(maxWidth: .infinity)
-        .padding(14)
-        .background(.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
     }
 }
 
@@ -220,23 +261,21 @@ private struct AnalyticsRow: View {
     let detail: String
 
     var body: some View {
-        HStack(spacing: 14) {
+        HStack(spacing: 12) {
             Image(systemName: icon)
-                .font(.title3)
-                .foregroundStyle(.white.opacity(0.85))
-                .frame(width: 40, height: 40)
-                .background(.white.opacity(0.1), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .font(.body)
+                .onGlassSecondary()
+                .frame(width: 28)
 
-            VStack(alignment: .leading, spacing: 4) {
-                Text(title)
-                    .font(.subheadline.weight(.medium))
-                    .foregroundStyle(.white)
-                Text(detail)
-                    .font(.caption)
-                    .foregroundStyle(.white.opacity(0.6))
-            }
+            Text(title)
+                .font(.subheadline)
+                .onGlassPrimary()
 
             Spacer()
+
+            Text(detail)
+                .font(.subheadline.weight(.medium))
+                .onGlassPrimary()
         }
     }
 }
@@ -245,32 +284,17 @@ private struct ActivityDayCell: View {
     let date: Date
     let isActive: Bool
     let formatter: DateFormatter
+    @ObservedObject private var themeManager = ThemeManager.shared
+    @Environment(\.colorScheme) var colorScheme
 
     var body: some View {
-        RoundedRectangle(cornerRadius: 10, style: .continuous)
-            .fill(fillStyle)
-            .frame(height: 34)
+        RoundedRectangle(cornerRadius: 8, style: .continuous)
+            .fill(isActive ? Color("ForestGreen") : Color("ForestGreen").opacity(0.08))
+            .frame(height: 36)
             .overlay(
                 Text(formatter.string(from: date))
-                    .font(.caption2)
-                    .foregroundStyle(isActive ? .white : .white.opacity(0.5))
+                    .font(.system(size: 9, weight: .medium))
+                    .foregroundStyle(isActive ? .white : themeManager.currentTheme.glassSecondaryText(for: colorScheme))
             )
-            .overlay(
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .stroke(borderStyle, lineWidth: 1)
-            )
-            .shadow(color: isActive ? Color("ForestGreen").opacity(0.2) : .clear, radius: 6, y: 3)
-    }
-
-    private var fillStyle: AnyShapeStyle {
-        if isActive {
-            return AnyShapeStyle(LinearGradient(colors: [Color("ForestGreen"), Color("LakeBlue")], startPoint: .topLeading, endPoint: .bottomTrailing))
-        } else {
-            return AnyShapeStyle(Color.white.opacity(0.07))
-        }
-    }
-
-    private var borderStyle: Color {
-        isActive ? Color.white.opacity(0.2) : Color.white.opacity(0.05)
     }
 }

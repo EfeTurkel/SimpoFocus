@@ -4,6 +4,7 @@ struct TimerSettingsView: View {
     @EnvironmentObject private var timer: PomodoroTimerService
     @EnvironmentObject private var market: MarketViewModel
     @EnvironmentObject private var localization: LocalizationManager
+    @EnvironmentObject private var entitlements: EntitlementManager
     @ObservedObject private var themeManager = ThemeManager.shared
     @Environment(\.dismiss) private var dismiss
     @Environment(\.openURL) private var openURL
@@ -24,6 +25,7 @@ struct TimerSettingsView: View {
     @State private var notificationsEnabled: Bool = false
     @State private var selectedLanguage: AppLanguage = LocalizationManager.shared.language
     @State private var selectedTheme: AppTheme = ThemeManager.shared.currentTheme
+    @State private var showingPaywall = false
 
     var body: some View {
         NavigationStack {
@@ -31,27 +33,42 @@ struct TimerSettingsView: View {
                 themeManager.currentTheme.getBackgroundGradient(for: colorScheme)
                     .ignoresSafeArea()
 
-                VStack(spacing: 24) {
-                    ScrollView(showsIndicators: false) {
-                        VStack(spacing: 24) {
-                            SettingsHeaderCard(focus: $focusMinutes,
-                                               shortBreak: $shortBreakMinutes,
-                                               longBreak: $longBreakMinutes,
-                                               dailyTarget: $dailyTarget,
-                                               sessionsBeforeLongBreak: $sessionsBeforeLongBreakValue)
-                                .environmentObject(localization)
+                ScrollView(showsIndicators: false) {
+                    VStack(spacing: DS.Padding.section * 2) {
+                        SettingsHeaderCard(focus: $focusMinutes,
+                                           shortBreak: $shortBreakMinutes,
+                                           longBreak: $longBreakMinutes,
+                                           dailyTarget: $dailyTarget,
+                                           sessionsBeforeLongBreak: $sessionsBeforeLongBreakValue)
+                            .environmentObject(localization)
 
-                            GlassSection(title: loc("SETTINGS_SECTION_DURATIONS_TITLE"),
-                                         subtitle: loc("SETTINGS_SECTION_DURATIONS_SUBTITLE"),
+                        GlassCard(title: loc("SETTINGS_SECTION_DURATIONS_TITLE"),
+                                         subtitle: entitlements.hasAdvancedTimerSettings ? loc("SETTINGS_SECTION_DURATIONS_SUBTITLE") : loc("SETTINGS_DURATIONS_PRO_HINT"),
                                          icon: "timer") {
                                 VStack(spacing: 18) {
                                     DurationSlider(title: loc("SETTINGS_TILE_FOCUS"), value: $focusMinutes, range: 10...50, color: Color("ForestGreen"))
+                                        .disabled(!entitlements.hasAdvancedTimerSettings)
+                                        .opacity(entitlements.hasAdvancedTimerSettings ? 1 : 0.5)
                                     DurationSlider(title: loc("SETTINGS_DURATION_SHORT_TITLE"), value: $shortBreakMinutes, range: 3...15, color: Color("LakeBlue"))
-                                    DurationSlider(title: loc("SETTINGS_DURATION_LONG_TITLE"), value: $longBreakMinutes, range: 10...30, color: Color("LakeNight"), valueColor: Color.white.opacity(0.9))
+                                        .disabled(!entitlements.hasAdvancedTimerSettings)
+                                        .opacity(entitlements.hasAdvancedTimerSettings ? 1 : 0.5)
+                                    DurationSlider(title: loc("SETTINGS_DURATION_LONG_TITLE"), value: $longBreakMinutes, range: 10...30, color: Color("LakeNight"))
+                                        .disabled(!entitlements.hasAdvancedTimerSettings)
+                                        .opacity(entitlements.hasAdvancedTimerSettings ? 1 : 0.5)
+
+                                    if !entitlements.hasAdvancedTimerSettings {
+                                        Button {
+                                            showingPaywall = true
+                                        } label: {
+                                            Label(loc("PRO_GATE_UNLOCK"), systemImage: "crown.fill")
+                                                .font(.footnote.weight(.semibold))
+                                                .foregroundStyle(.orange)
+                                        }
+                                    }
                                 }
                             }
 
-                            GlassSection(title: loc("SETTINGS_SECTION_GOALS_TITLE"),
+                            GlassCard(title: loc("SETTINGS_SECTION_GOALS_TITLE"),
                                          subtitle: loc("SETTINGS_SECTION_GOALS_SUBTITLE"),
                                          icon: "target") {
                                 VStack(spacing: 16) {
@@ -67,7 +84,7 @@ struct TimerSettingsView: View {
                                 }
                             }
 
-                            GlassSection(title: loc("SETTINGS_SECTION_ALERTS_TITLE"),
+                            GlassCard(title: loc("SETTINGS_SECTION_ALERTS_TITLE"),
                                          subtitle: loc("SETTINGS_SECTION_ALERTS_SUBTITLE"),
                                          icon: "bell.badge.fill") {
                                 VStack(spacing: 14) {
@@ -87,7 +104,7 @@ struct TimerSettingsView: View {
                                 .environmentObject(localization)
 #endif
 
-                            GlassSection(title: loc("SETTINGS_SECTION_SOUND_TITLE"),
+                            GlassCard(title: loc("SETTINGS_SECTION_SOUND_TITLE"),
                                          subtitle: loc("SETTINGS_SECTION_SOUND_SUBTITLE"),
                                          icon: "metronome.fill") {
                                 VStack(spacing: 16) {
@@ -121,10 +138,10 @@ struct TimerSettingsView: View {
                                         Label(loc("SETTINGS_BUTTON_PREVIEW"), systemImage: "play.circle")
                                             .font(.subheadline.weight(.semibold))
                                             .frame(maxWidth: .infinity)
-                                            .padding(.vertical, 12)
+                                            .padding(.vertical, DS.Padding.section)
                                             .background(
-                                                LinearGradient(colors: [Color("ForestGreen"), Color("LakeBlue")], startPoint: .topLeading, endPoint: .bottomTrailing),
-                                                in: RoundedRectangle(cornerRadius: 18, style: .continuous)
+                                                Color("ForestGreen"),
+                                                in: RoundedRectangle(cornerRadius: DS.Radius.large, style: .continuous)
                                             )
                                             .onGlassPrimary()
                                     }
@@ -133,7 +150,7 @@ struct TimerSettingsView: View {
                                 }
                             }
 
-                            GlassSection(title: loc("SETTINGS_SECTION_LANGUAGE_TITLE"),
+                            GlassCard(title: loc("SETTINGS_SECTION_LANGUAGE_TITLE"),
                                          subtitle: loc("SETTINGS_SECTION_LANGUAGE_SUBTITLE"),
                                          icon: "globe") {
                                 VStack(spacing: 16) {
@@ -150,7 +167,7 @@ struct TimerSettingsView: View {
                                 }
                             }
 
-                            GlassSection(title: loc("SETTINGS_SECTION_THEME_TITLE"),
+                            GlassCard(title: loc("SETTINGS_SECTION_THEME_TITLE"),
                                          subtitle: loc("SETTINGS_SECTION_THEME_SUBTITLE"),
                                          icon: "paintbrush.fill") {
                                 VStack(spacing: 16) {
@@ -167,16 +184,27 @@ struct TimerSettingsView: View {
                             MakerSection()
 #endif
                         }
-                        .padding(.vertical, 12)
-                    }
-
-                    actionBar
+                    .padding(.vertical, DS.Padding.section)
                 }
-                .padding(.horizontal, 20)
-                .padding(.bottom, 24)
+                .padding(.horizontal, DS.Padding.screen)
             }
             .navigationTitle(loc("SETTINGS_TITLE"))
             .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(loc("SETTINGS_BUTTON_CANCEL")) {
+                        dismiss()
+                    }
+                    .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(loc("SETTINGS_BUTTON_SAVE")) {
+                        saveSettings()
+                    }
+                    .fontWeight(.semibold)
+                    .foregroundStyle(Color("ForestGreen"))
+                }
+            }
         }
         .onAppear {
             focusMinutes = Double(timer.focusDuration) / 60
@@ -199,63 +227,37 @@ struct TimerSettingsView: View {
             localization.language = newValue
         }
         .onChange(of: selectedTheme) { _, newValue in
-            ThemeManager.shared.currentTheme = newValue
+            ThemeManager.shared.setTheme(newValue)
         }
         .onChange(of: tickVolume) { _, newValue in
             timer.tickVolume = newValue
             timer.setTickSound(selectedTickSound)
         }
+        .sheet(isPresented: $showingPaywall) {
+            PaywallView()
+        }
     }
 
-    private var actionBar: some View {
-        HStack(spacing: 16) {
-            Button {
-                dismiss()
-            } label: {
-                Label(loc("SETTINGS_BUTTON_CANCEL"), systemImage: "xmark")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
-                    .padding(.vertical, 16)
-                    .frame(maxWidth: .infinity)
-                    .background(themeManager.currentTheme.getCardBackground(for: colorScheme), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-            }
-
-            Button {
-                        timer.adjustDurations(
-                            focus: Int(focusMinutes * 60),
-                            shortBreak: Int(shortBreakMinutes * 60),
-                            longBreak: Int(longBreakMinutes * 60)
-                        )
-                market.dailyTarget = Int(dailyTarget)
-                timer.sessionsBeforeLongBreak = Int(sessionsBeforeLongBreakValue)
-                timer.soundEnabled = soundEnabled
-                timer.hapticsEnabled = hapticsEnabled
-                timer.autoStartBreaks = autoStartBreaks
-                timer.tickingEnabled = tickingEnabled
-                timer.setTickSound(selectedTickSound)
-                timer.overrideMute = overrideMute
-                timer.tickVolume = tickVolume
-                timer.notificationsEnabled = notificationsEnabled
-                PersistenceController.shared.saveTimer(timer)
-                PersistenceController.shared.saveMarket(market)
-                localization.language = selectedLanguage
-                        dismiss()
-            } label: {
-                Label(loc("SETTINGS_BUTTON_SAVE"), systemImage: "checkmark")
-                    .font(.subheadline.weight(.semibold))
-                    .onGlassPrimary()
-                    .padding(.vertical, 16)
-                    .frame(maxWidth: .infinity)
-                    .background(LinearGradient(colors: [Color("ForestGreen"), Color("LakeBlue")], startPoint: .topLeading, endPoint: .bottomTrailing), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-            }
-        }
-        .padding(18)
-        .background(
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .fill(Color.clear)
+    private func saveSettings() {
+        timer.adjustDurations(
+            focus: Int(focusMinutes * 60),
+            shortBreak: Int(shortBreakMinutes * 60),
+            longBreak: Int(longBreakMinutes * 60)
         )
-        .liquidGlass(.header, edgeMask: [.top])
-        .shadow(color: .black.opacity(0.2), radius: 20, y: 12)
+        market.dailyTarget = Int(dailyTarget)
+        timer.sessionsBeforeLongBreak = Int(sessionsBeforeLongBreakValue)
+        timer.soundEnabled = soundEnabled
+        timer.hapticsEnabled = hapticsEnabled
+        timer.autoStartBreaks = autoStartBreaks
+        timer.tickingEnabled = tickingEnabled
+        timer.setTickSound(selectedTickSound)
+        timer.overrideMute = overrideMute
+        timer.tickVolume = tickVolume
+        timer.notificationsEnabled = notificationsEnabled
+        PersistenceController.shared.saveTimer(timer)
+        PersistenceController.shared.saveMarket(market)
+        localization.language = selectedLanguage
+        dismiss()
     }
 }
 
@@ -278,10 +280,10 @@ private struct NotificationStatusCard: View {
     }
 
     var body: some View {
-        GlassSection(title: loc("SETTINGS_SECTION_BACKGROUND_TITLE"),
+        GlassCard(title: loc("SETTINGS_SECTION_BACKGROUND_TITLE"),
                      subtitle: loc("SETTINGS_SECTION_BACKGROUND_SUBTITLE"),
                      icon: "icloud.and.arrow.down") {
-            VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: DS.Padding.section) {
                 statusLabel
 
                 if !isEnabled {
@@ -291,9 +293,9 @@ private struct NotificationStatusCard: View {
                         Label(loc("SETTINGS_BACKGROUND_ALLOW_NOTIF"), systemImage: "bell.badge")
                             .font(.footnote.weight(.semibold))
                             .onGlassPrimary()
-                            .padding(.vertical, 10)
+                            .padding(.vertical, DS.Padding.element)
                             .frame(maxWidth: .infinity)
-                            .background(Color("ForestGreen"), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                            .background(Color("ForestGreen"), in: RoundedRectangle(cornerRadius: DS.Radius.medium, style: .continuous))
                     }
                 }
 
@@ -304,9 +306,9 @@ private struct NotificationStatusCard: View {
                         Label(loc("SETTINGS_BACKGROUND_OPEN_SETTINGS"), systemImage: "gear")
                             .font(.footnote.weight(.semibold))
                             .onGlassPrimary()
-                            .padding(.vertical, 10)
+                            .padding(.vertical, DS.Padding.element)
                             .frame(maxWidth: .infinity)
-                            .background(Color("LakeBlue"), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                            .background(Color("LakeBlue"), in: RoundedRectangle(cornerRadius: DS.Radius.medium, style: .continuous))
                     }
                 }
             }
@@ -315,7 +317,7 @@ private struct NotificationStatusCard: View {
 
     @ViewBuilder
     private var statusLabel: some View {
-        HStack(alignment: .top, spacing: 10) {
+        HStack(alignment: .top, spacing: DS.Padding.element) {
             Image(systemName: backgroundRefreshEnabled && isEnabled ? "checkmark.seal.fill" : "exclamationmark.triangle.fill")
                 .font(.title3)
                 .foregroundStyle(backgroundRefreshEnabled && isEnabled ? Color("ForestGreen") : Color("LakeBlue"))
@@ -362,23 +364,22 @@ private struct MakerSection: View {
     @EnvironmentObject private var localization: LocalizationManager
 
     var body: some View {
-        GlassSection(title: loc("SETTINGS_SECTION_CREATOR_TITLE"),
+        GlassCard(title: loc("SETTINGS_SECTION_CREATOR_TITLE"),
                      subtitle: loc("SETTINGS_SECTION_CREATOR_SUBTITLE"),
                      icon: "person.crop.circle.badge.checkmark") {
-            HStack(spacing: 14) {
-                MakerLinkButton(title: loc("SETTINGS_CREATOR_LINKEDIN"), tint: Color(red: 0.0, green: 0.47, blue: 0.71), action: { openLink("https://tr.linkedin.com/in/efetu") }) {
-                    LinkBadgeLabel(symbol: "in", tint: Color(red: 0.0, green: 0.47, blue: 0.71))
+            HStack(spacing: DS.Padding.section) {
+                MakerLinkButton(title: loc("SETTINGS_CREATOR_LINKEDIN"), action: { openLink("https://tr.linkedin.com/in/efetu") }) {
+                    Text("in").font(.title2.weight(.heavy))
                 }
 
-                MakerLinkButton(title: loc("SETTINGS_CREATOR_X"), tint: .black, action: { openLink("https://x.com/efetu0x") }) {
-                    LinkBadgeLabel(symbol: "X", tint: .black)
+                MakerLinkButton(title: loc("SETTINGS_CREATOR_X"), action: { openLink("https://x.com/efetu0x") }) {
+                    Text("X").font(.title2.weight(.heavy))
                 }
 
-                MakerLinkButton(title: loc("SETTINGS_CREATOR_EMAIL"), tint: Color("LakeBlue"), action: openMail) {
+                MakerLinkButton(title: loc("SETTINGS_CREATOR_EMAIL"), action: openMail) {
                     Image(systemName: "envelope.fill")
                         .font(.title2.weight(.semibold))
                         .symbolRenderingMode(.hierarchical)
-                        .onGlassPrimary()
                 }
             }
         }
@@ -403,43 +404,23 @@ private struct MakerSection: View {
 
 private struct MakerLinkButton<Label: View>: View {
     let title: String
-    let tint: Color
     let action: () -> Void
     @ViewBuilder let label: () -> Label
 
     var body: some View {
         Button(action: action) {
-            VStack(spacing: 8) {
+            VStack(spacing: DS.Padding.element) {
                 label()
                 Text(title)
                     .font(.footnote.weight(.semibold))
                     .lineLimit(1)
                     .minimumScaleFactor(0.85)
-                    .onGlassPrimary()
             }
-            .padding(.vertical, 14)
+            .foregroundStyle(Color("ForestGreen"))
+            .padding(.vertical, DS.Padding.section)
             .frame(maxWidth: .infinity)
-            .background(tint.opacity(0.18), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .stroke(tint.opacity(0.55), lineWidth: 1)
-            )
         }
         .buttonStyle(.plain)
-    }
-}
-
-private struct LinkBadgeLabel: View {
-    let symbol: String
-    let tint: Color
-
-    var body: some View {
-        Text(symbol)
-            .font(.title2.weight(.heavy))
-            .padding(.horizontal, 10)
-            .padding(.vertical, 6)
-            .background(tint.opacity(0.9), in: Capsule())
-            .onGlassPrimary()
     }
 }
 #endif
@@ -455,36 +436,36 @@ private struct SettingsHeaderCard: View {
     @Environment(\.colorScheme) var colorScheme
 
     var body: some View {
-        VStack(spacing: 22) {
+        VStack(spacing: DS.Padding.section + DS.Padding.element) {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 6) {
                     Text(loc("SETTINGS_HEADER_TITLE"))
-                        .font(.title2.weight(.semibold))
+                        .font(DS.Typography.sectionTitle)
                         .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
                     Text(loc("SETTINGS_HEADER_SUBTITLE"))
-                        .font(.footnote)
+                        .font(DS.Typography.caption)
                         .foregroundStyle(themeManager.currentTheme.getSecondaryTextColor(for: colorScheme))
                 }
                 Spacer()
                 Text(loc("SETTINGS_HEADER_ACTION"))
                     .font(.caption2.weight(.semibold))
                     .foregroundStyle(themeManager.currentTheme.getSecondaryTextColor(for: colorScheme))
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 8)
+                            .padding(.horizontal, DS.Padding.card)
+                    .padding(.vertical, DS.Padding.element)
                     .background(themeManager.currentTheme.getCardBackground(for: colorScheme), in: Capsule())
             }
 
-            HStack(spacing: 16) {
+            HStack(spacing: DS.Padding.card) {
                 SummaryTile(title: loc("SETTINGS_TILE_FOCUS"), value: loc("SETTINGS_DURATION_FORMAT", Int(focus)), icon: "bolt.fill", color: Color("ForestGreen"))
                 SummaryTile(title: loc("SETTINGS_TILE_BREAKS"), value: loc("SETTINGS_DURATION_FORMAT", Int(shortBreak + longBreak)), icon: "pause.circle.fill", color: Color("LakeBlue"))
                 SummaryTile(title: loc("SETTINGS_TILE_LONG"), value: "\(Int(sessionsBeforeLongBreak))x", icon: "hourglass", color: Color("LakeNight"))
             }
         }
-        .padding(28)
+        .padding(DS.Padding.xl)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(themeManager.currentTheme.getCardBackground(for: colorScheme).opacity(0.8), in: RoundedRectangle(cornerRadius: 36, style: .continuous))
+        .background(themeManager.currentTheme.getCardBackground(for: colorScheme), in: RoundedRectangle(cornerRadius: DS.Radius.xl, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: 36)
+            RoundedRectangle(cornerRadius: DS.Radius.xl)
                 .stroke(themeManager.currentTheme.getCardStroke(for: colorScheme), lineWidth: 1)
         )
     }
@@ -504,64 +485,27 @@ private struct SummaryTile: View {
     @Environment(\.colorScheme) var colorScheme
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: DS.Padding.element) {
             Image(systemName: icon)
-                .font(.headline)
+                .font(.title3.weight(.semibold))
                 .foregroundStyle(color)
-                .padding(10)
-                .background(color.opacity(0.12), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .frame(width: 48, height: 48)
+                .background(color.opacity(0.12), in: RoundedRectangle(cornerRadius: DS.Radius.medium, style: .continuous))
 
             Text(value)
-                .font(.title3.weight(.semibold))
+                .font(DS.Typography.cardTitle)
                 .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
             Text(title)
-                .font(.caption.weight(.semibold))
+                .font(DS.Typography.micro)
                 .foregroundStyle(themeManager.currentTheme.getSecondaryTextColor(for: colorScheme))
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(18)
-        .background(themeManager.currentTheme.getCardBackground(for: colorScheme).opacity(0.5), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .padding(DS.Padding.card)
+        .background(themeManager.currentTheme.getCardBackground(for: colorScheme), in: RoundedRectangle(cornerRadius: DS.Radius.large, style: .continuous))
     }
 }
 
-private struct GlassSection<Content: View>: View {
-    let title: String
-    let subtitle: String
-    let icon: String
-    @ViewBuilder let content: Content
-    @ObservedObject private var themeManager = ThemeManager.shared
-    @Environment(\.colorScheme) var colorScheme
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            HStack(spacing: 14) {
-                Image(systemName: icon)
-                    .font(.title3.weight(.semibold))
-                    .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
-                    .frame(width: 46, height: 46)
-                    .background(themeManager.currentTheme.getCardBackground(for: colorScheme), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(title)
-                        .font(.headline)
-                        .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
-                    Text(subtitle)
-                        .font(.caption)
-                        .foregroundStyle(themeManager.currentTheme.getSecondaryTextColor(for: colorScheme))
-                }
-            }
-
-            content
-        }
-        .padding(24)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(themeManager.currentTheme.getCardBackground(for: colorScheme).opacity(0.6), in: RoundedRectangle(cornerRadius: 32, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 32)
-                .stroke(themeManager.currentTheme.getCardStroke(for: colorScheme), lineWidth: 1)
-        )
-    }
-}
+// GlassSection replaced by shared GlassCard from Components/GlassCard.swift
 
 private struct DurationSlider: View {
     let title: String
@@ -605,12 +549,12 @@ private struct ToggleSetting: View {
     @Environment(\.colorScheme) var colorScheme
 
     var body: some View {
-        HStack(spacing: 16) {
+        HStack(spacing: DS.Padding.card) {
             Image(systemName: icon)
                 .font(.headline)
                 .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
-                .frame(width: 40, height: 40)
-                .background(themeManager.currentTheme.getCardBackground(for: colorScheme), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .frame(width: DS.IconSize.medium, height: DS.IconSize.medium)
+                .background(themeManager.currentTheme.getCardBackground(for: colorScheme), in: RoundedRectangle(cornerRadius: DS.Radius.medium, style: .continuous))
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(title)

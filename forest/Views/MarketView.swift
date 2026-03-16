@@ -17,21 +17,24 @@ struct MarketView: View {
                              title: loc("MARKET_TOTAL_BALANCE", fallback: "Toplam Bakiye"),
                              subtitle: loc("MARKET_OVERVIEW", fallback: "Piyasa değerinin güncel görünümü"))
 
-                VStack(alignment: .leading, spacing: 16) {
-                    ForEach(market.coins) { coin in
+                VStack(spacing: 0) {
+                    ForEach(Array(market.coins.enumerated()), id: \.element.id) { index, coin in
                         CoinCard(coin: coin) {
                             selectedCoin = coin
                         }
                         .environmentObject(market)
+                        if index < market.coins.count - 1 {
+                            Divider().padding(.leading, 60)
+                        }
                     }
                 }
-                .padding(18)
+                .padding(.horizontal, DS.Padding.card)
                 .background(
-                    RoundedRectangle(cornerRadius: 28, style: .continuous)
-                        .fill(Color.clear)
+                    RoundedRectangle(cornerRadius: DS.Radius.large, style: .continuous)
+                        .fill(.clear)
                 )
-                .liquidGlass(.card, edgeMask: [.all])
-                .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+                .liquidGlass(.card, edgeMask: [.top])
+                .clipShape(RoundedRectangle(cornerRadius: DS.Radius.large, style: .continuous))
             }
             .padding(24)
         }
@@ -67,26 +70,21 @@ private struct MarketHeader: View {
     let subtitle: String
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: 6) {
             Text(title)
-                .font(.subheadline.weight(.medium))
+                .font(.caption.weight(.medium))
                 .onGlassSecondary()
 
             Text(balance, format: .currency(code: "TRY"))
-                .font(.system(size: 46, weight: .bold, design: .rounded))
+                .font(.system(size: 36, weight: .bold, design: .rounded))
                 .onGlassPrimary()
-                .shadow(color: .black.opacity(0.35), radius: 18, y: 10)
 
             Text(subtitle)
-                .font(.caption)
+                .font(.caption2)
                 .onGlassSecondary()
         }
-        .padding()
-        .frame(maxWidth: .infinity)
-        .background(
-            RoundedRectangle(cornerRadius: 32, style: .continuous)
-                .fill(LinearGradient(colors: [Color("ForestGreen"), Color("LakeBlue")], startPoint: .topLeading, endPoint: .bottomTrailing))
-        )
+        .padding(DS.Padding.card)
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 
@@ -97,14 +95,6 @@ private struct CoinCard: View {
     @EnvironmentObject private var localization: LocalizationManager
     @ObservedObject private var themeManager = ThemeManager.shared
     @Environment(\.colorScheme) var colorScheme
-
-    private var history: [CoinPriceSnapshot] {
-        market.priceHistory[coin.symbol] ?? []
-    }
-
-    private var stats: MiniSparkline.Stats? {
-        MiniSparkline.Stats(history: history)
-    }
 
     private var descriptionText: String {
         let key: String
@@ -119,130 +109,32 @@ private struct CoinCard: View {
 
     var body: some View {
         Button(action: action) {
-            HStack(spacing: 16) {
+            HStack(spacing: 12) {
                 Image(systemName: coin.iconName)
-                    .font(.title2)
-                    .onGlassPrimary()
-                    .frame(width: 54, height: 54)
-                    .background(
-                        RoundedRectangle(cornerRadius: 16, style: .continuous)
-                            .fill(Color.clear)
-                    )
-                    .liquidGlass(.card, edgeMask: [.all])
-                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    .font(.title3)
+                    .onGlassSecondary()
+                    .frame(width: 36, height: 36)
+                    .background(Color("ForestGreen").opacity(0.08), in: RoundedRectangle(cornerRadius: DS.Radius.small, style: .continuous))
 
-                VStack(alignment: .leading, spacing: 6) {
+                VStack(alignment: .leading, spacing: 2) {
                     Text(coin.name)
-                        .font(.headline)
+                        .font(.subheadline.weight(.medium))
                         .onGlassPrimary()
                     Text(coin.currentPrice, format: .currency(code: "TRY"))
-                        .font(.title3.weight(.semibold))
+                        .font(.subheadline.weight(.semibold))
                         .onGlassPrimary()
                 }
 
                 Spacer()
 
                 Image(systemName: "chevron.right")
+                    .font(.caption)
                     .onGlassSecondary()
             }
-            .padding(18)
-            .background(
-                RoundedRectangle(cornerRadius: 26, style: .continuous)
-                    .fill(Color.clear)
-            )
-            .liquidGlass(.card, edgeMask: [.all])
-            .clipShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
+            .padding(.vertical, DS.Padding.section)
         }
+        .buttonStyle(.plain)
     }
 }
 
-private struct ChangeBadge: View {
-    let percentage: Double
-
-    private var formatted: String {
-        String(format: "%+.2f%%", percentage)
-    }
-
-    private var isPositive: Bool { percentage >= 0 }
-
-    var body: some View {
-        Text(formatted)
-            .font(.caption2.weight(.semibold))
-            .padding(.horizontal, 6)
-            .padding(.vertical, 2)
-            .background((isPositive ? Color.green : Color.red).opacity(0.16), in: Capsule())
-            .foregroundStyle(isPositive ? Color.green : Color.red)
-    }
-}
-
-private struct MiniSparkline: View {
-    let history: [CoinPriceSnapshot]
-    let accent: Color
-    @ObservedObject private var themeManager = ThemeManager.shared
-    @Environment(\.colorScheme) var colorScheme
-
-    var body: some View {
-        GeometryReader { proxy in
-            let points = makePoints(in: proxy.size)
-            let color = accent.opacity(0.85)
-
-            ZStack {
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(themeManager.currentTheme.getCardBackground(for: colorScheme).opacity(0.3))
-
-                if points.count > 1 {
-                    Path { path in
-                        guard let first = points.first else { return }
-                        path.move(to: first)
-                        points.dropFirst().forEach { path.addLine(to: $0) }
-                    }
-                    .stroke(color, style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
-
-                    if let last = points.last {
-                        Circle()
-                            .strokeBorder(color.opacity(0.4), lineWidth: 2)
-                            .background(Circle().fill(themeManager.currentTheme.glassPrimaryText(for: colorScheme)))
-                            .frame(width: 6, height: 6)
-                            .position(last)
-                    }
-                }
-            }
-        }
-    }
-
-    func makePoints(in size: CGSize) -> [CGPoint] {
-        let values = history.map { $0.price }
-        guard values.count > 1 else {
-            return [CGPoint(x: 0, y: size.height / 2), CGPoint(x: size.width, y: size.height / 2)]
-        }
-
-        guard let min = values.min(), let max = values.max(), max - min > 0 else {
-            return values.enumerated().map { index, _ in
-                let x = size.width * CGFloat(index) / CGFloat(values.count - 1)
-                return CGPoint(x: x, y: size.height / 2)
-            }
-        }
-
-        return values.enumerated().map { index, value in
-            let progress = CGFloat(index) / CGFloat(values.count - 1)
-            let normalized = (value - min) / (max - min)
-            let x = progress * size.width
-            let y = size.height * CGFloat(1 - normalized)
-            return CGPoint(x: x, y: y)
-        }
-    }
-
-    struct Stats {
-        let percentage: Double
-
-        init?(history: [CoinPriceSnapshot]) {
-            guard let first = history.first?.price, let last = history.last?.price, first > 0 else { return nil }
-            percentage = ((last - first) / first) * 100
-        }
-
-        static func historyAvailable(_ history: [CoinPriceSnapshot]) -> Bool {
-            history.count > 1
-        }
-    }
-}
 

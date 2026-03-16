@@ -4,57 +4,66 @@ struct CategoryPieChart: View {
     let categoryStats: [CategoryStats]
     @ObservedObject private var themeManager = ThemeManager.shared
     @Environment(\.colorScheme) var colorScheme
-    
+
     var body: some View {
-        HStack(spacing: 24) {
-            // Pie Chart
+        HStack(spacing: DS.Padding.screen) {
             ZStack {
                 if categoryStats.isEmpty {
                     Circle()
                         .fill(themeManager.currentTheme.getCardBackground(for: colorScheme))
                         .frame(width: 160, height: 160)
+                    VStack(spacing: 4) {
+                        Image(systemName: "chart.pie")
+                            .font(.title2)
+                            .onGlassSecondary()
+                        Text("—")
+                            .font(.caption)
+                            .onGlassSecondary()
+                    }
                 } else {
                     PieSlices(stats: categoryStats)
                         .frame(width: 160, height: 160)
                 }
             }
-            
-            // Legend
-            VStack(alignment: .leading, spacing: 12) {
+
+            VStack(alignment: .leading, spacing: DS.Padding.element) {
                 ForEach(categoryStats, id: \.category) { stat in
                     HStack(spacing: 8) {
                         Circle()
                             .fill(stat.category.color)
                             .frame(width: 12, height: 12)
-                        
+
                         VStack(alignment: .leading, spacing: 2) {
                             Text(stat.category.displayName)
                                 .font(.subheadline.weight(.medium))
-                                .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
-                            
+                                .onGlassPrimary()
+
                             HStack(spacing: 8) {
                                 Text(String(format: "%.1fh", stat.hours))
                                     .font(.caption2)
-                                    .foregroundStyle(themeManager.currentTheme.getSecondaryTextColor(for: colorScheme))
-                                
+                                    .onGlassSecondary()
+
                                 Text(String(format: "%.0f%%", stat.percentage))
                                     .font(.caption2.weight(.semibold))
-                                    .foregroundStyle(themeManager.currentTheme.getSecondaryTextColor(for: colorScheme))
+                                    .onGlassSecondary()
                             }
                         }
-                        
+
                         Spacer()
                     }
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
+        .animation(DS.Animation.defaultSpring, value: categoryStats.map(\.category.displayName))
     }
 }
 
 private struct PieSlices: View {
     let stats: [CategoryStats]
-    
+    @ObservedObject private var themeManager = ThemeManager.shared
+    @Environment(\.colorScheme) var colorScheme
+
     var body: some View {
         ZStack {
             ForEach(Array(stats.enumerated()), id: \.element.category) { index, stat in
@@ -65,9 +74,8 @@ private struct PieSlices: View {
                 )
             }
             
-            // Center hole for donut effect
             Circle()
-                .fill(Color("LakeNight").opacity(0.7))
+                .fill(themeManager.currentTheme.getCardBackground(for: colorScheme))
                 .frame(width: 80, height: 80)
         }
     }

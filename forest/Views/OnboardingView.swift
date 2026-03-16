@@ -20,10 +20,15 @@ struct OnboardingView: View {
     @State private var notificationsEnabled = false
     @State private var selectedLanguage: AppLanguage = .english
     @FocusState private var nameFieldFocused: Bool
+    @State private var isForward = true
     
     // MARK: - Transition
-    private var insertionTransition: AnyTransition { .move(edge: .trailing).combined(with: .opacity).combined(with: .scale(scale: 0.98)) }
-    private var removalTransition: AnyTransition { .move(edge: .leading).combined(with: .opacity).combined(with: .scale(scale: 1.02)) }
+    private var insertionTransition: AnyTransition {
+        .opacity.combined(with: .move(edge: isForward ? .trailing : .leading))
+    }
+    private var removalTransition: AnyTransition {
+        .opacity.combined(with: .move(edge: isForward ? .leading : .trailing))
+    }
 
     private var steps: [Step] { Step.allCases }
 
@@ -33,43 +38,31 @@ struct OnboardingView: View {
         ZStack {
             themeManager.currentTheme.getBackgroundGradient(for: colorScheme)
                 .ignoresSafeArea()
-            
-            // Subtle bloom accents for a premium depth (only for gradient theme)
-            if themeManager.currentTheme == .gradient {
-                RadialGradient(colors: [Color.white.opacity(0.08), .clear], center: .topLeading, startRadius: 60, endRadius: 300)
-                    .ignoresSafeArea()
-                RadialGradient(colors: [Color.white.opacity(0.06), .clear], center: .bottomTrailing, startRadius: 80, endRadius: 320)
-                    .ignoresSafeArea()
-            }
 
-            VStack(spacing: 28) {
+            VStack(spacing: DS.Padding.section * 2) {
                 Spacer(minLength: 0)
 
                 ZStack {
-                    VStack(spacing: 14) {
+                    VStack(spacing: DS.Padding.section) {
                         // Gradient-masked icon for a modern Apple-like look
-                        LinearGradient(colors: [Color("ForestGreen"), Color("LakeBlue")], startPoint: .topLeading, endPoint: .bottomTrailing)
-                            .mask(
-                                Image(systemName: step.icon)
-                                    .font(.system(size: 76, weight: .bold))
-                            )
-                            .shadow(color: .black.opacity(0.25), radius: 20, y: 10)
+                        Image(systemName: step.icon)
+                            .font(.system(size: 88, weight: .bold))
+                            .foregroundStyle(Color("ForestGreen"))
 
                         Text(loc(step.titleKey))
-                            .font(.system(.largeTitle, design: .rounded).weight(.bold))
+                            .font(DS.Typography.heroTitle)
                             .multilineTextAlignment(.center)
                             .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
-                            .shadow(color: .black.opacity(0.12), radius: 8, y: 4)
                             .lineLimit(2)
                             .minimumScaleFactor(0.75)
                             .frame(maxWidth: .infinity)
-                            .padding(.horizontal, 24)
+                            .padding(.horizontal, DS.Padding.screen)
 
                         Text(loc(step.subtitleKey))
                             .font(.callout)
                             .multilineTextAlignment(.center)
                             .foregroundStyle(themeManager.currentTheme.getSecondaryTextColor(for: colorScheme))
-                            .padding(.horizontal, 24)
+                            .padding(.horizontal, DS.Padding.screen)
                             .lineLimit(3)
                             .minimumScaleFactor(0.8)
                     }
@@ -83,16 +76,16 @@ struct OnboardingView: View {
                         .id(currentStep)
                         .transition(.asymmetric(insertion: insertionTransition, removal: removalTransition))
                 }
-                .padding(.horizontal, 24)
+                .padding(.horizontal, DS.Padding.screen)
                 .frame(maxWidth: .infinity, alignment: .center)
                 .frame(minHeight: 240, alignment: .top)
 
                 Spacer(minLength: 0)
 
                 onboardingProgress
-                    .padding(.horizontal, 24)
+                    .padding(.horizontal, DS.Padding.screen)
 
-                HStack(spacing: 16) {
+                HStack(spacing: DS.Padding.card) {
                     if currentStep > 0 {
                         backButton
                     }
@@ -100,8 +93,8 @@ struct OnboardingView: View {
                     primaryButton
                         .frame(maxWidth: .infinity)
                 }
-                .padding(.horizontal, 24)
-                .padding(.bottom, 28)
+                .padding(.horizontal, DS.Padding.screen)
+                .padding(.bottom, DS.Padding.xl)
             }
         }
         .interactiveDismissDisabled(true)
@@ -131,41 +124,25 @@ struct OnboardingView: View {
     }
 
     private var onboardingProgress: some View {
-        HStack(spacing: 6) {
+        HStack(spacing: DS.Padding.element) {
             ForEach(steps.indices, id: \.self) { index in
                 Capsule()
-                    .fill(index <= currentStep ? Color.white : Color.white.opacity(0.25))
-                    .frame(height: 6)
+                    .fill(index <= currentStep ? Color("ForestGreen") : Color("ForestGreen").opacity(0.25))
+                    .frame(height: 8)
                     .frame(maxWidth: .infinity)
                     .animation(.easeInOut(duration: 0.25), value: currentStep)
             }
         }
-        .padding(10)
-        .background(
-            Capsule().fill(Color.clear)
-        )
-        .liquidGlass(.header, edgeMask: [.all])
-        .clipShape(Capsule())
     }
 
     private var primaryButton: some View {
         Button(action: nextStep) {
             Text(currentStep == steps.count - 1 ? loc("ONBOARD_PRIMARY_START") : loc("ONBOARD_PRIMARY_NEXT"))
                 .font(.headline.weight(.semibold))
-                .padding(.vertical, 16)
+                .foregroundStyle(.white)
+                .padding(.vertical, DS.Padding.card)
                 .frame(maxWidth: .infinity)
-                .background(
-                    LinearGradient(colors: [Color("ForestGreen"), Color("LakeBlue")],
-                                   startPoint: .topLeading,
-                                   endPoint: .bottomTrailing),
-                    in: RoundedRectangle(cornerRadius: 18, style: .continuous)
-                )
-                .onGlassPrimary()
-                .overlay(
-                    RoundedRectangle(cornerRadius: 18, style: .continuous)
-                        .stroke(.white.opacity(0.25), lineWidth: 1)
-                )
-                .shadow(color: .black.opacity(0.25), radius: 18, y: 10)
+                .background(Color("ForestGreen"), in: RoundedRectangle(cornerRadius: DS.Radius.large, style: .continuous))
         }
         .disabled(steps[currentStep] == .profile && userName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
         .opacity(steps[currentStep] == .profile && userName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? 0.5 : 1)
@@ -173,22 +150,15 @@ struct OnboardingView: View {
     
     private var backButton: some View {
         Button(action: previousStep) {
-            HStack(spacing: 8) {
+            HStack(spacing: DS.Padding.element) {
                 Image(systemName: "chevron.left")
                     .font(.headline.weight(.semibold))
                 Text(loc("ONBOARD_BACK"))
                     .font(.headline.weight(.semibold))
             }
-            .padding(.vertical, 16)
-            .padding(.horizontal, 20)
-            .background(
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .fill(Color.clear)
-            )
-            .liquidGlass(.card, edgeMask: [.all])
-            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-            .onGlassPrimary()
-            .shadow(color: .black.opacity(0.15), radius: 12, y: 6)
+            .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
+            .padding(.vertical, DS.Padding.card)
+            .padding(.horizontal, DS.Padding.screen)
         }
     }
 
@@ -201,9 +171,9 @@ struct OnboardingView: View {
         case .theme:
             ThemeSelectionCard()
         case .focus:
-            VStack(spacing: 18) {
+            VStack(spacing: DS.Padding.section + DS.Padding.element) {
                 OnboardingCard {
-                    VStack(alignment: .leading, spacing: 12) {
+                    VStack(alignment: .leading, spacing: DS.Padding.section) {
                         HStack {
                             Text(loc("ONBOARD_FOCUS_DURATION", Int(focusMinutes)))
                                 .font(.headline)
@@ -215,7 +185,7 @@ struct OnboardingView: View {
                 }
 
                 OnboardingCard {
-                    VStack(alignment: .leading, spacing: 12) {
+                    VStack(alignment: .leading, spacing: DS.Padding.section) {
                         Text(loc("ONBOARD_DAILY_TARGET"))
                             .font(.headline)
                         Stepper(loc("ONBOARD_DAILY_TARGET_VALUE", Int(dailyTarget)), value: $dailyTarget, in: 2...12, step: 1)
@@ -223,9 +193,9 @@ struct OnboardingView: View {
                 }
             }
         case .breaks:
-            VStack(spacing: 18) {
+            VStack(spacing: DS.Padding.section + DS.Padding.element) {
                 OnboardingCard {
-                    VStack(alignment: .leading, spacing: 12) {
+                    VStack(alignment: .leading, spacing: DS.Padding.section) {
                         Text(loc("ONBOARD_SHORT_BREAK", Int(shortBreakMinutes)))
                             .font(.headline)
                         Slider(value: $shortBreakMinutes, in: 3...15, step: 1)
@@ -238,7 +208,7 @@ struct OnboardingView: View {
                 }
 
                 OnboardingCard {
-                    VStack(alignment: .leading, spacing: 12) {
+                    VStack(alignment: .leading, spacing: DS.Padding.section) {
                         Stepper(loc("ONBOARD_BEFORE_LONG_BREAK", Int(sessionsBeforeLongBreak)), value: $sessionsBeforeLongBreak, in: 2...10, step: 1)
                         Toggle(loc("ONBOARD_AUTO_BREAKS"), isOn: $autoStartBreaks)
                             .toggleStyle(.switch)
@@ -253,12 +223,12 @@ struct OnboardingView: View {
                 .environmentObject(localization)
         case .notifications:
             OnboardingCard {
-                VStack(alignment: .leading, spacing: 14) {
+                VStack(alignment: .leading, spacing: DS.Padding.section + DS.Padding.element) {
                     Toggle(loc("ONBOARD_NOTIFICATIONS_TOGGLE"), isOn: $notificationsEnabled)
                         .toggleStyle(.switch)
                     Text(loc("ONBOARD_NOTIFICATIONS_DESC"))
                         .font(.footnote)
-                        .foregroundStyle(.secondary)
+                        .onGlassSecondary()
                 }
             }
         case .language:
@@ -274,7 +244,8 @@ struct OnboardingView: View {
 
     private func nextStep() {
         if currentStep < steps.count - 1 {
-            withAnimation(.spring(response: 0.5, dampingFraction: 0.85)) {
+            isForward = true
+            withAnimation(DS.Animation.slowSpring) {
                 currentStep += 1
             }
         } else {
@@ -284,7 +255,8 @@ struct OnboardingView: View {
     
     private func previousStep() {
         if currentStep > 0 {
-            withAnimation(.spring(response: 0.5, dampingFraction: 0.85)) {
+            isForward = false
+            withAnimation(DS.Animation.slowSpring) {
                 currentStep -= 1
             }
         }
@@ -313,18 +285,17 @@ struct OnboardingView: View {
         @ViewBuilder var content: Content
 
         var body: some View {
-            VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: DS.Padding.section) {
                 content
             }
-            .padding(22)
+            .padding(DS.Padding.card + DS.Padding.section)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(
-                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                RoundedRectangle(cornerRadius: DS.Radius.xl, style: .continuous)
                     .fill(Color.clear)
             )
             .liquidGlass(.card, edgeMask: [.all])
-            .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
-            .shadow(color: .black.opacity(0.18), radius: 24, y: 12)
+            .clipShape(RoundedRectangle(cornerRadius: DS.Radius.xl, style: .continuous))
         }
     }
 
@@ -332,19 +303,20 @@ struct OnboardingView: View {
         @EnvironmentObject private var localization: LocalizationManager
 
         var body: some View {
-            VStack(spacing: 16) {
-                // Keep a single, concise welcome to avoid clutter
+            VStack(spacing: DS.Padding.card) {
                 Text(loc("ONBOARD_WELCOME_DESC"))
                     .font(.title3.weight(.semibold))
                     .multilineTextAlignment(.center)
                     .onGlassPrimary()
                     .padding()
                     .background(
-                        RoundedRectangle(cornerRadius: 22, style: .continuous)
-                            .fill(.white.opacity(0.08))
+                        RoundedRectangle(cornerRadius: DS.Radius.xl, style: .continuous)
+                            .fill(.clear)
                     )
+                    .liquidGlass(.card, edgeMask: [.all])
+                    .clipShape(RoundedRectangle(cornerRadius: DS.Radius.xl, style: .continuous))
             }
-            .padding(.horizontal, 24)
+            .padding(.horizontal, DS.Padding.screen)
         }
 
         private func loc(_ key: String, _ arguments: CVarArg...) -> String {
@@ -357,24 +329,24 @@ struct OnboardingView: View {
 
         var body: some View {
             OnboardingCard {
-                VStack(alignment: .leading, spacing: 12) {
+                VStack(alignment: .leading, spacing: DS.Padding.section) {
                     Label(loc("ONBOARD_FINANCE_EARN"), systemImage: "bolt.fill")
                         .font(.headline)
                     Text(loc("ONBOARD_FINANCE_EARN_DESC"))
                         .font(.footnote)
-                        .foregroundStyle(.secondary)
+                        .onGlassSecondary()
                     Divider().blendMode(.overlay)
                     Label(loc("ONBOARD_FINANCE_BANK"), systemImage: "building.columns")
                         .font(.headline)
                     Text(loc("ONBOARD_FINANCE_BANK_DESC"))
                         .font(.footnote)
-                        .foregroundStyle(.secondary)
+                        .onGlassSecondary()
                     Divider().blendMode(.overlay)
                     Label(loc("ONBOARD_FINANCE_MARKET"), systemImage: "cart.fill")
                         .font(.headline)
                     Text(loc("ONBOARD_FINANCE_MARKET_DESC"))
                         .font(.footnote)
-                        .foregroundStyle(.secondary)
+                        .onGlassSecondary()
                 }
             }
         }
@@ -389,18 +361,18 @@ struct OnboardingView: View {
 
         var body: some View {
             OnboardingCard {
-                VStack(alignment: .leading, spacing: 12) {
+                VStack(alignment: .leading, spacing: DS.Padding.section) {
                     Label(loc("ONBOARD_HOME_CUSTOMIZE"), systemImage: "house.fill")
                         .font(.headline)
                     Text(loc("ONBOARD_HOME_CUSTOMIZE_DESC"))
                         .font(.footnote)
-                        .foregroundStyle(.secondary)
+                        .onGlassSecondary()
                     Divider().blendMode(.overlay)
                     Label(loc("ONBOARD_HOME_THEMES"), systemImage: "sparkles")
                         .font(.headline)
                     Text(loc("ONBOARD_HOME_THEMES_DESC"))
                         .font(.footnote)
-                        .foregroundStyle(.secondary)
+                        .onGlassSecondary()
                 }
             }
         }
@@ -421,7 +393,7 @@ struct OnboardingView: View {
                         .font(.headline)
                     Text(loc("ONBOARD_LANGUAGE_DESCRIPTION"))
                         .font(.footnote)
-                        .foregroundStyle(.secondary)
+                        .onGlassSecondary()
 
                     Picker(loc("ONBOARD_LANGUAGE_TITLE"), selection: $selectedLanguage) {
                         ForEach(AppLanguage.allCases) { language in
@@ -432,7 +404,7 @@ struct OnboardingView: View {
 
                     Text(loc("ONBOARD_LANGUAGE_NOTE"))
                         .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .onGlassSecondary()
                 }
             }
         }
@@ -450,20 +422,29 @@ struct OnboardingView: View {
 
         var body: some View {
             OnboardingCard {
-                VStack(spacing: 16) {
+                VStack(spacing: DS.Padding.card) {
                     TextField(loc("ONBOARD_NAME_PROMPT"), text: $userName)
-                        .textFieldStyle(.roundedBorder)
+                        .textFieldStyle(.plain)
                         .font(.title3.weight(.semibold))
+                        .onGlassPrimary()
+                        .padding(.horizontal, DS.Padding.section)
+                        .padding(.vertical, DS.Padding.element)
+                        .background(
+                            RoundedRectangle(cornerRadius: DS.Radius.small, style: .continuous)
+                                .fill(.clear)
+                        )
+                        .liquidGlass(.card, edgeMask: .all)
+                        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.small, style: .continuous))
                         .focused($nameFieldFocused)
                         .submitLabel(.done)
                         .onSubmit { finishAction() }
 
                     Text(loc("ONBOARD_NAME_HINT"))
                         .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .onGlassSecondary()
                         .multilineTextAlignment(.center)
                 }
-                .padding(.bottom, 4)
+                .padding(.bottom, DS.Padding.element)
             }
         }
 
@@ -543,7 +524,7 @@ private struct ThemeSelectionCard: View {
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 2), spacing: 12) {
                 ForEach(themes, id: \.self) { theme in
                     ThemeOptionCard(theme: theme, isSelected: themeManager.currentTheme == theme) {
-                        themeManager.currentTheme = theme
+                        themeManager.setTheme(theme)
                     }
                 }
             }
@@ -562,7 +543,7 @@ private struct ThemeOptionCard: View {
         Button(action: onTap) {
             VStack(spacing: 12) {
                 // Theme preview
-                RoundedRectangle(cornerRadius: 12)
+                RoundedRectangle(cornerRadius: DS.Radius.small)
                     .fill(theme.getBackgroundGradient(for: colorScheme))
                     .frame(height: 80)
                     .overlay(
@@ -579,7 +560,7 @@ private struct ThemeOptionCard: View {
                         }
                     )
                     .overlay(
-                        RoundedRectangle(cornerRadius: 12)
+                        RoundedRectangle(cornerRadius: DS.Radius.small)
                             .stroke(
                                 isSelected ? Color("ForestGreen") : Color.clear,
                                 lineWidth: 2

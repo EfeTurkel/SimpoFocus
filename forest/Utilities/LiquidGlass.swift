@@ -2,7 +2,7 @@ import SwiftUI
 
 public enum LiquidGlassStyle {
     case system
-    case header
+    case hero
     case card
 }
 
@@ -22,21 +22,28 @@ private struct LiquidGlassBackgroundModifier: ViewModifier {
     @Environment(\.colorScheme) private var colorScheme
     @ObservedObject private var themeManager = ThemeManager.shared
 
+    private var isHero: Bool { style == .hero }
+
     func body(content: Content) -> some View {
         content
             .background(materialBackground)
             .overlay(lensingOverlay)
+            .animation(DS.Animation.themeTransition, value: themeManager.currentTheme)
     }
 
     @ViewBuilder
     private var materialBackground: some View {
-        // Use theme-aware background colors instead of system materials
-        Rectangle()
-            .fill(themeManager.currentTheme.getCardBackground(for: colorScheme))
+        ZStack {
+            Rectangle()
+                .fill(themeManager.currentTheme.getCardBackground(for: colorScheme))
+            Rectangle()
+                .fill(themeManager.currentTheme.glassTint(for: colorScheme))
+        }
     }
 
     @ViewBuilder
     private var lensingOverlay: some View {
+        let edgeHeight: CGFloat = isHero ? 0.04 : 0.03
         GeometryReader { proxy in
             let size = proxy.size
             ZStack {
@@ -44,29 +51,22 @@ private struct LiquidGlassBackgroundModifier: ViewModifier {
                     LinearGradient(colors: topHighlightColors,
                                    startPoint: .top,
                                    endPoint: .bottom)
-                        .frame(height: max(1, size.height * 0.06))
+                        .frame(height: max(1, size.height * edgeHeight))
+                        .frame(maxHeight: .infinity, alignment: .top)
+                }
+                if isHero && edgeMask.contains(.top) {
+                    LinearGradient(colors: heroInnerGlow,
+                                   startPoint: .top,
+                                   endPoint: .bottom)
+                        .frame(height: max(1, size.height * 0.15))
                         .frame(maxHeight: .infinity, alignment: .top)
                 }
                 if edgeMask.contains(.bottom) {
                     LinearGradient(colors: bottomHighlightColors,
                                    startPoint: .bottom,
                                    endPoint: .top)
-                        .frame(height: max(1, size.height * 0.06))
+                        .frame(height: max(1, size.height * edgeHeight))
                         .frame(maxHeight: .infinity, alignment: .bottom)
-                }
-                if edgeMask.contains(.leading) {
-                    LinearGradient(colors: sideHighlightColors,
-                                   startPoint: .leading,
-                                   endPoint: .trailing)
-                        .frame(width: max(1, size.width * 0.06))
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                }
-                if edgeMask.contains(.trailing) {
-                    LinearGradient(colors: sideHighlightColors,
-                                   startPoint: .trailing,
-                                   endPoint: .leading)
-                        .frame(width: max(1, size.width * 0.06))
-                        .frame(maxWidth: .infinity, alignment: .trailing)
                 }
             }
         }
@@ -74,16 +74,32 @@ private struct LiquidGlassBackgroundModifier: ViewModifier {
         .accessibilityHidden(true)
     }
 
-    private var topHighlightColors: [Color] {
+    private var heroInnerGlow: [Color] {
         switch themeManager.currentTheme {
         case .system:
             return colorScheme == .dark
-            ? [Color.white.opacity(0.16), Color.white.opacity(0.04), .clear]
-            : [Color.white.opacity(0.22), Color.white.opacity(0.08), .clear]
-        case .gradient, .oledDark:
-            return [Color.white.opacity(0.16), Color.white.opacity(0.04), .clear]
+            ? [Color.white.opacity(0.04), .clear]
+            : [Color.white.opacity(0.25), .clear]
+        case .gradient:
+            return [Color("ForestGreen").opacity(0.06), .clear]
+        case .oledDark:
+            return [Color.white.opacity(0.03), .clear]
         case .light:
-            return [Color.white.opacity(0.3), Color.white.opacity(0.1), .clear]
+            return [Color.white.opacity(0.3), .clear]
+        }
+    }
+
+    private var topHighlightColors: [Color] {
+        let multiplier: CGFloat = isHero ? 1.5 : 1.0
+        switch themeManager.currentTheme {
+        case .system:
+            return colorScheme == .dark
+            ? [Color.white.opacity(0.10 * multiplier), Color.white.opacity(0.03), .clear]
+            : [Color.white.opacity(0.15 * multiplier), Color.white.opacity(0.05), .clear]
+        case .gradient, .oledDark:
+            return [Color.white.opacity(0.10 * multiplier), Color.white.opacity(0.03), .clear]
+        case .light:
+            return [Color.white.opacity(0.20 * multiplier), Color.white.opacity(0.06), .clear]
         }
     }
 
@@ -91,25 +107,12 @@ private struct LiquidGlassBackgroundModifier: ViewModifier {
         switch themeManager.currentTheme {
         case .system:
             return colorScheme == .dark
-            ? [Color.black.opacity(0.25), Color.black.opacity(0.1), .clear]
-            : [Color.black.opacity(0.18), Color.black.opacity(0.06), .clear]
+            ? [Color.black.opacity(0.12), Color.black.opacity(0.04), .clear]
+            : [Color.black.opacity(0.06), Color.black.opacity(0.02), .clear]
         case .gradient, .oledDark:
-            return [Color.black.opacity(0.25), Color.black.opacity(0.1), .clear]
+            return [Color.black.opacity(0.12), Color.black.opacity(0.04), .clear]
         case .light:
-            return [Color.black.opacity(0.05), Color.black.opacity(0.02), .clear]
-        }
-    }
-
-    private var sideHighlightColors: [Color] {
-        switch themeManager.currentTheme {
-        case .system:
-            return colorScheme == .dark
-            ? [Color.white.opacity(0.08), Color.white.opacity(0.02), .clear]
-            : [Color.white.opacity(0.12), Color.white.opacity(0.04), .clear]
-        case .gradient, .oledDark:
-            return [Color.white.opacity(0.08), Color.white.opacity(0.02), .clear]
-        case .light:
-            return [Color.white.opacity(0.2), Color.white.opacity(0.05), .clear]
+            return [Color.black.opacity(0.03), Color.black.opacity(0.01), .clear]
         }
     }
 }
@@ -119,5 +122,3 @@ public extension View {
         modifier(LiquidGlassBackgroundModifier(style: style, edgeMask: edgeMask))
     }
 }
-
-

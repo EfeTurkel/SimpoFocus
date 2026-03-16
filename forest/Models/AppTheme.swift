@@ -12,138 +12,104 @@ enum AppTheme: String, Codable, CaseIterable, Identifiable {
         LocalizationManager.shared.translate("THEME_\(rawValue.uppercased())")
     }
     
+    private static let warmCream = Color(red: 0.98, green: 0.97, blue: 0.96)
+    private static let warmLight = Color(red: 0.97, green: 0.96, blue: 0.95)
+    private static let warmDark = Color(red: 0.11, green: 0.11, blue: 0.12)
+    
     func backgroundGradient(for colorScheme: ColorScheme) -> LinearGradient {
-        // Always use theme-specific gradients, ignore system colorScheme
         switch self {
         case .system:
-            // For system theme, use a neutral background that adapts
-            return LinearGradient(
-                colors: [Color(.systemBackground), Color(.systemBackground)],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
+            return colorScheme == .dark
+                ? LinearGradient(colors: [Self.warmDark, Self.warmDark], startPoint: .top, endPoint: .bottom)
+                : LinearGradient(colors: [Self.warmLight, Self.warmCream], startPoint: .top, endPoint: .bottom)
         case .gradient:
             return LinearGradient(
-                colors: [Color("ForestGreen"), Color("LakeNight")],
+                colors: [Color("ForestDark"), Color("ForestGreen").opacity(0.35), Color("LakeNight")],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
         case .oledDark:
             return LinearGradient(
-                colors: [Color.black, Color.black],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
+                colors: [Color.black, Color(red: 0.02, green: 0.06, blue: 0.04)],
+                startPoint: .top,
+                endPoint: .bottom
             )
         case .light:
             return LinearGradient(
-                colors: [Color.white, Color.white],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
+                colors: [Self.warmCream, Color(red: 0.96, green: 0.95, blue: 0.93)],
+                startPoint: .top,
+                endPoint: .bottom
             )
         }
     }
     
     func primaryTextColor(for colorScheme: ColorScheme) -> Color {
-        // Always use theme-specific colors, ignore system colorScheme
         switch self {
-        case .system:
-            // For system theme, use a neutral approach
-            return .primary
-        case .gradient, .oledDark:
-            return .white
-        case .light:
-            return .black.opacity(0.9)
+        case .system: return .primary
+        case .gradient, .oledDark: return .white
+        case .light: return Color(red: 0.12, green: 0.12, blue: 0.13)
         }
     }
     
     func primaryTextColor() -> Color {
         switch self {
-        case .system:
-            return .primary
-        case .gradient, .oledDark:
-            return .white
-        case .light:
-            return .black.opacity(0.9)
+        case .system: return .primary
+        case .gradient, .oledDark: return .white
+        case .light: return Color(red: 0.12, green: 0.12, blue: 0.13)
         }
     }
     
     func secondaryTextColor(for colorScheme: ColorScheme) -> Color {
-        // Always use theme-specific colors, ignore system colorScheme
         switch self {
-        case .system:
-            // For system theme, use a neutral approach
-            return .secondary
-        case .gradient, .oledDark:
-            return .white.opacity(0.7)
-        case .light:
-            return .black.opacity(0.7)
+        case .system: return .secondary
+        case .gradient, .oledDark: return .white.opacity(0.65)
+        case .light: return Color(red: 0.12, green: 0.12, blue: 0.13).opacity(0.55)
         }
     }
     
     func secondaryTextColor() -> Color {
         switch self {
-        case .system:
-            return .secondary
-        case .gradient, .oledDark:
-            return .white.opacity(0.7)
-        case .light:
-            return .black.opacity(0.7)
+        case .system: return .secondary
+        case .gradient, .oledDark: return .white.opacity(0.65)
+        case .light: return Color(red: 0.12, green: 0.12, blue: 0.13).opacity(0.55)
         }
     }
     
     func cardBackground(for colorScheme: ColorScheme) -> Color {
-        // Always use theme-specific colors, ignore system colorScheme
         switch self {
         case .system:
-            // For system theme, use a neutral approach
-            return Color(.systemBackground).opacity(0.8)
-        case .gradient:
-            return .white.opacity(0.08)
-        case .oledDark:
-            return .white.opacity(0.05)
-        case .light:
-            return .white.opacity(0.95)
+            return colorScheme == .dark ? Color.white.opacity(0.07) : Color.white.opacity(0.85)
+        case .gradient: return .white.opacity(0.09)
+        case .oledDark: return .white.opacity(0.06)
+        case .light: return .white.opacity(0.92)
         }
     }
     
     func cardBackground() -> Color {
         switch self {
-        case .system:
-            return Color(.systemBackground)
-        case .gradient:
-            return .white.opacity(0.08)
-        case .oledDark:
-            return .white.opacity(0.05)
-        case .light:
-            return .white.opacity(0.95)
+        case .system: return Color(.systemBackground)
+        case .gradient: return .white.opacity(0.09)
+        case .oledDark: return .white.opacity(0.06)
+        case .light: return .white.opacity(0.92)
         }
     }
     
     func cardStroke(for colorScheme: ColorScheme) -> Color {
-        // Always use theme-specific colors, ignore system colorScheme
         switch self {
         case .system:
-            // For system theme, use a neutral approach
-            return Color(.separator)
-        case .gradient:
-            return .white.opacity(0.12)
-        case .oledDark:
-            return .white.opacity(0.1)
-        case .light:
-            return .black.opacity(0.15)
+            return colorScheme == .dark ? Color.white.opacity(0.1) : Color.black.opacity(0.06)
+        case .gradient: return .white.opacity(0.12)
+        case .oledDark: return .white.opacity(0.08)
+        case .light: return .black.opacity(0.06)
         }
     }
     
     func cardStroke() -> Color {
         switch self {
-        case .system:
-            return Color(.separator)
-        case .gradient:
-            return .white.opacity(0.12)
-        case .oledDark:
-            return .white.opacity(0.1)
-        case .light:
-            return .black.opacity(0.15)
+        case .system: return Color(.separator)
+        case .gradient: return .white.opacity(0.12)
+        case .oledDark: return .white.opacity(0.08)
+        case .light: return .black.opacity(0.06)
         }
     }
 }
@@ -157,6 +123,16 @@ final class ThemeManager: ObservableObject {
         }
     }
     
+    func setTheme(_ theme: AppTheme, animated: Bool = true) {
+        if animated {
+            withAnimation(DS.Animation.themeTransition) {
+                currentTheme = theme
+            }
+        } else {
+            currentTheme = theme
+        }
+    }
+    
     private init() {
         if let stored = UserDefaults.standard.string(forKey: "app_theme"),
            let theme = AppTheme(rawValue: stored) {
@@ -167,96 +143,119 @@ final class ThemeManager: ObservableObject {
     }
 }
 
-// MARK: - Helper Extension for ColorScheme Independence
+// MARK: - ColorScheme Independence Helpers
 extension AppTheme {
-    /// Returns the appropriate color method based on theme type
-    /// For system theme, uses colorScheme parameter; for others, ignores it
     func getPrimaryTextColor(for colorScheme: ColorScheme) -> Color {
         switch self {
-        case .system:
-            return primaryTextColor(for: colorScheme)
-        case .gradient, .oledDark, .light:
-            // For non-system themes, ignore colorScheme and use theme-specific colors
-            return primaryTextColor()
+        case .system: return primaryTextColor(for: colorScheme)
+        case .gradient, .oledDark, .light: return primaryTextColor()
         }
     }
     
     func getSecondaryTextColor(for colorScheme: ColorScheme) -> Color {
         switch self {
-        case .system:
-            return secondaryTextColor(for: colorScheme)
-        case .gradient, .oledDark, .light:
-            return secondaryTextColor()
+        case .system: return secondaryTextColor(for: colorScheme)
+        case .gradient, .oledDark, .light: return secondaryTextColor()
         }
     }
     
     func getCardBackground(for colorScheme: ColorScheme) -> Color {
         switch self {
-        case .system:
-            return cardBackground(for: colorScheme)
-        case .gradient, .oledDark, .light:
-            return cardBackground()
+        case .system: return cardBackground(for: colorScheme)
+        case .gradient, .oledDark, .light: return cardBackground()
         }
     }
     
     func getCardStroke(for colorScheme: ColorScheme) -> Color {
         switch self {
-        case .system:
-            return cardStroke(for: colorScheme)
-        case .gradient, .oledDark, .light:
-            return cardStroke()
+        case .system: return cardStroke(for: colorScheme)
+        case .gradient, .oledDark, .light: return cardStroke()
         }
     }
     
     func getBackgroundGradient(for colorScheme: ColorScheme) -> LinearGradient {
         switch self {
-        case .system:
-            return backgroundGradient(for: colorScheme)
-        case .gradient, .oledDark, .light:
-            // For non-system themes, ignore colorScheme and use theme-specific gradients
-            return backgroundGradient(for: .light) // Pass .light as dummy, will be ignored
+        case .system: return backgroundGradient(for: colorScheme)
+        case .gradient, .oledDark, .light: return backgroundGradient(for: .light)
         }
     }
 }
 
 // MARK: - Liquid Glass aware theme colors
 extension AppTheme {
-    /// Primary text/icon color tuned for readability over Liquid Glass
     func glassPrimaryText(for colorScheme: ColorScheme) -> Color {
         switch self {
         case .system:
-            return colorScheme == .dark ? .white : .black
-        case .gradient, .oledDark:
-            return .white
-        case .light:
-            return .black.opacity(0.9)
+            return colorScheme == .dark ? .white : Color(red: 0.12, green: 0.12, blue: 0.13)
+        case .gradient, .oledDark: return .white
+        case .light: return Color(red: 0.12, green: 0.12, blue: 0.13)
         }
     }
 
-    /// Secondary text/icon color tuned for readability over Liquid Glass
     func glassSecondaryText(for colorScheme: ColorScheme) -> Color {
         switch self {
         case .system:
-            return colorScheme == .dark ? Color.white.opacity(0.7) : Color.black.opacity(0.65)
-        case .gradient, .oledDark:
-            return Color.white.opacity(0.75)
-        case .light:
-            return Color.black.opacity(0.7)
+            return colorScheme == .dark ? Color.white.opacity(0.65) : Color.black.opacity(0.5)
+        case .gradient, .oledDark: return Color.white.opacity(0.65)
+        case .light: return Color(red: 0.12, green: 0.12, blue: 0.13).opacity(0.55)
         }
     }
 
-    /// Subtle stroke color to outline glass elements when needed
     func glassStroke(for colorScheme: ColorScheme) -> Color {
         switch self {
         case .system:
-            return colorScheme == .dark ? Color.white.opacity(0.22) : Color.black.opacity(0.2)
-        case .gradient:
-            return Color.white.opacity(0.18)
-        case .oledDark:
-            return Color.white.opacity(0.14)
-        case .light:
-            return Color.black.opacity(0.12)
+            return colorScheme == .dark ? Color.white.opacity(0.15) : Color.black.opacity(0.08)
+        case .gradient: return Color.white.opacity(0.14)
+        case .oledDark: return Color.white.opacity(0.1)
+        case .light: return Color.black.opacity(0.06)
         }
     }
-}
+    
+    func glassTint(for colorScheme: ColorScheme) -> Color {
+        switch self {
+        case .system:
+            return colorScheme == .dark ? Color.white.opacity(0.02) : Color(red: 0.98, green: 0.96, blue: 0.93).opacity(0.15)
+        case .gradient: return Color("ForestGreen").opacity(0.04)
+        case .oledDark: return Color.white.opacity(0.015)
+        case .light: return Color(red: 0.98, green: 0.96, blue: 0.93).opacity(0.2)
+        }
+    }
 
+    func glassTertiaryText(for colorScheme: ColorScheme) -> Color {
+        switch self {
+        case .system:
+            return colorScheme == .dark ? Color.white.opacity(0.35) : Color.black.opacity(0.3)
+        case .gradient, .oledDark: return Color.white.opacity(0.35)
+        case .light: return Color(red: 0.12, green: 0.12, blue: 0.13).opacity(0.3)
+        }
+    }
+
+    func sheetBackground(for colorScheme: ColorScheme) -> Color {
+        switch self {
+        case .system:
+            return colorScheme == .dark ? Color(red: 0.11, green: 0.11, blue: 0.12) : .white
+        case .gradient: return Color(red: 0.05, green: 0.26, blue: 0.16)
+        case .oledDark: return Color(red: 0.06, green: 0.06, blue: 0.07)
+        case .light: return .white
+        }
+    }
+
+    func chipBackground(selected: Bool, for colorScheme: ColorScheme) -> Color {
+        if selected {
+            return glassPrimaryText(for: colorScheme).opacity(0.9)
+        }
+        return glassPrimaryText(for: colorScheme).opacity(0.12)
+    }
+
+    func chipTextColor(selected: Bool, for colorScheme: ColorScheme) -> Color {
+        if selected {
+            switch self {
+            case .system:
+                return colorScheme == .dark ? .black : .white
+            case .gradient, .oledDark: return .black
+            case .light: return .white
+            }
+        }
+        return glassPrimaryText(for: colorScheme).opacity(0.9)
+    }
+}

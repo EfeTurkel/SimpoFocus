@@ -1,6 +1,7 @@
 import SwiftUI
 import Combine
 import UserNotifications
+import StoreKit
 
 @main
 struct FocusForestApp: App {
@@ -40,15 +41,22 @@ struct FocusForestApp: App {
                 .environmentObject(market)
                 .environmentObject(room)
                 .environmentObject(bank)
+                .environmentObject(StoreKitService.shared)
+                .environmentObject(EntitlementManager.shared)
                 .onAppear(perform: setupPersistenceObservers)
                 .onAppear {
-                    // Request AlarmKit permissions/setup when available (iOS 18+) and present
                     #if canImport(AlarmKit)
                     if #available(iOS 18.0, *) {
                         AlarmService.shared.requestAuthorization()
                     }
                     #endif
                     processPendingAction()
+                }
+                .task {
+                    StoreKitService.shared.onCoinsPurchased = { [weak wallet] coins in
+                        wallet?.addPurchasedCoins(amount: coins)
+                    }
+                    StoreKitService.shared.startIfNeeded()
                 }
                 .onChange(of: scenePhase) { _, newPhase in
                     handleScenePhaseChange(newPhase)
@@ -60,58 +68,88 @@ struct FocusForestApp: App {
     }
     
     private func handleURL(_ url: URL) {
+        #if DEBUG
         print("App - Received URL: \(url)")
+        #endif
         if url.scheme == "forest" {
             switch url.host {
             case "start":
+                #if DEBUG
                 print("App - Starting timer from URL")
+                #endif
                 timerService.start()
             case "pause":
+                #if DEBUG
                 print("App - Pausing timer from URL")
+                #endif
                 timerService.pause()
             case "resume":
+                #if DEBUG
                 print("App - Resuming timer from URL")
+                #endif
                 timerService.resume()
             case "reset":
+                #if DEBUG
                 print("App - Resetting timer from URL")
+                #endif
                 timerService.reset()
             default:
+                #if DEBUG
                 print("App - Unknown URL host: \(url.host ?? "nil")")
+                #endif
             }
         }
     }
 
     private func processPendingAction() {
         guard let shared = UserDefaults(suiteName: "group.com.efeturkel.simpoapp") else { 
+            #if DEBUG
             print("App - processPendingAction: Failed to access shared UserDefaults")
+            #endif
             return 
         }
         let action = shared.string(forKey: "pendingAction")
         guard let action else { 
+            #if DEBUG
             print("App - processPendingAction: No pending action found")
+            #endif
             return 
         }
+        #if DEBUG
         print("App - Processing pending action: \(action)")
+        #endif
         switch action {
         case "start":
+            #if DEBUG
             print("App - Executing start action")
+            #endif
             timerService.start()
         case "pause":
+            #if DEBUG
             print("App - Executing pause action")
+            #endif
             timerService.pause()
         case "resume":
+            #if DEBUG
             print("App - Executing resume action")
+            #endif
             timerService.resume()
         case "reset":
+            #if DEBUG
             print("App - Executing reset action")
+            #endif
             timerService.reset()
         default:
+            #if DEBUG
             print("App - Unknown pending action: \(action)")
+            #endif
             break
         }
         shared.removeObject(forKey: "pendingAction")
         shared.removeObject(forKey: "pendingActionAt")
+        #if DEBUG
         print("App - Cleared pending action")
+        #endif
     }
 
     private func setupPersistenceObservers() {
@@ -133,7 +171,9 @@ struct FocusForestApp: App {
             persistence.saveRoom(room)
         case .active:
             // App became active - restore state if needed
+            #if DEBUG
             print("App - Became active, restoring state")
+            #endif
         @unknown default:
             break
         }

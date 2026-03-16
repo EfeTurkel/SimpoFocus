@@ -4,6 +4,8 @@ struct SellCoinSheet: View {
     @EnvironmentObject private var market: MarketViewModel
     @EnvironmentObject private var wallet: WalletViewModel
     @EnvironmentObject private var localization: LocalizationManager
+    @ObservedObject private var themeManager = ThemeManager.shared
+    @Environment(\.colorScheme) var colorScheme
     @Environment(\.dismiss) private var dismiss
     @State private var selectedSymbol: String?
     @State private var quantity: Double = 0
@@ -21,64 +23,93 @@ struct SellCoinSheet: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(spacing: 24) {
-                    PickerCard(selectedSymbol: $selectedSymbol, coins: market.coins)
+            ZStack {
+                themeManager.currentTheme.getBackgroundGradient(for: colorScheme)
+                    .ignoresSafeArea()
 
-                    if let coin = selectedCoin {
-                        CoinOverview(coin: coin, quickSelection: $quickSelection) { value in
-                            quantity = min(value, coin.quantity)
+                ScrollView(showsIndicators: false) {
+                    VStack(spacing: DS.Padding.card) {
+                        PickerCard(selectedSymbol: $selectedSymbol, coins: market.coins)
+
+                        if let coin = selectedCoin {
+                            CoinOverview(coin: coin, quickSelection: $quickSelection) { value in
+                                quantity = min(value, coin.quantity)
+                            }
+                            .environmentObject(market)
+
+                            GlassSection(cornerRadius: DS.Radius.large) {
+                                VStack(spacing: DS.Padding.section) {
+                                    QuantitySlider(quantity: $quantity, maxQuantity: coin.quantity, price: coin.currentPrice)
+                                        .environmentObject(localization)
+
+                                    SellStatTile(title: loc("SELL_COIN_MARKET_VALUE"), value: CurrencyFormatter.abbreviatedCurrency(coin.marketValue), icon: "chart.line.uptrend.xyaxis")
+                                }
+                            }
                         }
-                        .environmentObject(market)
-                        .environmentObject(market)
 
-                        VStack(spacing: 18) {
-                            QuantitySlider(quantity: $quantity, maxQuantity: coin.quantity, price: coin.currentPrice)
-                                .environmentObject(localization)
-
-                            StatTile(title: loc("SELL_COIN_MARKET_VALUE"), value: CurrencyFormatter.abbreviatedCurrency(coin.marketValue), icon: "chart.line.uptrend.xyaxis")
+                        if let errorMessage {
+                            HStack(spacing: DS.Padding.element) {
+                                Image(systemName: "exclamationmark.triangle.fill")
+                                    .foregroundStyle(.red)
+                                Text(errorMessage)
+                                    .font(.subheadline.weight(.medium))
+                                    .onGlassPrimary()
+                            }
+                            .padding(DS.Padding.section)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .background(
+                                RoundedRectangle(cornerRadius: DS.Radius.medium, style: .continuous)
+                                    .fill(Color.red.opacity(0.12))
+                            )
+                            .overlay(
+                                RoundedRectangle(cornerRadius: DS.Radius.medium, style: .continuous)
+                                    .stroke(Color.red.opacity(0.3), lineWidth: 1)
+                            )
+                            .transition(.opacity.combined(with: .offset(y: 8)))
                         }
-                        .padding(22)
-                        .background(
-                            RoundedRectangle(cornerRadius: 28, style: .continuous)
-                                .fill(Color.clear)
-                        )
-                        .liquidGlass(.card, edgeMask: [.top, .bottom])
                     }
-
-                    if let errorMessage {
-                        Text(errorMessage)
-                            .foregroundStyle(.red)
-                    }
+                    .padding(.horizontal, DS.Padding.screen)
+                    .padding(.vertical, DS.Padding.section)
                 }
-                .padding(24)
             }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(loc("SELL_COIN_CLOSE")) { dismiss() }
+                        .onGlassPrimary()
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button(loc("SELL_COIN_SELL")) {
-                        guard let symbol = selectedSymbol else {
-                            errorMessage = loc("SELL_COIN_ERROR_SELECT")
-                            return
-                        }
-                        guard quantity > 0 else {
-                            errorMessage = loc("SELL_COIN_ERROR_QUANTITY")
-                            return
-                        }
-                        let success = market.sell(symbol: symbol, quantity: quantity, wallet: wallet)
-                        if success {
-                            dismiss()
-                        } else {
-                            errorMessage = loc("SELL_COIN_ERROR_INSUFFICIENT")
-                        }
+                        handleSell()
                     }
+                    .onGlassPrimary()
                 }
             }
         }
     }
-    
+
+    private func handleSell() {
+        guard let symbol = selectedSymbol else {
+            withAnimation(DS.Animation.quickSpring) {
+                errorMessage = loc("SELL_COIN_ERROR_SELECT")
+            }
+            return
+        }
+        guard quantity > 0 else {
+            withAnimation(DS.Animation.quickSpring) {
+                errorMessage = loc("SELL_COIN_ERROR_QUANTITY")
+            }
+            return
+        }
+        let success = market.sell(symbol: symbol, quantity: quantity, wallet: wallet)
+        if success {
+            dismiss()
+        } else {
+            withAnimation(DS.Animation.quickSpring) {
+                errorMessage = loc("SELL_COIN_ERROR_INSUFFICIENT")
+            }
+        }
+    }
+
     private func loc(_ key: String, _ arguments: CVarArg...) -> String {
         localization.translate(key, fallback: key, arguments: arguments)
     }
@@ -91,29 +122,30 @@ private struct PickerCard: View {
     @ObservedObject private var themeManager = ThemeManager.shared
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: DS.Padding.element) {
             Text(loc("SELL_COIN_SELECT"))
                 .font(.headline)
+                .onGlassPrimary()
             Picker("Coin", selection: $selectedSymbol) {
                 Text(loc("SELL_COIN_SELECT_PLACEHOLDER")).tag(String?.none)
                 ForEach(coins) { coin in
-                    Text("\(coin.symbol) - \(coin.quantity, format: .number.precision(.fractionLength(2))) adet")
+                    Text("\(coin.symbol) - \(coin.quantity, format: .number.precision(.fractionLength(2))) \(loc("SELL_COIN_QUANTITY_UNIT"))")
                         .tag(String?.some(coin.symbol))
                 }
             }
             .pickerStyle(.menu)
+            .tint(Color("ForestGreen"))
         }
-        .padding(22)
+        .padding(DS.Padding.card)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
-            themeManager.currentTheme == .light
-                ? LinearGradient(colors: [Color("LakeBlue").opacity(0.8), Color("LakeNight").opacity(0.8)], startPoint: .topLeading, endPoint: .bottomTrailing)
-                : LinearGradient(colors: [Color("LakeBlue"), Color("LakeNight")], startPoint: .topLeading, endPoint: .bottomTrailing),
-            in: RoundedRectangle(cornerRadius: 24, style: .continuous)
+            RoundedRectangle(cornerRadius: DS.Radius.large, style: .continuous)
+                .fill(.clear)
         )
-        .onGlassPrimary()
+        .liquidGlass(.card, edgeMask: [.top])
+        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.large, style: .continuous))
     }
-    
+
     private func loc(_ key: String, _ arguments: CVarArg...) -> String {
         localization.translate(key, fallback: key, arguments: arguments)
     }
@@ -126,6 +158,7 @@ private struct CoinOverview: View {
     @EnvironmentObject private var market: MarketViewModel
     @EnvironmentObject private var localization: LocalizationManager
     @ObservedObject private var themeManager = ThemeManager.shared
+    @Environment(\.colorScheme) private var colorScheme
 
     private var quickOptions: [Double] {
         let base = coin.quantity
@@ -133,15 +166,18 @@ private struct CoinOverview: View {
     }
 
     var body: some View {
-        VStack(spacing: 18) {
-            HStack(alignment: .center, spacing: 16) {
+        VStack(spacing: DS.Padding.section) {
+            HStack(alignment: .center, spacing: DS.Padding.section) {
                 Image(systemName: coin.iconName)
                     .font(.system(size: 34))
                     .frame(width: 72, height: 72)
-                    .background(.white.opacity(0.2), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+                    .background(
+                        RoundedRectangle(cornerRadius: DS.Radius.medium, style: .continuous)
+                            .fill(themeManager.currentTheme.getCardBackground(for: colorScheme))
+                    )
                     .overlay(
-                        RoundedRectangle(cornerRadius: 20)
-                            .stroke(.white.opacity(0.3), lineWidth: 1)
+                        RoundedRectangle(cornerRadius: DS.Radius.medium, style: .continuous)
+                            .stroke(themeManager.currentTheme.getCardStroke(for: colorScheme), lineWidth: 1)
                     )
                     .onGlassPrimary()
 
@@ -177,10 +213,11 @@ private struct CoinOverview: View {
                 .padding(.bottom, 4)
 
             if !quickOptions.isEmpty {
-                HStack(spacing: 12) {
+                HStack(spacing: DS.Padding.element) {
                     ForEach(quickOptions, id: \.self) { option in
+                        let isSelected = quickSelection == option
                         Button {
-                            withAnimation(.spring(response: 0.35, dampingFraction: 0.7)) {
+                            withAnimation(DS.Animation.quickSpring) {
                                 quickSelection = option
                                 action(option)
                             }
@@ -188,29 +225,27 @@ private struct CoinOverview: View {
                             Text(option, format: .number.precision(.fractionLength(2)))
                                 .font(.subheadline.weight(.semibold))
                                 .padding(.vertical, 10)
-                                .padding(.horizontal, 16)
+                                .padding(.horizontal, DS.Padding.section)
                                 .background(
-                                    RoundedRectangle(cornerRadius: 18, style: .continuous)
-                                        .fill(quickSelection == option ? Color.white.opacity(0.9) : Color.white.opacity(0.12))
+                                    RoundedRectangle(cornerRadius: DS.Radius.medium - 2, style: .continuous)
+                                        .fill(themeManager.currentTheme.chipBackground(selected: isSelected, for: colorScheme))
                                 )
-                                .foregroundStyle(quickSelection == option ? Color.black : Color.white.opacity(0.85))
+                                .foregroundStyle(themeManager.currentTheme.chipTextColor(selected: isSelected, for: colorScheme))
                         }
+                        .buttonStyle(ScaleButtonStyle())
                     }
                 }
             }
         }
-        .padding(24)
+        .padding(DS.Padding.screen)
         .background(
-            RoundedRectangle(cornerRadius: 32, style: .continuous)
-                .fill(
-                    themeManager.currentTheme == .light
-                        ? LinearGradient(colors: [Color("ForestGreen").opacity(0.8), Color("LakeBlue").opacity(0.8)], startPoint: .topLeading, endPoint: .bottomTrailing)
-                        : LinearGradient(colors: [Color("ForestGreen"), Color("LakeBlue")], startPoint: .topLeading, endPoint: .bottomTrailing)
-                )
-                .shadow(color: .black.opacity(0.25), radius: 24, y: 12)
+            RoundedRectangle(cornerRadius: DS.Radius.xl, style: .continuous)
+                .fill(.clear)
         )
+        .liquidGlass(.card, edgeMask: [.top])
+        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.xl, style: .continuous))
     }
-    
+
     private func loc(_ key: String, _ arguments: CVarArg...) -> String {
         localization.translate(key, fallback: key, arguments: arguments)
     }
@@ -223,13 +258,15 @@ private struct QuantitySlider: View {
     @EnvironmentObject private var localization: LocalizationManager
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: DS.Padding.element) {
             HStack {
                 Text(loc("SELL_COIN_QUANTITY"))
                     .font(.headline)
+                    .onGlassPrimary()
                 Spacer()
                 Text(quantity, format: .number.precision(.fractionLength(4)))
                     .font(.headline)
+                    .onGlassPrimary()
             }
             Slider(value: $quantity, in: 0...maxQuantity, step: max(maxQuantity / 20, 0.01))
                 .tint(Color("ForestGreen"))
@@ -237,36 +274,43 @@ private struct QuantitySlider: View {
             if price > 0 {
                 Text("≈ \((quantity * price), format: .currency(code: "TRY"))")
                     .font(.subheadline.weight(.medium))
+                    .onGlassSecondary()
             }
         }
     }
-    
+
     private func loc(_ key: String, _ arguments: CVarArg...) -> String {
         localization.translate(key, fallback: key, arguments: arguments)
     }
 }
 
-private struct StatTile: View {
+private struct SellStatTile: View {
     let title: String
     let value: String
     let icon: String
 
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: DS.Padding.element) {
             Image(systemName: icon)
                 .font(.headline)
+                .onGlassPrimary()
             VStack(alignment: .leading, spacing: 2) {
                 Text(value)
                     .font(.headline)
+                    .onGlassPrimary()
                 Text(title)
                     .font(.caption)
                     .onGlassSecondary()
             }
         }
-        .onGlassPrimary()
         .padding(.vertical, 14)
-        .padding(.horizontal, 16)
-        .background(.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .padding(.horizontal, DS.Padding.section)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: DS.Radius.medium, style: .continuous)
+                .fill(.clear)
+        )
+        .liquidGlass(.card, edgeMask: [.all])
+        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.medium, style: .continuous))
     }
 }
-

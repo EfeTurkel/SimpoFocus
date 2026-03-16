@@ -18,22 +18,30 @@ struct PauseTimerIntent: AppIntent {
     
     func perform() async throws -> some IntentResult {
         // Send notification to app to pause timer
+        #if DEBUG
         print("Widget - PauseTimerIntent triggered")
+        #endif
         NotificationCenter.default.post(name: .pauseTimer, object: nil)
         // Write pending action for app to process when opened
         if let shared = UserDefaults(suiteName: "group.com.efeturkel.simpoapp") {
             shared.set("pause", forKey: "pendingAction")
             shared.set(Date().timeIntervalSince1970, forKey: "pendingActionAt")
+            #if DEBUG
             print("Widget - PauseTimerIntent: Set pendingAction=pause")
+            #endif
         } else {
+            #if DEBUG
             print("Widget - PauseTimerIntent: Failed to access shared UserDefaults")
+            #endif
         }
         
         // Force widget reload after a short delay
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             #if canImport(WidgetKit)
             WidgetCenter.shared.reloadTimelines(ofKind: "Simpofocuswidget")
+            #if DEBUG
             print("Widget - Forced timeline reload after pause")
+            #endif
             #endif
         }
         
@@ -87,36 +95,50 @@ struct StartTimerIntent: AppIntent {
     static var openAppWhenRun: Bool = true
     
     func perform() async throws -> some IntentResult {
+        #if DEBUG
         print("Widget - StartTimerIntent triggered")
+        #endif
         
         // Send notification to app
         NotificationCenter.default.post(name: .startTimer, object: nil)
         if let shared = UserDefaults(suiteName: "group.com.efeturkel.simpoapp") {
             shared.set("start", forKey: "pendingAction")
             shared.set(Date().timeIntervalSince1970, forKey: "pendingActionAt")
+            #if DEBUG
             print("Widget - StartTimerIntent: Set pendingAction=start")
+            #endif
         } else {
+            #if DEBUG
             print("Widget - StartTimerIntent: Failed to access shared UserDefaults")
+            #endif
         }
         
         // Force widget reload immediately and after delays
         #if canImport(WidgetKit)
         WidgetCenter.shared.reloadTimelines(ofKind: "Simpofocuswidget")
+        #if DEBUG
         print("Widget - Immediate timeline reload after start")
+        #endif
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
             WidgetCenter.shared.reloadTimelines(ofKind: "Simpofocuswidget")
+            #if DEBUG
             print("Widget - Quick timeline reload after start")
+            #endif
         }
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             WidgetCenter.shared.reloadTimelines(ofKind: "Simpofocuswidget")
+            #if DEBUG
             print("Widget - Delayed timeline reload after start")
+            #endif
         }
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
             WidgetCenter.shared.reloadTimelines(ofKind: "Simpofocuswidget")
+            #if DEBUG
             print("Widget - Final timeline reload after start")
+            #endif
         }
         #endif
         

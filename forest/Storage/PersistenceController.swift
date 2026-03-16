@@ -1,8 +1,10 @@
 import Foundation
 import Combine
 
-final class PersistenceController {
+final class PersistenceController: ObservableObject {
     static let shared = PersistenceController()
+
+    @Published var lastSaveError: String?
 
     private let walletKey = "wallet_snapshot"
     private let marketKey = "market_snapshot"
@@ -18,7 +20,10 @@ final class PersistenceController {
             let data = try encoder.encode(wallet.snapshot())
             UserDefaults.standard.set(data, forKey: walletKey)
         } catch {
+            lastSaveError = error.localizedDescription
+            #if DEBUG
             print("Failed to save wallet: \(error)")
+            #endif
         }
     }
 
@@ -27,7 +32,9 @@ final class PersistenceController {
         do {
             return try decoder.decode(WalletViewModel.Snapshot.self, from: data)
         } catch {
+            #if DEBUG
             print("Failed to decode wallet: \(error)")
+            #endif
             return nil
         }
     }
@@ -37,7 +44,10 @@ final class PersistenceController {
             let data = try encoder.encode(market.snapshot())
             UserDefaults.standard.set(data, forKey: marketKey)
         } catch {
+            lastSaveError = error.localizedDescription
+            #if DEBUG
             print("Failed to save market: \(error)")
+            #endif
         }
     }
 
@@ -46,7 +56,9 @@ final class PersistenceController {
         do {
             return try decoder.decode(MarketViewModel.Snapshot.self, from: data)
         } catch {
+            #if DEBUG
             print("Failed to decode market: \(error)")
+            #endif
             return nil
         }
     }
@@ -56,7 +68,10 @@ final class PersistenceController {
             let data = try encoder.encode(bank.snapshot())
             UserDefaults.standard.set(data, forKey: bankKey)
         } catch {
+            lastSaveError = error.localizedDescription
+            #if DEBUG
             print("Failed to save bank: \(error)")
+            #endif
         }
     }
 
@@ -65,7 +80,9 @@ final class PersistenceController {
         do {
             return try decoder.decode(BankSnapshot.self, from: data)
         } catch {
+            #if DEBUG
             print("Failed to decode bank: \(error)")
+            #endif
             return nil
         }
     }
@@ -75,7 +92,10 @@ final class PersistenceController {
             let data = try encoder.encode(timer.snapshot())
             UserDefaults.standard.set(data, forKey: timerKey)
         } catch {
+            lastSaveError = error.localizedDescription
+            #if DEBUG
             print("Failed to save timer: \(error)")
+            #endif
         }
     }
 
@@ -84,7 +104,9 @@ final class PersistenceController {
         do {
             return try decoder.decode(PomodoroTimerService.Snapshot.self, from: data)
         } catch {
+            #if DEBUG
             print("Failed to decode timer: \(error)")
+            #endif
             return nil
         }
     }
@@ -94,7 +116,10 @@ final class PersistenceController {
             let data = try encoder.encode(room.snapshot())
             UserDefaults.standard.set(data, forKey: roomKey)
         } catch {
+            lastSaveError = error.localizedDescription
+            #if DEBUG
             print("Failed to save room: \(error)")
+            #endif
         }
     }
 
@@ -103,7 +128,9 @@ final class PersistenceController {
         do {
             return try decoder.decode(RoomSnapshot.self, from: data)
         } catch {
+            #if DEBUG
             print("Failed to decode room: \(error)")
+            #endif
             return nil
         }
     }

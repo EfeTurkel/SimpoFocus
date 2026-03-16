@@ -32,13 +32,17 @@ final class AnalyticsCalculator {
     
     func weekStats() -> PeriodStats {
         let now = Date()
-        let weekAgo = calendar.date(byAdding: .day, value: -7, to: now)!
+        guard let weekAgo = calendar.date(byAdding: .day, value: -7, to: now) else {
+            return PeriodStats(sessions: 0, hours: 0, coins: 0)
+        }
         return statsForPeriod { $0.date >= weekAgo && $0.date <= now }
     }
     
     func monthStats() -> PeriodStats {
         let now = Date()
-        let monthAgo = calendar.date(byAdding: .month, value: -1, to: now)!
+        guard let monthAgo = calendar.date(byAdding: .month, value: -1, to: now) else {
+            return PeriodStats(sessions: 0, hours: 0, coins: 0)
+        }
         return statsForPeriod { $0.date >= monthAgo && $0.date <= now }
     }
     
@@ -78,7 +82,7 @@ final class AnalyticsCalculator {
     // MARK: - Category Breakdown
     
     func categoryBreakdown(for year: Int? = nil) -> [CategoryStats] {
-        let sessions = year != nil ? sessionsForYear(year!) : sessionHistory
+        let sessions = year.map { sessionsForYear($0) } ?? sessionHistory
         let totalHours = sessions.reduce(0) { $0 + $1.hours }
         
         guard totalHours > 0 else { return [] }

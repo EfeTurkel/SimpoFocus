@@ -1,0 +1,330 @@
+import SwiftUI
+import StoreKit
+
+struct PaywallView: View {
+    var onDismissedWithoutPurchase: (() -> Void)?
+
+    @EnvironmentObject private var storeKit: StoreKitService
+    @EnvironmentObject private var entitlements: EntitlementManager
+    @EnvironmentObject private var localization: LocalizationManager
+    @ObservedObject private var themeManager = ThemeManager.shared
+    @Environment(\.colorScheme) var colorScheme
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var selectedProduct: Product?
+    @State private var isPurchasing = false
+    @State private var errorMessage: String?
+    @State private var appeared = false
+
+    var body: some View {
+        NavigationStack {
+            ZStack {
+                themeManager.currentTheme.getBackgroundGradient(for: colorScheme)
+                    .ignoresSafeArea()
+
+                ScrollView(showsIndicators: false) {
+                    VStack(spacing: DS.Padding.card) {
+                        headerSection
+                            .opacity(appeared ? 1 : 0)
+                            .offset(y: appeared ? 0 : 10)
+                            .animation(DS.Animation.defaultSpring, value: appeared)
+                        featuresSection
+                            .opacity(appeared ? 1 : 0)
+                            .offset(y: appeared ? 0 : 10)
+                            .animation(DS.Animation.defaultSpring.delay(DS.Animation.staggerDelay(index: 1, base: 0.05)), value: appeared)
+
+                        if let loadError = storeKit.loadError {
+                            GlassSection {
+                                VStack(spacing: DS.Padding.element) {
+                                    Text(loadError)
+                                        .font(.footnote)
+                                        .foregroundStyle(.red)
+                                        .multilineTextAlignment(.center)
+                                    Button(loc("PAYWALL_RESTORE")) {
+                                        Task { await storeKit.loadProducts() }
+                                    }
+                                    .buttonStyle(SecondaryCTAStyle())
+                                }
+                            }
+                        } else {
+                            plansSection
+                                .opacity(appeared ? 1 : 0)
+                                .offset(y: appeared ? 0 : 10)
+                                .animation(DS.Animation.defaultSpring.delay(DS.Animation.staggerDelay(index: 2, base: 0.05)), value: appeared)
+                            purchaseButton
+                                .opacity(appeared ? 1 : 0)
+                                .offset(y: appeared ? 0 : 10)
+                                .animation(DS.Animation.defaultSpring.delay(DS.Animation.staggerDelay(index: 3, base: 0.05)), value: appeared)
+                        }
+
+                        restoreButton
+                        termsFooter
+                    }
+                    .padding(.horizontal, DS.Padding.screen)
+                    .padding(.bottom, 40)
+                }
+            }
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button {
+                        onDismissedWithoutPurchase?()
+                        dismiss()
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.title3)
+                            .symbolRenderingMode(.hierarchical)
+                            .onGlassSecondary()
+                    }
+                }
+            }
+            .onAppear {
+                if selectedProduct == nil {
+                    selectedProduct = storeKit.subscriptionProducts.first { $0.id == StoreKitService.proYearlyID }
+                        ?? storeKit.subscriptionProducts.last
+                }
+                appeared = true
+            }
+        }
+    }
+
+    // MARK: - Header
+
+    private var headerSection: some View {
+        VStack(spacing: DS.Padding.section) {
+            Image(systemName: "crown.fill")
+                .font(.system(size: 64))
+                .foregroundStyle(Color("ForestGreen"))
+                .shadow(color: Color("ForestGreen").opacity(0.3), radius: 20, y: 4)
+
+            Text(loc("PAYWALL_TITLE"))
+                .font(DS.Typography.heroTitle)
+                .onGlassPrimary()
+
+            Text(loc("PAYWALL_SUBTITLE"))
+                .font(DS.Typography.body)
+                .onGlassSecondary()
+                .multilineTextAlignment(.center)
+        }
+        .padding(.top, DS.Padding.section)
+    }
+
+    // MARK: - Features
+
+    private var featuresSection: some View {
+        GlassSection(cornerRadius: DS.Radius.large) {
+            VStack(spacing: 14) {
+                FeatureRow(icon: "infinity", text: loc("PAYWALL_FEATURE_CATEGORIES"), color: Color("ForestGreen"))
+                FeatureRow(icon: "chart.bar.xaxis", text: loc("PAYWALL_FEATURE_ANALYTICS"), color: Color("ForestGreen"))
+                FeatureRow(icon: "paintbrush.fill", text: loc("PAYWALL_FEATURE_THEMES"), color: Color("ForestGreen"))
+                FeatureRow(icon: "timer", text: loc("PAYWALL_FEATURE_TIMER"), color: Color("ForestGreen"))
+                FeatureRow(icon: "arrow.up.right", text: loc("PAYWALL_FEATURE_COINS"), color: Color("ForestGreen"))
+            }
+        }
+    }
+
+    // MARK: - Plans
+
+    private var plansSection: some View {
+        VStack(spacing: DS.Padding.element) {
+            ForEach(Array(storeKit.subscriptionProducts.enumerated()), id: \.element.id) { index, product in
+                PlanCard(
+                    product: product,
+                    isSelected: selectedProduct?.id == product.id,
+                    isBestValue: product.id == StoreKitService.proYearlyID
+                ) {
+                    withAnimation(DS.Animation.quickSpring) {
+                        selectedProduct = product
+                    }
+                }
+                .environmentObject(localization)
+                .transition(.opacity.combined(with: .offset(y: 8)))
+            }
+        }
+    }
+
+    // MARK: - Purchase Button
+
+    private var purchaseButton: some View {
+        VStack(spacing: 8) {
+            if let error = errorMessage {
+                Text(error)
+                    .font(.footnote)
+                    .foregroundStyle(.red)
+                    .transition(.opacity)
+            }
+
+            Button {
+                Task { await handlePurchase() }
+            } label: {
+                HStack(spacing: 8) {
+                    if isPurchasing {
+                        ProgressView()
+                            .tint(.white)
+                    }
+                    Text(entitlements.isPro ? loc("PAYWALL_ALREADY_PRO") : loc("PAYWALL_SUBSCRIBE"))
+                }
+            }
+            .buttonStyle(PrimaryCTAStyle())
+            .disabled(isPurchasing || selectedProduct == nil || entitlements.isPro)
+            .opacity(entitlements.isPro ? 0.5 : 1)
+            .accessibilityHint(loc("PAYWALL_TERMS"))
+        }
+    }
+
+    // MARK: - Restore
+
+    private var restoreButton: some View {
+        Button {
+            Task { await storeKit.restorePurchases() }
+        } label: {
+            Text(loc("PAYWALL_RESTORE"))
+        }
+        .buttonStyle(GhostButtonStyle())
+    }
+
+    // MARK: - Terms
+
+    private var termsFooter: some View {
+        Text(loc("PAYWALL_TERMS"))
+            .font(.caption2)
+            .onGlassSecondary()
+            .opacity(0.7)
+            .multilineTextAlignment(.center)
+    }
+
+    // MARK: - Actions
+
+    private func handlePurchase() async {
+        guard let product = selectedProduct else { return }
+        isPurchasing = true
+        errorMessage = nil
+
+        do {
+            let transaction = try await storeKit.purchase(product)
+            if transaction != nil {
+                UINotificationFeedbackGenerator().notificationOccurred(.success)
+                dismiss()
+            }
+        } catch {
+            UINotificationFeedbackGenerator().notificationOccurred(.error)
+            errorMessage = error.localizedDescription
+        }
+
+        isPurchasing = false
+    }
+
+    private func loc(_ key: String, _ arguments: CVarArg...) -> String {
+        localization.translate(key, fallback: key, arguments: arguments)
+    }
+}
+
+// MARK: - Feature Row
+
+private struct FeatureRow: View {
+    let icon: String
+    let text: String
+    let color: Color
+
+    var body: some View {
+        HStack(spacing: DS.Padding.section) {
+            Image(systemName: icon)
+                .font(.body.weight(.semibold))
+                .foregroundStyle(color)
+                .frame(width: 44, height: 44)
+                .background(color.opacity(0.12), in: RoundedRectangle(cornerRadius: DS.Radius.small, style: .continuous))
+
+            Text(text)
+                .font(DS.Typography.body)
+                .onGlassPrimary()
+
+            Spacer()
+
+            Image(systemName: "checkmark.circle.fill")
+                .font(.body.weight(.bold))
+                .foregroundStyle(Color("ForestGreen"))
+        }
+        .frame(minHeight: 56)
+    }
+}
+
+// MARK: - Plan Card
+
+private struct PlanCard: View {
+    let product: Product
+    let isSelected: Bool
+    let isBestValue: Bool
+    let onTap: () -> Void
+    @EnvironmentObject private var localization: LocalizationManager
+    @ObservedObject private var themeManager = ThemeManager.shared
+    @Environment(\.colorScheme) private var colorScheme
+
+    var body: some View {
+        Button(action: onTap) {
+            HStack(spacing: DS.Padding.section) {
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack(spacing: 8) {
+                        Text(planTitle)
+                            .font(.subheadline.weight(.semibold))
+                            .onGlassPrimary()
+
+                        if isBestValue {
+                            Text(loc("PAYWALL_BEST_VALUE"))
+                                .font(.caption2.weight(.bold))
+                                .foregroundStyle(.white)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 3)
+                                .background(Color("ForestGreen"), in: Capsule())
+                        }
+                    }
+
+                    Text(product.displayPrice + " / " + periodSuffix)
+                        .font(.caption)
+                        .onGlassSecondary()
+                }
+
+                Spacer()
+
+                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                    .font(.title3)
+                    .foregroundStyle(isSelected ? Color("ForestGreen") : themeManager.currentTheme.glassSecondaryText(for: colorScheme))
+            }
+            .padding(DS.Padding.card)
+            .frame(minHeight: 80)
+            .background(
+                RoundedRectangle(cornerRadius: DS.Radius.medium, style: .continuous)
+                    .fill(.clear)
+            )
+            .liquidGlass(.card, edgeMask: [.all])
+            .clipShape(RoundedRectangle(cornerRadius: DS.Radius.medium, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: DS.Radius.medium, style: .continuous)
+                    .stroke(isSelected ? Color("ForestGreen") : .clear, lineWidth: 2)
+            )
+            .shadow(color: isSelected ? Color("ForestGreen").opacity(0.15) : .clear, radius: 8, y: 2)
+        }
+        .buttonStyle(ScaleButtonStyle())
+    }
+
+    private var planTitle: String {
+        switch product.id {
+        case StoreKitService.proWeeklyID:  return loc("PAYWALL_PLAN_WEEKLY")
+        case StoreKitService.proMonthlyID: return loc("PAYWALL_PLAN_MONTHLY")
+        case StoreKitService.proYearlyID:  return loc("PAYWALL_PLAN_YEARLY")
+        default: return product.displayName
+        }
+    }
+
+    private var periodSuffix: String {
+        switch product.id {
+        case StoreKitService.proWeeklyID:  return loc("PAYWALL_PERIOD_WEEK")
+        case StoreKitService.proMonthlyID: return loc("PAYWALL_PERIOD_MONTH")
+        case StoreKitService.proYearlyID:  return loc("PAYWALL_PERIOD_YEAR")
+        default: return ""
+        }
+    }
+
+    private func loc(_ key: String) -> String {
+        localization.translate(key, fallback: key)
+    }
+}

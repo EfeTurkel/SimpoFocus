@@ -81,8 +81,10 @@ struct BankView: View {
             depositAmount = 0
             let formatted = "₺" + String(format: "%.2f", requested)
             feedback = FeedbackMessage(message: loc("BANK_SUCCESS_DEPOSIT", formatted), color: .green)
+            scheduleDismiss()
         } else {
             feedback = FeedbackMessage(message: loc("BANK_ERROR_GENERIC"), color: .red)
+            scheduleDismiss()
         }
     }
 
@@ -107,8 +109,16 @@ struct BankView: View {
             withdrawAmount = 0
             let formatted = "₺" + String(format: "%.2f", requested)
             feedback = FeedbackMessage(message: loc("BANK_SUCCESS_WITHDRAW", formatted), color: .green)
+            scheduleDismiss()
         } else {
             feedback = FeedbackMessage(message: loc("BANK_ERROR_GENERIC"), color: .red)
+            scheduleDismiss()
+        }
+    }
+
+    private func scheduleDismiss() {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
+            withAnimation(DS.Animation.quickSpring) { feedback = nil }
         }
     }
 
@@ -144,7 +154,7 @@ private struct ToastMessage: View {
                 .font(.headline)
                 .onGlassPrimary()
                 .padding(10)
-                .background(.white.opacity(0.18), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .background(themeManager.currentTheme.getCardBackground(for: colorScheme), in: RoundedRectangle(cornerRadius: DS.Radius.small, style: .continuous))
 
             Text(text)
                 .font(.callout.weight(.semibold))
@@ -157,9 +167,8 @@ private struct ToastMessage: View {
         .padding(.horizontal, 18)
         .padding(.vertical, 14)
         .background(
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
+            RoundedRectangle(cornerRadius: DS.Radius.large, style: .continuous)
                 .fill(themeManager.currentTheme.getCardBackground(for: colorScheme))
-                .shadow(color: .black.opacity(0.25), radius: 18, y: 12)
         )
     }
 }
@@ -174,30 +183,30 @@ private struct BankSummaryCard: View {
     @Environment(\.colorScheme) var colorScheme
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 18) {
+        VStack(alignment: .leading, spacing: DS.Padding.card) {
             Text(loc("BANK_ACCOUNT"))
-                .font(.callout.weight(.medium))
+                .font(DS.Typography.caption)
                 .onGlassSecondary()
 
-            VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: DS.Padding.section) {
                 SummaryRow(title: loc("BANK_AVAILABLE"), value: available)
                 SummaryRow(title: loc("BANK_STAKED"), value: staked)
                 SummaryRow(title: loc("BANK_EARNED"), value: earned, highlight: true)
             }
 
-            HStack(spacing: 16) {
+            HStack(spacing: DS.Padding.section) {
                 InfoChip(title: loc("BANK_YEARLY_RATE"), value: ratePercent)
                 InfoChip(title: loc("BANK_DAILY_RATE"), value: dailyPercent)
             }
         }
-        .padding(24)
+        .padding(DS.Padding.card)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
-            RoundedRectangle(cornerRadius: 32, style: .continuous)
+            RoundedRectangle(cornerRadius: DS.Radius.large, style: .continuous)
                 .fill(Color.clear)
         )
-        .liquidGlass(.card, edgeMask: [.all])
-        .clipShape(RoundedRectangle(cornerRadius: 32, style: .continuous))
+        .liquidGlass(.card, edgeMask: [.top])
+        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.large, style: .continuous))
     }
 
     private var ratePercent: String {
@@ -241,15 +250,15 @@ private struct InfoChip: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(title)
-                .font(.caption2)
+                .font(DS.Typography.micro)
                 .onGlassSecondary()
             Text(value)
-                .font(.headline)
+                .font(DS.Typography.cardTitle)
                 .onGlassPrimary()
         }
-        .padding(.vertical, 12)
-        .padding(.horizontal, 16)
-        .background(themeManager.currentTheme.getCardBackground(for: colorScheme).opacity(0.8), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .padding(.vertical, DS.Padding.element)
+        .padding(.horizontal, DS.Padding.section)
+        .background(themeManager.currentTheme.getCardBackground(for: colorScheme).opacity(0.8), in: RoundedRectangle(cornerRadius: DS.Radius.medium, style: .continuous))
     }
 }
 
@@ -265,9 +274,9 @@ private struct BankActionsSection: View {
     @Environment(\.colorScheme) var colorScheme
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 20) {
+        VStack(alignment: .leading, spacing: DS.Padding.card) {
             Text(loc("BANK_ACTIONS"))
-                .font(.headline)
+                .font(DS.Typography.sectionTitle)
                 .onGlassPrimary()
 
             VStack(spacing: 18) {
@@ -290,13 +299,13 @@ private struct BankActionsSection: View {
                 .environmentObject(localization)
             }
         }
-        .padding(24)
+        .padding(DS.Padding.card)
         .background(
-            RoundedRectangle(cornerRadius: 32, style: .continuous)
+            RoundedRectangle(cornerRadius: DS.Radius.large, style: .continuous)
                 .fill(Color.clear)
         )
-        .liquidGlass(.card, edgeMask: [.all])
-        .clipShape(RoundedRectangle(cornerRadius: 32, style: .continuous))
+        .liquidGlass(.card, edgeMask: [.top])
+        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.large, style: .continuous))
     }
 
     private func loc(_ key: String, _ arguments: CVarArg...) -> String {
@@ -327,67 +336,52 @@ private struct ActionCard: View {
     }()
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: DS.Padding.section) {
+            VStack(alignment: .leading, spacing: 4) {
                 Text(title)
-                    .font(.headline)
-                    .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
+                    .font(.subheadline.weight(.semibold))
+                    .onGlassPrimary()
                 Text(subtitle)
-                    .font(.caption)
-                    .foregroundStyle(themeManager.currentTheme.getSecondaryTextColor(for: colorScheme))
+                    .font(.caption2)
+                    .onGlassSecondary()
             }
 
             HStack {
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .leading, spacing: 2) {
                     Text(loc("BANK_AVAILABLE_LABEL"))
                         .font(.caption2)
-                        .foregroundStyle(themeManager.currentTheme.getSecondaryTextColor(for: colorScheme))
+                        .onGlassSecondary()
                     Text(balance, format: .currency(code: "TRY"))
                         .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
+                        .onGlassPrimary()
                 }
                 Spacer()
             }
 
-            HStack(spacing: 16) {
+            HStack(spacing: 12) {
                 TextField(loc("BANK_AMOUNT_PLACEHOLDER"), value: $amount, formatter: formatter)
                     .focused($isFocused)
                     .keyboardType(.decimalPad)
                     .textFieldStyle(.plain)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 14)
+                    .padding(.horizontal, DS.Padding.section)
+                    .padding(.vertical, DS.Padding.section)
+                    .onGlassPrimary()
                     .background(
-                        RoundedRectangle(cornerRadius: 20, style: .continuous)
-                            .fill(Color.clear)
+                        RoundedRectangle(cornerRadius: DS.Radius.small, style: .continuous)
+                            .fill(Color("ForestGreen").opacity(0.06))
                     )
-                    .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
-                    .liquidGlass(.card, edgeMask: [.all])
-                    .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
 
                 Button(action: action) {
                     Text(loc(buttonTitle))
                         .font(.subheadline.weight(.semibold))
-                        .onGlassPrimary()
-                        .padding(.horizontal, 20)
-                        .padding(.vertical, 12)
-                        .background(
-                            LinearGradient(
-                                colors: gradient.stops.map { $0.color },
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 18)
+                        .padding(.vertical, 10)
+                        .background(Color("ForestGreen"), in: RoundedRectangle(cornerRadius: DS.Radius.small, style: .continuous))
                 }
             }
         }
-        .padding(22)
-        .background(
-            RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .fill(Color.clear)
-        )
-        .liquidGlass(.card, edgeMask: [.all])
-        .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+        .padding(DS.Padding.card)
     }
 
     private func loc(_ key: String, _ arguments: CVarArg...) -> String {
@@ -463,9 +457,9 @@ private struct BankInfoSection: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 18) {
+        VStack(alignment: .leading, spacing: DS.Padding.card) {
             Text(loc("BANK_INFO"))
-                .font(.headline)
+                .font(DS.Typography.sectionTitle)
                 .onGlassPrimary()
 
             InfoRow(icon: "calendar.badge.clock",
@@ -480,13 +474,13 @@ private struct BankInfoSection: View {
                     relative: relativeFormatter.localizedString(for: lastInterestApplied, relativeTo: Date()))
                 .environmentObject(localization)
         }
-        .padding(24)
+        .padding(DS.Padding.card)
         .background(
-            RoundedRectangle(cornerRadius: 32, style: .continuous)
+            RoundedRectangle(cornerRadius: DS.Radius.large, style: .continuous)
                 .fill(Color.clear)
         )
-        .liquidGlass(.card, edgeMask: [.all])
-        .clipShape(RoundedRectangle(cornerRadius: 32, style: .continuous))
+        .liquidGlass(.card, edgeMask: [.top])
+        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.large, style: .continuous))
     }
 
     private func loc(_ key: String, _ arguments: CVarArg...) -> String {
@@ -505,15 +499,9 @@ private struct BankInfoSection: View {
         var body: some View {
             HStack(alignment: .top, spacing: 12) {
                 Image(systemName: icon)
-                    .font(.headline)
-                    .onGlassPrimary()
-                    .frame(width: 34, height: 34)
-                    .background(
-                        RoundedRectangle(cornerRadius: 12, style: .continuous)
-                            .fill(Color.clear)
-                    )
-                    .liquidGlass(.card, edgeMask: [.all])
-                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    .font(.body)
+                    .onGlassSecondary()
+                    .frame(width: 28)
 
                 VStack(alignment: .leading, spacing: 4) {
                     Text(title)

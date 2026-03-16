@@ -257,7 +257,9 @@ final class PomodoroTimerService: ObservableObject {
         setupNotificationObservers()
         
         // Initialize shared data for widget
+#if DEBUG
         print("App init - Initial phase: \(phase), remainingSeconds: \(remainingSeconds), isRunning: \(isRunning)")
+#endif
         updateSharedData()
         
         // Test reading back the data
@@ -265,12 +267,18 @@ final class PomodoroTimerService: ObservableObject {
         let testPhase = sharedDefaults?.string(forKey: "currentPhase")
         let testRemaining = sharedDefaults?.integer(forKey: "remainingSeconds")
         let testRunning = sharedDefaults?.bool(forKey: "isRunning")
+#if DEBUG
+#if DEBUG
         print("App init - Test read back - Phase: \(testPhase ?? "nil"), Remaining: \(testRemaining ?? -1), Running: \(testRunning ?? false)")
+#endif
+#endif
         
         // Force widget reload
         #if canImport(WidgetKit)
         WidgetCenter.shared.reloadAllTimelines()
+#if DEBUG
         print("App init - Forced widget reload")
+#endif
         #endif
         #endif
     }
@@ -639,9 +647,13 @@ final class PomodoroTimerService: ObservableObject {
     private func setupNotificationObservers() {
         NotificationCenter.default.publisher(for: .startTimer)
             .sink { [weak self] _ in
+#if DEBUG
                 print("App - Received startTimer notification")
+#endif
                 DispatchQueue.main.async {
+#if DEBUG
                     print("App - Calling start() method")
+#endif
                     self?.start()
                 }
             }
@@ -653,7 +665,9 @@ final class PomodoroTimerService: ObservableObject {
             object: nil,
             queue: .main
         ) { [weak self] _ in
+#if DEBUG
             print("App - Direct notification received for startTimer")
+#endif
             self?.start()
         }
         
@@ -663,14 +677,18 @@ final class PomodoroTimerService: ObservableObject {
             object: nil,
             queue: .main
         ) { [weak self] _ in
+#if DEBUG
             print("App - Became active, syncing with widget")
+#endif
             self?.updateSharedData()
         }
         
         // Listen for language changes to update widget
         LocalizationManager.shared.$language
             .sink { [weak self] _ in
+#if DEBUG
                 print("App - Language changed, updating widget")
+#endif
                 DispatchQueue.main.async {
                     self?.updateSharedData()
                 }
@@ -679,9 +697,13 @@ final class PomodoroTimerService: ObservableObject {
         
         NotificationCenter.default.publisher(for: .pauseTimer)
             .sink { [weak self] _ in
+#if DEBUG
                 print("App - Received pauseTimer notification")
+#endif
                 DispatchQueue.main.async {
+#if DEBUG
                     print("App - Calling pause() method")
+#endif
                     self?.pause()
                 }
             }
@@ -781,7 +803,9 @@ final class PomodoroTimerService: ObservableObject {
                        currentLanguage == "de" ? "Lange Pause" : "Long Break"
         }
         
+#if DEBUG
         print("App updateSharedData - Language: \(currentLanguage), Phase: \(phaseName), Remaining: \(remainingSeconds), Running: \(isRunning)")
+#endif
         
         sharedDefaults?.set(phaseName, forKey: "currentPhase")
         sharedDefaults?.set(remainingSeconds, forKey: "remainingSeconds")
@@ -796,12 +820,16 @@ final class PomodoroTimerService: ObservableObject {
         let savedRemaining = sharedDefaults?.integer(forKey: "remainingSeconds")
         let savedRunning = sharedDefaults?.bool(forKey: "isRunning")
         let savedLanguage = sharedDefaults?.string(forKey: "app_language")
+#if DEBUG
         print("App verify - Saved Phase: \(savedPhase ?? "nil"), Remaining: \(savedRemaining ?? -1), Running: \(savedRunning ?? false), Language: \(savedLanguage ?? "nil")")
+#endif
         
         // Update widget timeline
         #if canImport(WidgetKit)
         WidgetCenter.shared.reloadTimelines(ofKind: "Simpofocuswidget")
+#if DEBUG
         print("App - Widget timeline reloaded")
+#endif
         #endif
     }
 
@@ -829,7 +857,8 @@ final class PomodoroTimerService: ObservableObject {
     private func rewardAmountForCurrentStreak() -> Double {
         let minutes = Double(focusDuration) / 60.0
         let streakMultiplier = 1 + Double(streak - 1) * 0.15
-        return minutes * max(streakMultiplier, 1)
+        let proMultiplier: Double = UserDefaults.standard.bool(forKey: "entitlement_isPro") ? 2.0 : 1.0
+        return minutes * max(streakMultiplier, 1) * proMultiplier
     }
 
     private func passiveBoostForStreak() -> Double {
@@ -1138,7 +1167,9 @@ private extension PomodoroTimerService {
             tickPlayers[sound] = player
             return player
         } catch {
+#if DEBUG
             print("Failed to prepare tick sound: \(error)")
+#endif
             return nil
         }
     }
@@ -1156,7 +1187,9 @@ private extension PomodoroTimerService {
             try session.setCategory(category, options: options)
             try session.setActive(true, options: .notifyOthersOnDeactivation)
         } catch {
+#if DEBUG
             print("Audio session error: \(error)")
+#endif
         }
     }
 
