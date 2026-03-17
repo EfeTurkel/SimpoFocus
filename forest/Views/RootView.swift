@@ -39,6 +39,8 @@ struct RootView: View {
                 .environmentObject(room)
                 .environmentObject(bank)
                 .environmentObject(LocalizationManager.shared)
+                .environmentObject(StoreKitService.shared)
+                .environmentObject(EntitlementManager.shared)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .id(rootViewModel.selectedTab)
                 .transition(.opacity)

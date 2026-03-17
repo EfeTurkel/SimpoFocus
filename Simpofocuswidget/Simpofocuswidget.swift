@@ -1,96 +1,61 @@
-//
-//  Simpofocuswidget.swift
-//  Simpofocuswidget
-//
-//  Created by Efe Türkel on 17.10.2025.
-//
-
 import WidgetKit
 import SwiftUI
 import AppIntents
 
 struct Provider: AppIntentTimelineProvider {
     func placeholder(in context: Context) -> SimpleEntry {
-        SimpleEntry(date: Date(), configuration: ConfigurationAppIntent(), phase: "Hazır", remainingSeconds: 1500, isRunning: false)
+        SimpleEntry(date: Date(), configuration: ConfigurationAppIntent(), phase: "Odak", remainingSeconds: 1500, isRunning: false, endDate: nil, totalDuration: 1500)
     }
 
     func snapshot(for configuration: ConfigurationAppIntent, in context: Context) async -> SimpleEntry {
-        SimpleEntry(date: Date(), configuration: configuration, phase: "Hazır", remainingSeconds: 1500, isRunning: false)
+        SimpleEntry(date: Date(), configuration: configuration, phase: "Odak", remainingSeconds: 1500, isRunning: false, endDate: nil, totalDuration: 1500)
     }
     
     func timeline(for configuration: ConfigurationAppIntent, in context: Context) async -> Timeline<SimpleEntry> {
-        var entries: [SimpleEntry] = []
-
-        // Get current timer state from UserDefaults (shared between app and widget)
         let sharedDefaults = UserDefaults(suiteName: "group.com.efeturkel.simpoapp")
-        let phase = sharedDefaults?.string(forKey: "currentPhase") ?? "Hazır"
+        let phase = sharedDefaults?.string(forKey: "currentPhase") ?? "Odak"
         let isRunning = sharedDefaults?.bool(forKey: "isRunning") ?? false
         let endsAtTimestamp = sharedDefaults?.double(forKey: "running_ends_at")
+        let savedRemaining = sharedDefaults?.integer(forKey: "remainingSeconds") ?? 1500
 
-        let remainingSeconds: Int = {
-            // Prefer endDate-based sync to avoid drift when the app is closed.
-            if isRunning, let endsAtTimestamp, endsAtTimestamp > 0 {
-                let endsAt = Date(timeIntervalSince1970: endsAtTimestamp)
-                return max(0, Int(endsAt.timeIntervalSince(Date()).rounded(.down)))
-            }
-            return sharedDefaults?.integer(forKey: "remainingSeconds") ?? 1500
-        }()
+        var endDate: Date? = nil
+        var remainingSeconds = savedRemaining
         
-        // Debug log
-        #if DEBUG
-        print("Widget Timeline - SharedDefaults: \(sharedDefaults != nil), Phase: \(phase), Remaining: \(remainingSeconds), Running: \(isRunning)")
-        #endif
-        
-        // Test if we can write to shared defaults
-        sharedDefaults?.set("Test", forKey: "testKey")
-        let testValue = sharedDefaults?.string(forKey: "testKey")
-        #if DEBUG
-        print("Widget Test Write/Read: \(testValue ?? "nil")")
-        #endif
-        
-        // Test reading all keys
-        let allKeys = sharedDefaults?.dictionaryRepresentation().keys
-        #if DEBUG
-        print("Widget - All keys in shared defaults: \(allKeys.map { Array($0) } ?? [])")
-        #endif
-        
-        // Test reading specific keys
-        let testPhase = sharedDefaults?.string(forKey: "currentPhase")
-        let testRemaining = sharedDefaults?.integer(forKey: "remainingSeconds")
-        let testRunning = sharedDefaults?.bool(forKey: "isRunning")
-        #if DEBUG
-        print("Widget - Direct read - Phase: \(testPhase ?? "nil"), Remaining: \(testRemaining ?? -1), Running: \(testRunning ?? false)")
-        #endif
-        
-        let currentDate = Date()
-        let entry = SimpleEntry(date: currentDate, configuration: configuration, phase: phase, remainingSeconds: remainingSeconds, isRunning: isRunning)
-        entries.append(entry)
-
-        // If timer is running, update every second for real-time countdown
-        if isRunning && remainingSeconds > 0 {
-            for i in 1...min(remainingSeconds, 300) { // Update for next 300 seconds (5 minutes) max
-                guard let nextDate = Calendar.current.date(byAdding: .second, value: i, to: currentDate) else { continue }
-                let nextEntry = SimpleEntry(
-                    date: nextDate, 
-                    configuration: configuration, 
-                    phase: phase, 
-                    remainingSeconds: max(0, remainingSeconds - i), 
-                    isRunning: isRunning
-                )
-                entries.append(nextEntry)
+        let totalDuration: Int
+        let lowerPhase = phase.lowercased()
+        if lowerPhase.contains("mola") || lowerPhase.contains("break") {
+            if lowerPhase.contains("uzun") || lowerPhase.contains("long") {
+                totalDuration = 900 // 15 mins
+            } else {
+                totalDuration = 300 // 5 mins
             }
         } else {
-            // If not running, update every 5 seconds for faster response
-            let nextUpdate = Calendar.current.date(byAdding: .second, value: 5, to: currentDate) ?? currentDate.addingTimeInterval(5)
-            let nextEntry = SimpleEntry(date: nextUpdate, configuration: configuration, phase: phase, remainingSeconds: remainingSeconds, isRunning: isRunning)
-            entries.append(nextEntry)
+            totalDuration = 1500 // 25 mins
+        }
+
+        if isRunning, let ts = endsAtTimestamp, ts > 0 {
+            endDate = Date(timeIntervalSince1970: ts)
+            if let end = endDate {
+                remainingSeconds = max(0, Int(end.timeIntervalSince(Date()).rounded(.down)))
+            }
         }
         
         #if DEBUG
-        print("Widget Timeline - Final entries count: \(entries.count), First entry remainingSeconds: \(entries.first?.remainingSeconds ?? -1)")
+        print("Widget Timeline - Phase: \(phase), Remaining: \(remainingSeconds), Running: \(isRunning), EndDate: \(endDate?.description ?? "nil")")
         #endif
+        
+        let entry = SimpleEntry(
+            date: Date(),
+            configuration: configuration,
+            phase: phase == "Hazır" ? "Odak" : phase,
+            remainingSeconds: remainingSeconds,
+            isRunning: isRunning,
+            endDate: endDate,
+            totalDuration: totalDuration
+        )
 
-        return Timeline(entries: entries, policy: .atEnd)
+        let refreshDate = endDate ?? Date().addingTimeInterval(3600)
+        return Timeline(entries: [entry], policy: .after(refreshDate))
     }
 }
 
@@ -100,183 +65,147 @@ struct SimpleEntry: TimelineEntry {
     let phase: String
     let remainingSeconds: Int
     let isRunning: Bool
+    let endDate: Date?
+    let totalDuration: Int
 }
 
 struct SimpofocuswidgetEntryView : View {
     var entry: Provider.Entry
+    @Environment(\.widgetFamily) var family
     
     private func localizedString(_ key: String) -> String {
-        // Get current language from UserDefaults
         let sharedDefaults = UserDefaults(suiteName: "group.com.efeturkel.simpoapp")
         let language = sharedDefaults?.string(forKey: "app_language") ?? "en"
         
-        // Simple localization dictionary for widget
         let translations: [String: [String: String]] = [
             "tr": [
-                "STATE_ACTIVE": "Aktif",
-                "STATE_READY": "Hazır",
-                "CONTROL_PAUSE": "Durdur",
-                "CONTROL_START": "Başlat",
-                "CONTROL_RESUME": "Devam Et",
-                "CONTROL_RESET": "Sıfırla",
-                "PHASE_FOCUS": "Odak",
-                "PHASE_SHORT_BREAK": "Kısa Mola",
-                "PHASE_LONG_BREAK": "Uzun Mola",
-                "PHASE_IDLE": "Hazır"
+                "ODAK": "Odak",
+                "KISA_MOLA": "Kısa Mola",
+                "UZUN_MOLA": "Uzun Mola",
+                "HAZIR": "Hazır"
             ],
             "en": [
-                "STATE_ACTIVE": "Active",
-                "STATE_READY": "Ready",
-                "CONTROL_PAUSE": "Pause",
-                "CONTROL_START": "Start",
-                "CONTROL_RESUME": "Resume",
-                "CONTROL_RESET": "Reset",
-                "PHASE_FOCUS": "Focus",
-                "PHASE_SHORT_BREAK": "Short Break",
-                "PHASE_LONG_BREAK": "Long Break",
-                "PHASE_IDLE": "Ready"
+                "ODAK": "Focus",
+                "KISA_MOLA": "Short Break",
+                "UZUN_MOLA": "Long Break",
+                "HAZIR": "Ready"
             ],
             "de": [
-                "STATE_ACTIVE": "Aktiv",
-                "STATE_READY": "Bereit",
-                "CONTROL_PAUSE": "Pause",
-                "CONTROL_START": "Start",
-                "CONTROL_RESUME": "Fortsetzen",
-                "CONTROL_RESET": "Zurücksetzen",
-                "PHASE_FOCUS": "Fokus",
-                "PHASE_SHORT_BREAK": "Kurze Pause",
-                "PHASE_LONG_BREAK": "Lange Pause",
-                "PHASE_IDLE": "Bereit"
+                "ODAK": "Fokus",
+                "KISA_MOLA": "Kurze Pause",
+                "UZUN_MOLA": "Lange Pause",
+                "HAZIR": "Bereit"
             ]
         ]
         
-        return translations[language]?[key] ?? translations["en"]?[key] ?? key
+        let locMap = ["Odak": "ODAK", "Kısa Mola": "KISA_MOLA", "Uzun Mola": "UZUN_MOLA", "Hazır": "HAZIR"]
+        let lookupKey = locMap[key] ?? key
+        
+        return translations[language]?[lookupKey] ?? translations["en"]?[lookupKey] ?? key
     }
 
     var body: some View {
-        VStack(spacing: 12) {
-            // Header with phase and status
-            HStack {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(entry.phase)
-                        .font(.system(size: 14, weight: .semibold, design: .rounded))
-                        .foregroundColor(.primary)
-                        Text(entry.isRunning ? localizedString("STATE_ACTIVE") : localizedString("STATE_READY"))
-                            .font(.system(size: 10, weight: .medium, design: .rounded))
-                            .foregroundColor(entry.isRunning ? .green : .secondary)
-                }
-                Spacer()
-                Circle()
-                    .fill(entry.isRunning ? .green : .gray)
-                    .frame(width: 8, height: 8)
-            }
+        let isBreak = entry.phase.lowercased().contains("mola") || entry.phase.lowercased().contains("break")
+        let mainColor = isBreak ? Color.teal : Color.indigo
+        let gradientSecondary = isBreak ? Color.mint : Color.purple
+        
+        ZStack {
+            // Modern Background gradient
+            LinearGradient(
+                colors: [mainColor.opacity(0.85), gradientSecondary.opacity(0.95)],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
             
-            // Timer display
-            VStack(spacing: 4) {
-                Text(timeString(from: entry.remainingSeconds))
-                    .font(.system(size: 24, weight: .bold, design: .monospaced))
-                    .foregroundColor(.primary)
-                    .onAppear {
-                        #if DEBUG
-                        print("Widget UI - entry.remainingSeconds: \(entry.remainingSeconds)")
-                        #endif
-                    }
+            // Glass overlay
+            Color.black.opacity(0.15)
+            
+            VStack(spacing: 0) {
+                // Header
+                HStack {
+                    Image(systemName: isBreak ? "cup.and.saucer.fill" : "target")
+                        .font(.system(size: 11, weight: .bold))
+                    Text(localizedString(entry.phase))
+                        .lineLimit(1)
+                        .font(.system(size: 13, weight: .bold, design: .rounded))
+                    Spacer()
+                    Circle()
+                        .fill(entry.isRunning ? Color.green : Color.white.opacity(0.6))
+                        .frame(width: 10, height: 10)
+                        .shadow(color: entry.isRunning ? .green : .clear, radius: 4)
+                }
+                .foregroundColor(.white)
+                .padding(.horizontal, 16)
+                .padding(.top, 16)
                 
-                // Progress bar
-                GeometryReader { geometry in
-                    ZStack(alignment: .leading) {
-                        RoundedRectangle(cornerRadius: 2)
-                            .fill(Color(.systemGray5))
-                            .frame(height: 4)
-                        
-                        RoundedRectangle(cornerRadius: 2)
-                            .fill(LinearGradient(
-                                colors: [.blue, .purple],
-                                startPoint: .leading,
-                                endPoint: .trailing
-                            ))
-                            .frame(width: geometry.size.width * progressPercentage(entry), height: 4)
-                    }
+                Spacer()
+                
+                // Timer native live countdown
+                if entry.isRunning, let endDate = entry.endDate, endDate > Date() {
+                    Text(timerInterval: Date()...endDate, countsDown: true)
+                        .font(.system(size: 40, weight: .heavy, design: .rounded))
+                        .foregroundColor(.white)
+                        .monospacedDigit()
+                        .shadow(color: .black.opacity(0.2), radius: 2, y: 1)
+                        .contentTransition(.numericText())
+                } else {
+                    Text(timeString(from: entry.remainingSeconds))
+                        .font(.system(size: 40, weight: .heavy, design: .rounded))
+                        .foregroundColor(.white)
+                        .monospacedDigit()
+                        .shadow(color: .black.opacity(0.2), radius: 2, y: 1)
                 }
-                .frame(height: 4)
-            }
-            
-            // Action button
-            if entry.isRunning {
-                    Button(intent: PauseTimerIntent()) {
-                        HStack(spacing: 4) {
-                            Image(systemName: "pause.fill")
-                                .font(.system(size: 12, weight: .medium))
-                            Text(localizedString("CONTROL_PAUSE"))
-                                .font(.system(size: 12, weight: .medium))
+                
+                Spacer()
+                
+                // Interactive Button Container
+                HStack {
+                    if entry.isRunning {
+                        let url = URL(string: "forest://pause")
+                        if let url {
+                            Link(destination: url) {
+                                Circle()
+                                    .fill(Color.white.opacity(0.25))
+                                    .frame(width: 44, height: 44)
+                                    .overlay(
+                                        Image(systemName: "pause.fill")
+                                            .font(.system(size: 16, weight: .bold))
+                                            .foregroundColor(.white)
+                                    )
+                                    .shadow(color: .black.opacity(0.15), radius: 8, y: 2)
+                            }
+                            .accessibilityLabel("Pause")
+                        }
+                    } else {
+                        let url = URL(string: "forest://start")
+                        if let url {
+                            Link(destination: url) {
+                                Circle()
+                                    .fill(Color.white)
+                                    .frame(width: 44, height: 44)
+                                    .overlay(
+                                        Image(systemName: "play.fill")
+                                            .font(.system(size: 16, weight: .bold))
+                                            .foregroundColor(mainColor)
+                                    )
+                                    .shadow(color: .black.opacity(0.18), radius: 8, y: 2)
+                            }
+                            .accessibilityLabel("Start")
                         }
                     }
-                .buttonStyle(.bordered)
-                .tint(.orange)
-                .controlSize(.small)
-                .onTapGesture {
-                    #if DEBUG
-                    print("Widget - Pause button tapped (onTapGesture)")
-                    #endif
                 }
-            } else {
-                    Button(intent: StartTimerIntent()) {
-                        HStack(spacing: 4) {
-                            Image(systemName: "play.fill")
-                                .font(.system(size: 12, weight: .medium))
-                            Text(localizedString("CONTROL_START"))
-                                .font(.system(size: 12, weight: .medium))
-                        }
-                    }
-                .buttonStyle(.bordered)
-                .tint(.green)
-                .controlSize(.small)
-                .onTapGesture {
-                    #if DEBUG
-                    print("Widget - Start button tapped (onTapGesture)")
-                    #endif
-                }
+                .padding(.horizontal, 16)
+                .padding(.bottom, 16)
             }
         }
-        .padding(16)
-        .background(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(.ultraThinMaterial)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        .stroke(Color.white.opacity(0.2), lineWidth: 1)
-                )
-        )
+        .padding(0)
     }
     
-        private func timeString(from seconds: Int) -> String {
-            let m = seconds / 60
-            let s = seconds % 60
-            let timeString = String(format: "%02d:%02d", m, s)
-            #if DEBUG
-            print("Widget timeString - seconds: \(seconds), result: \(timeString)")
-            #endif
-            return timeString
-        }
-    
-        private func progressPercentage(_ entry: SimpleEntry) -> Double {
-            let totalDuration: Int
-            switch entry.phase {
-            case "Odak":
-                totalDuration = 1500 // 25 minutes
-            case "Kısa Mola":
-                totalDuration = 300 // 5 minutes
-            case "Uzun Mola":
-                totalDuration = 900 // 15 minutes
-            case "Hazır":
-                return 0.0 // No progress when idle
-            default:
-                totalDuration = 1500
-            }
-            
-            let elapsed = totalDuration - entry.remainingSeconds
-            return max(0, min(1, Double(elapsed) / Double(totalDuration)))
-        }
+    private func timeString(from seconds: Int) -> String {
+        let m = seconds / 60
+        let s = seconds % 60
+        return String(format: "%02d:%02d", m, s)
+    }
 }
 
 struct Simpofocuswidget: Widget {
@@ -285,11 +214,12 @@ struct Simpofocuswidget: Widget {
     var body: some WidgetConfiguration {
         AppIntentConfiguration(kind: kind, intent: ConfigurationAppIntent.self, provider: Provider()) { entry in
             SimpofocuswidgetEntryView(entry: entry)
-                .containerBackground(.clear, for: .widget)
+                .containerBackground(.clear, for: .widget) // iOS 17 modern transparent container
         }
         .configurationDisplayName("Focus Timer")
-        .description("Modern Pomodoro timer widget with iOS 26 Liquid Glass design")
+        .description("Modern Pomodoro timer widget with fast interactive controls.")
         .supportedFamilies([.systemSmall, .systemMedium])
+        .contentMarginsDisabled() // Removes default padding so gradient fills completely!
     }
 }
 
@@ -310,6 +240,6 @@ extension ConfigurationAppIntent {
 #Preview(as: .systemSmall) {
     Simpofocuswidget()
 } timeline: {
-    SimpleEntry(date: .now, configuration: .focus, phase: "Odak", remainingSeconds: 1500, isRunning: false)
-    SimpleEntry(date: .now, configuration: .`break`, phase: "Kısa Mola", remainingSeconds: 300, isRunning: true)
+    SimpleEntry(date: .now, configuration: .focus, phase: "Odak", remainingSeconds: 1500, isRunning: false, endDate: nil, totalDuration: 1500)
+    SimpleEntry(date: .now, configuration: .`break`, phase: "Kısa Mola", remainingSeconds: 300, isRunning: true, endDate: Date().addingTimeInterval(300), totalDuration: 300)
 }

@@ -83,6 +83,8 @@ struct FinanceView: View {
         .animation(.spring(response: 0.5, dampingFraction: 0.8), value: showCoins)
         .fullScreenCover(isPresented: $showPaywall) {
             PaywallView()
+                .environmentObject(StoreKitService.shared)
+                .environmentObject(EntitlementManager.shared)
         }
         .sheet(item: $selectedCoin) { coin in
             BuyCoinSheet(coin: coin, amount: .constant(100.0))
@@ -96,6 +98,8 @@ struct FinanceView: View {
         }
         .sheet(isPresented: $showCoinStoreSheet) {
             TokenPackagesView(isSheet: true)
+                .environmentObject(StoreKitService.shared)
+                .environmentObject(EntitlementManager.shared)
                 .presentationDetents([.fraction(0.85), .large])
                 .presentationDragIndicator(.visible)
         }

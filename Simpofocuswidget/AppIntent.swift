@@ -9,6 +9,23 @@ import WidgetKit
 import AppIntents
 import Foundation
 import UIKit
+import ActivityKit
+
+// MARK: - Live Activity Helper
+@available(iOS 16.2, *)
+func updateLiveActivity(isRunning: Bool, remainingSeconds: Int, endsAtTimestamp: Double) async {
+    let endsAt = endsAtTimestamp > 0 ? Date(timeIntervalSince1970: endsAtTimestamp) : Date().addingTimeInterval(Double(remainingSeconds))
+    for activity in Activity<FocusActivityAttributes>.activities {
+        let current = activity.content.state
+        let updated = FocusActivityAttributes.ContentState(
+            phase: current.phase,
+            endDate: endsAt,
+            isPaused: !isRunning,
+            remainingSeconds: remainingSeconds
+        )
+        await activity.update(ActivityContent(state: updated, staleDate: nil))
+    }
+}
 
 // MARK: - Timer Control Intents
 struct PauseTimerIntent: AppIntent {
@@ -17,33 +34,34 @@ struct PauseTimerIntent: AppIntent {
     static var openAppWhenRun: Bool = true
     
     func perform() async throws -> some IntentResult {
-        // Send notification to app to pause timer
-        #if DEBUG
-        print("Widget - PauseTimerIntent triggered")
-        #endif
-        NotificationCenter.default.post(name: .pauseTimer, object: nil)
-        // Write pending action for app to process when opened
         if let shared = UserDefaults(suiteName: "group.com.efeturkel.simpoapp") {
+            shared.set(false, forKey: "isRunning")
+            
+            // Calculate remaining seconds if previously running
+            let endsAt = shared.double(forKey: "running_ends_at")
+            var remaining = shared.integer(forKey: "remainingSeconds")
+            
+            if endsAt > 0 {
+                // If it was running, it had an endDate. We must figure out how much is left right now:
+                remaining = max(0, Int(endsAt - Date().timeIntervalSince1970))
+            }
+            // Always save back the newly calculated remaining time!
+            shared.set(remaining, forKey: "remainingSeconds")
+            // Also nullify ends_at so the widget knows it's truly stopped
+            shared.set(0.0, forKey: "running_ends_at")
+            
             shared.set("pause", forKey: "pendingAction")
             shared.set(Date().timeIntervalSince1970, forKey: "pendingActionAt")
+            
             #if DEBUG
-            print("Widget - PauseTimerIntent: Set pendingAction=pause")
-            #endif
-        } else {
-            #if DEBUG
-            print("Widget - PauseTimerIntent: Failed to access shared UserDefaults")
+            print("Widget - PauseTimerIntent: Set remaining=\(remaining), isRunning=false")
             #endif
         }
         
-        // Force widget reload after a short delay
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            #if canImport(WidgetKit)
-            WidgetCenter.shared.reloadTimelines(ofKind: "Simpofocuswidget")
-            #if DEBUG
-            print("Widget - Forced timeline reload after pause")
-            #endif
-            #endif
-        }
+        // Force widget reload
+        #if canImport(WidgetKit)
+        WidgetCenter.shared.reloadTimelines(ofKind: "Simpofocuswidget")
+        #endif
         
         return .result()
     }
@@ -55,12 +73,28 @@ struct ResumeTimerIntent: AppIntent {
     static var openAppWhenRun: Bool = true
     
     func perform() async throws -> some IntentResult {
-        // Send notification to app to resume timer
-        NotificationCenter.default.post(name: .resumeTimer, object: nil)
         if let shared = UserDefaults(suiteName: "group.com.efeturkel.simpoapp") {
+            let selectedPhase = shared.string(forKey: "currentPhase") ?? "Odak"
+            var remaining = shared.integer(forKey: "remainingSeconds")
+            
+            // If remainder is <= 0 or missing, fallback to defaults depending on phase
+            if remaining <= 0 {
+                let isBreak = selectedPhase.lowercased().contains("mola") || selectedPhase.lowercased().contains("break")
+                remaining = isBreak ? 300 : 1500
+                shared.set(remaining, forKey: "remainingSeconds")
+            }
+            
+            shared.set(true, forKey: "isRunning")
+            let endsAt = Date().timeIntervalSince1970 + Double(remaining)
+            shared.set(endsAt, forKey: "running_ends_at")
             shared.set("resume", forKey: "pendingAction")
             shared.set(Date().timeIntervalSince1970, forKey: "pendingActionAt")
         }
+        
+        #if canImport(WidgetKit)
+        WidgetCenter.shared.reloadTimelines(ofKind: "Simpofocuswidget")
+        #endif
+        
         return .result()
     }
 }
@@ -95,51 +129,31 @@ struct StartTimerIntent: AppIntent {
     static var openAppWhenRun: Bool = true
     
     func perform() async throws -> some IntentResult {
-        #if DEBUG
-        print("Widget - StartTimerIntent triggered")
-        #endif
-        
-        // Send notification to app
-        NotificationCenter.default.post(name: .startTimer, object: nil)
         if let shared = UserDefaults(suiteName: "group.com.efeturkel.simpoapp") {
+            let selectedPhase = shared.string(forKey: "currentPhase") ?? "Odak"
+            var remaining = shared.integer(forKey: "remainingSeconds")
+            
+            // If remainder is <= 0 or missing, fallback to defaults depending on phase
+            if remaining <= 0 {
+                let isBreak = selectedPhase.lowercased().contains("mola") || selectedPhase.lowercased().contains("break")
+                remaining = isBreak ? 300 : 1500
+                shared.set(remaining, forKey: "remainingSeconds")
+            }
+            
+            shared.set(true, forKey: "isRunning")
+            let endsAt = Date().timeIntervalSince1970 + Double(remaining)
+            shared.set(endsAt, forKey: "running_ends_at")
+            
             shared.set("start", forKey: "pendingAction")
             shared.set(Date().timeIntervalSince1970, forKey: "pendingActionAt")
+            
             #if DEBUG
-            print("Widget - StartTimerIntent: Set pendingAction=start")
-            #endif
-        } else {
-            #if DEBUG
-            print("Widget - StartTimerIntent: Failed to access shared UserDefaults")
+            print("Widget - StartTimerIntent: Set pendingAction=start and isRunning=true, remaining=\(remaining)")
             #endif
         }
         
-        // Force widget reload immediately and after delays
         #if canImport(WidgetKit)
         WidgetCenter.shared.reloadTimelines(ofKind: "Simpofocuswidget")
-        #if DEBUG
-        print("Widget - Immediate timeline reload after start")
-        #endif
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-            WidgetCenter.shared.reloadTimelines(ofKind: "Simpofocuswidget")
-            #if DEBUG
-            print("Widget - Quick timeline reload after start")
-            #endif
-        }
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            WidgetCenter.shared.reloadTimelines(ofKind: "Simpofocuswidget")
-            #if DEBUG
-            print("Widget - Delayed timeline reload after start")
-            #endif
-        }
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-            WidgetCenter.shared.reloadTimelines(ofKind: "Simpofocuswidget")
-            #if DEBUG
-            print("Widget - Final timeline reload after start")
-            #endif
-        }
         #endif
         
         return .result()

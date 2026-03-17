@@ -117,54 +117,43 @@ struct FocusForestApp: App {
     }
 
     private func processPendingAction() {
-        guard let shared = UserDefaults(suiteName: "group.com.efeturkel.simpoapp") else { 
-            #if DEBUG
-            print("App - processPendingAction: Failed to access shared UserDefaults")
-            #endif
-            return 
+        guard let shared = UserDefaults(suiteName: "group.com.efeturkel.simpoapp") else {
+            timerService.syncFromWidget()
+            return
         }
+
         let action = shared.string(forKey: "pendingAction")
-        guard let action else { 
+        let actionAt = shared.double(forKey: "pendingActionAt")
+
+        // Always pull latest snapshot first (phase/remaining/isRunning).
+        timerService.syncFromWidget()
+
+        // Avoid replaying stale intents (e.g. after reinstall / long time).
+        let isFresh = actionAt > 0 && (Date().timeIntervalSince1970 - actionAt) < 60
+
+        if let action, isFresh {
             #if DEBUG
-            print("App - processPendingAction: No pending action found")
+            print("App - Processing pendingAction: \(action)")
             #endif
-            return 
+
+            DispatchQueue.main.async {
+                switch action {
+                case "start":
+                    self.timerService.start()
+                case "pause":
+                    self.timerService.pause()
+                case "resume":
+                    self.timerService.resume()
+                case "reset":
+                    self.timerService.reset()
+                default:
+                    break
+                }
+            }
         }
-        #if DEBUG
-        print("App - Processing pending action: \(action)")
-        #endif
-        switch action {
-        case "start":
-            #if DEBUG
-            print("App - Executing start action")
-            #endif
-            timerService.start()
-        case "pause":
-            #if DEBUG
-            print("App - Executing pause action")
-            #endif
-            timerService.pause()
-        case "resume":
-            #if DEBUG
-            print("App - Executing resume action")
-            #endif
-            timerService.resume()
-        case "reset":
-            #if DEBUG
-            print("App - Executing reset action")
-            #endif
-            timerService.reset()
-        default:
-            #if DEBUG
-            print("App - Unknown pending action: \(action)")
-            #endif
-            break
-        }
+
         shared.removeObject(forKey: "pendingAction")
         shared.removeObject(forKey: "pendingActionAt")
-        #if DEBUG
-        print("App - Cleared pending action")
-        #endif
     }
 
     private func setupPersistenceObservers() {
@@ -189,6 +178,7 @@ struct FocusForestApp: App {
             #if DEBUG
             print("App - Became active, restoring state")
             #endif
+            processPendingAction()
         @unknown default:
             break
         }

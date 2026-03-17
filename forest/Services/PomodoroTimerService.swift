@@ -353,11 +353,11 @@ final class PomodoroTimerService: ObservableObject {
         setupLifecycleObservers()
         setupNotificationObservers()
         
-        // Initialize shared data for widget
+        // Initialize shared data from widget if any exists
 #if DEBUG
         print("App init - Initial phase: \(phase), remainingSeconds: \(remainingSeconds), isRunning: \(isRunning)")
 #endif
-        updateSharedData()
+        syncFromWidget()
         
         // Test reading back the data
         let sharedDefaults = UserDefaults(suiteName: "group.com.efeturkel.simpoapp")
@@ -790,7 +790,7 @@ final class PomodoroTimerService: ObservableObject {
 #if DEBUG
             print("App - Became active, syncing with widget")
 #endif
-            self?.updateSharedData()
+            self?.syncFromWidget()
         }
         
         // Listen for language changes to update widget
@@ -888,6 +888,46 @@ final class PomodoroTimerService: ObservableObject {
     private func sanitizeDuration(_ seconds: Int, minimumMinutes: Int = 1) -> Int {
         let minutes = max(seconds / 60, minimumMinutes)
         return minutes * 60
+    }
+    
+    func syncFromWidget() {
+        guard let sharedDefaults = UserDefaults(suiteName: "group.com.efeturkel.simpoapp") else { return }
+        
+        let savedRunning = sharedDefaults.bool(forKey: "isRunning")
+        let savedPhaseRaw = sharedDefaults.string(forKey: "phase_raw") ?? PomodoroPhase.idle.rawValue
+        let savedRemaining = sharedDefaults.integer(forKey: "remainingSeconds")
+        let savedEndsAt = sharedDefaults.double(forKey: "running_ends_at")
+        let newPhase = PomodoroPhase(rawValue: savedPhaseRaw) ?? .idle
+        
+        if savedRemaining > 0 || savedRunning {
+            self.phase = newPhase
+            
+            if savedRunning {
+                self.isRunning = true
+                if savedEndsAt > 0 {
+                    let remaining = savedEndsAt - Date().timeIntervalSince1970
+                    if remaining > 0 {
+                        self.remainingSeconds = Int(remaining)
+                        beginTicking()
+                    } else {
+                        self.remainingSeconds = 0
+                        finishPhase()
+                    }
+                } else {
+                    self.remainingSeconds = savedRemaining
+                    beginTicking()
+                }
+            } else {
+                self.isRunning = false
+                self.remainingSeconds = savedRemaining
+                self.timerCancellable?.cancel()
+                self.timerCancellable = nil
+            }
+            
+#if DEBUG
+            print("App syncFromWidget - phase: \(self.phase), remainingSeconds: \(self.remainingSeconds), isRunning: \(self.isRunning)")
+#endif
+        }
     }
     
     private func updateSharedData() {
