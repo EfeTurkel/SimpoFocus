@@ -113,6 +113,14 @@ final class MarketViewModel: ObservableObject {
                  lastRefreshDate: lastRefreshDate)
     }
 
+    func apply(_ snapshot: Snapshot) {
+        coins = snapshot.coins
+        priceHistory = snapshot.priceHistory
+        dailyTarget = snapshot.dailyTarget
+        lastRefreshDate = snapshot.lastRefreshDate
+        seedInitialHistoryIfNeeded()
+    }
+
     private func seedInitialHistoryIfNeeded() {
         let now = Date()
         for coin in coins {

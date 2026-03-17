@@ -3,6 +3,9 @@ import SwiftUI
 struct TimerSettingsView: View {
     @EnvironmentObject private var timer: PomodoroTimerService
     @EnvironmentObject private var market: MarketViewModel
+    @EnvironmentObject private var wallet: WalletViewModel
+    @EnvironmentObject private var room: RoomViewModel
+    @EnvironmentObject private var bank: BankService
     @EnvironmentObject private var localization: LocalizationManager
     @EnvironmentObject private var entitlements: EntitlementManager
     @ObservedObject private var themeManager = ThemeManager.shared
@@ -26,6 +29,9 @@ struct TimerSettingsView: View {
     @State private var selectedLanguage: AppLanguage = LocalizationManager.shared.language
     @State private var selectedTheme: AppTheme = ThemeManager.shared.currentTheme
     @State private var showingPaywall = false
+    @State private var isSyncingICloud = false
+    @State private var lastICloudSyncStatus: String?
+    @State private var lastICloudSyncAt: Date?
 
     var body: some View {
         NavigationStack {
@@ -181,6 +187,67 @@ struct TimerSettingsView: View {
                             }
 
 #if canImport(UIKit)
+                            GlassCard(title: "iCloud Sync",
+                                         subtitle: "Cihazlar arasında istatistik, token ve ayarları senkronla.",
+                                         icon: "icloud") {
+                                VStack(spacing: 12) {
+                                    HStack {
+                                        Text("Last sync")
+                                            .font(.footnote.weight(.semibold))
+                                            .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
+                                        Spacer()
+                                        Text(lastICloudSyncAt.map { formatSyncDate($0) } ?? "—")
+                                            .font(.footnote)
+                                            .foregroundStyle(themeManager.currentTheme.getSecondaryTextColor(for: colorScheme))
+                                    }
+
+                                    if let lastICloudSyncStatus {
+                                        Text(lastICloudSyncStatus)
+                                            .font(.footnote)
+                                            .foregroundStyle(themeManager.currentTheme.getSecondaryTextColor(for: colorScheme))
+                                            .frame(maxWidth: .infinity, alignment: .leading)
+                                    }
+
+                                    Button {
+                                        Task { await pullFromICloud() }
+                                    } label: {
+                                        Label(isSyncingICloud ? "Syncing..." : "Sync now (Download)", systemImage: "arrow.down.circle")
+                                            .font(.footnote.weight(.semibold))
+                                            .onGlassPrimary()
+                                            .padding(.vertical, DS.Padding.element)
+                                            .frame(maxWidth: .infinity)
+                                            .background(Color("LakeBlue"), in: RoundedRectangle(cornerRadius: DS.Radius.medium, style: .continuous))
+                                    }
+                                    .disabled(isSyncingICloud)
+
+                                    Button {
+                                        pushToICloud()
+                                    } label: {
+                                        Label(isSyncingICloud ? "Syncing..." : "Upload now", systemImage: "arrow.up.circle")
+                                            .font(.footnote.weight(.semibold))
+                                            .onGlassPrimary()
+                                            .padding(.vertical, DS.Padding.element)
+                                            .frame(maxWidth: .infinity)
+                                            .background(Color("ForestGreen"), in: RoundedRectangle(cornerRadius: DS.Radius.medium, style: .continuous))
+                                    }
+                                    .disabled(isSyncingICloud)
+
+                                    Button {
+                                        openAppSettings()
+                                    } label: {
+                                        Label("Open App Settings", systemImage: "gear")
+                                            .font(.footnote.weight(.semibold))
+                                            .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
+                                            .padding(.vertical, DS.Padding.element)
+                                            .frame(maxWidth: .infinity)
+                                            .background(themeManager.currentTheme.getCardBackground(for: colorScheme),
+                                                        in: RoundedRectangle(cornerRadius: DS.Radius.medium, style: .continuous))
+                                    }
+                                }
+                            }
+#endif
+
+#if canImport(UIKit)
                             MakerSection()
 #endif
                         }
@@ -233,6 +300,9 @@ struct TimerSettingsView: View {
             timer.tickVolume = newValue
             timer.setTickSound(selectedTickSound)
         }
+        .onReceive(PersistenceController.shared.$lastCloudSyncAt) { date in
+            lastICloudSyncAt = date
+        }
         .sheet(isPresented: $showingPaywall) {
             PaywallView()
         }
@@ -258,6 +328,53 @@ struct TimerSettingsView: View {
         PersistenceController.shared.saveMarket(market)
         localization.language = selectedLanguage
         dismiss()
+    }
+
+#if canImport(UIKit)
+    @MainActor
+    private func pullFromICloud() async {
+        isSyncingICloud = true
+        lastICloudSyncStatus = "Sync started…"
+        await PersistenceController.shared.syncFromCloudIfNeeded(
+            wallet: wallet,
+            market: market,
+            bank: bank,
+            timer: timer,
+            room: room
+        )
+        isSyncingICloud = false
+        lastICloudSyncStatus = "Sync finished."
+    }
+
+    private func pushToICloud() {
+        isSyncingICloud = true
+        lastICloudSyncStatus = "Upload started…"
+        PersistenceController.shared.pushCurrentStateToCloud(
+            wallet: wallet,
+            market: market,
+            bank: bank,
+            timer: timer,
+            room: room
+        )
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+            isSyncingICloud = false
+            lastICloudSyncStatus = "Upload queued."
+        }
+    }
+
+    private func openAppSettings() {
+        guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
+        UIApplication.shared.open(url, options: [:], completionHandler: nil)
+    }
+#endif
+}
+
+private extension TimerSettingsView {
+    func formatSyncDate(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .short
+        return formatter.string(from: date)
     }
 }
 

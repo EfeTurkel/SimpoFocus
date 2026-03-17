@@ -52,5 +52,11 @@ final class BankService: ObservableObject {
                      lastRateUpdate: lastRateUpdate,
                      lastInterestApplied: lastInterestApplied)
     }
+
+    func apply(_ snapshot: BankSnapshot) {
+        annualInterestRate = snapshot.annualInterestRate
+        lastRateUpdate = snapshot.lastRateUpdate
+        lastInterestApplied = snapshot.lastInterestApplied
+    }
 }
 

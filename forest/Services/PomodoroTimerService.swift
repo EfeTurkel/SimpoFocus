@@ -271,68 +271,7 @@ final class PomodoroTimerService: ObservableObject {
 
     init(snapshot: Snapshot? = nil) {
         if let snapshot {
-            phase = PomodoroPhase(rawValue: snapshot.phaseRaw) ?? .idle
-            focusDuration = sanitizeDuration(snapshot.focusDuration, minimumMinutes: 1)
-            shortBreakDuration = sanitizeDuration(snapshot.shortBreakDuration, minimumMinutes: 1)
-            longBreakDuration = sanitizeDuration(snapshot.longBreakDuration, minimumMinutes: 1)
-            sessionsBeforeLongBreak = snapshot.sessionsBeforeLongBreak
-            baseRewardPerSession = snapshot.baseRewardPerSession
-            soundEnabled = snapshot.soundEnabled
-            hapticsEnabled = snapshot.hapticsEnabled
-            autoStartBreaks = snapshot.autoStartBreaks
-            tickingEnabled = snapshot.tickingEnabled
-            selectedTickSound = TickSound(rawValue: snapshot.selectedTickSound) ?? .classic
-            overrideMute = snapshot.overrideMute
-            tickVolume = snapshot.tickVolume
-            notificationsEnabled = snapshot.notificationsEnabled
-            completedFocusSessions = snapshot.completedFocusSessions
-            streak = snapshot.streak
-            totalCompletedSessions = snapshot.totalSessions
-            totalFocusMinutes = snapshot.totalFocusMinutes
-            focusDays = Set(snapshot.focusDays)
-            lastGoalReset = snapshot.lastGoalReset ?? calendar.startOfDay(for: Date())
-            sessionHistory = snapshot.sessionHistory
-            selectedCategory = snapshot.selectedCategory
-            remainingSeconds = snapshot.remainingSeconds
-            isRunning = snapshot.isRunning
-
-            if let endsAt = snapshot.runningEndsAt, snapshot.isRunning {
-                let remaining = max(0, endsAt.timeIntervalSinceNow)
-                remainingSeconds = Int(remaining.rounded(.down))
-                if remainingSeconds > 0 {
-                    beginTicking()
-#if canImport(ActivityKit)
-                    if #available(iOS 16.1, *) {
-                        let label = phase.displayName(using: LocalizationManager.shared)
-                        LiveActivityService.shared.startOrUpdate(
-                            phase: label,
-                            endDate: endsAt,
-                            isPaused: false,
-                            remainingSeconds: remainingSeconds
-                        )
-                    }
-#endif
-                } else {
-                    remainingSeconds = 0
-                    // Phase ended while app was closed; finalize once on launch.
-                    DispatchQueue.main.async { [weak self] in
-                        self?.finishPhase()
-                    }
-                }
-            } else if snapshot.isRunning, remainingSeconds > 0 {
-                beginTicking()
-#if canImport(ActivityKit)
-                if #available(iOS 16.1, *) {
-                    let label = phase.displayName(using: LocalizationManager.shared)
-                    LiveActivityService.shared.startOrUpdate(
-                        phase: label,
-                        endDate: Date().addingTimeInterval(TimeInterval(remainingSeconds)),
-                        isPaused: false,
-                        remainingSeconds: remainingSeconds
-                    )
-                }
-#endif
-            }
+            restore(from: snapshot)
         } else {
             lastGoalReset = calendar.startOfDay(for: Date())
             remainingSeconds = focusDuration
@@ -380,6 +319,14 @@ final class PomodoroTimerService: ObservableObject {
         #endif
     }
 
+    @MainActor
+    func apply(_ snapshot: Snapshot) {
+        timerCancellable?.cancel()
+        timerCancellable = nil
+        restore(from: snapshot)
+        updateSharedData()
+    }
+
     // MARK: - Intent
     func start() {
         guard phase == .idle else {
@@ -387,6 +334,70 @@ final class PomodoroTimerService: ObservableObject {
             return
         }
         startFocusSession()
+    }
+
+    private func restore(from snapshot: Snapshot) {
+        phase = PomodoroPhase(rawValue: snapshot.phaseRaw) ?? .idle
+        focusDuration = sanitizeDuration(snapshot.focusDuration, minimumMinutes: 1)
+        shortBreakDuration = sanitizeDuration(snapshot.shortBreakDuration, minimumMinutes: 1)
+        longBreakDuration = sanitizeDuration(snapshot.longBreakDuration, minimumMinutes: 1)
+        sessionsBeforeLongBreak = snapshot.sessionsBeforeLongBreak
+        baseRewardPerSession = snapshot.baseRewardPerSession
+        soundEnabled = snapshot.soundEnabled
+        hapticsEnabled = snapshot.hapticsEnabled
+        autoStartBreaks = snapshot.autoStartBreaks
+        tickingEnabled = snapshot.tickingEnabled
+        selectedTickSound = TickSound(rawValue: snapshot.selectedTickSound) ?? .classic
+        overrideMute = snapshot.overrideMute
+        tickVolume = snapshot.tickVolume
+        notificationsEnabled = snapshot.notificationsEnabled
+        completedFocusSessions = snapshot.completedFocusSessions
+        streak = snapshot.streak
+        totalCompletedSessions = snapshot.totalSessions
+        totalFocusMinutes = snapshot.totalFocusMinutes
+        focusDays = Set(snapshot.focusDays)
+        lastGoalReset = snapshot.lastGoalReset ?? calendar.startOfDay(for: Date())
+        sessionHistory = snapshot.sessionHistory
+        selectedCategory = snapshot.selectedCategory
+        remainingSeconds = snapshot.remainingSeconds
+        isRunning = snapshot.isRunning
+
+        if let endsAt = snapshot.runningEndsAt, snapshot.isRunning {
+            let remaining = max(0, endsAt.timeIntervalSinceNow)
+            remainingSeconds = Int(remaining.rounded(.down))
+            if remainingSeconds > 0 {
+                beginTicking()
+#if canImport(ActivityKit)
+                if #available(iOS 16.1, *) {
+                    let label = phase.displayName(using: LocalizationManager.shared)
+                    LiveActivityService.shared.startOrUpdate(
+                        phase: label,
+                        endDate: endsAt,
+                        isPaused: false,
+                        remainingSeconds: remainingSeconds
+                    )
+                }
+#endif
+            } else {
+                remainingSeconds = 0
+                DispatchQueue.main.async { [weak self] in
+                    self?.finishPhase()
+                }
+            }
+        } else if snapshot.isRunning, remainingSeconds > 0 {
+            beginTicking()
+#if canImport(ActivityKit)
+            if #available(iOS 16.1, *) {
+                let label = phase.displayName(using: LocalizationManager.shared)
+                LiveActivityService.shared.startOrUpdate(
+                    phase: label,
+                    endDate: Date().addingTimeInterval(TimeInterval(remainingSeconds)),
+                    isPaused: false,
+                    remainingSeconds: remainingSeconds
+                )
+            }
+#endif
+        }
     }
 
     func pause() {

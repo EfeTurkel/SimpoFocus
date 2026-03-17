@@ -61,6 +61,15 @@ struct FocusForestApp: App {
                         }
                         StoreKitService.shared.startIfNeeded()
                     }
+                    .task {
+                        await persistence.syncFromCloudIfNeeded(
+                            wallet: wallet,
+                            market: market,
+                            bank: bank,
+                            timer: timerService,
+                            room: room
+                        )
+                    }
                     .onChange(of: scenePhase) { _, newPhase in
                         handleScenePhaseChange(newPhase)
                     }
@@ -162,6 +171,7 @@ struct FocusForestApp: App {
         persistence.setupBankPersistence(bank, cancellables: &cancellables)
         persistence.setupTimerPersistence(timerService, cancellables: &cancellables)
         persistence.setupRoomPersistence(room, cancellables: &cancellables)
+        persistence.setupCloudSyncObservers()
     }
 
     private func handleScenePhaseChange(_ phase: ScenePhase) {
@@ -179,6 +189,15 @@ struct FocusForestApp: App {
             print("App - Became active, restoring state")
             #endif
             processPendingAction()
+            Task {
+                await persistence.syncFromCloudIfNeeded(
+                    wallet: wallet,
+                    market: market,
+                    bank: bank,
+                    timer: timerService,
+                    room: room
+                )
+            }
         @unknown default:
             break
         }

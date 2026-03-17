@@ -26,6 +26,7 @@ struct RootView: View {
     @State private var showSpecialOffer = false
     @State private var showLifetimeOffer = false
     @State private var persistenceError: String?
+    @State private var waitingForCloudBootstrap = true
 
     var body: some View {
         ZStack {
@@ -66,6 +67,8 @@ struct RootView: View {
         }
         .onAppear {
             if !hasCheckedOnboarding {
+                waitingForCloudBootstrap = !PersistenceController.shared.didFinishInitialCloudSync
+                guard !waitingForCloudBootstrap else { return }
                 hasCheckedOnboarding = true
                 if !onboardingCompleted {
                     showingOnboarding = true
@@ -76,6 +79,22 @@ struct RootView: View {
                         grantProWelcomeBonusIfNeeded()
                         grantProMonthlyBonusIfNeeded()
                     }
+                }
+            }
+        }
+        .onReceive(PersistenceController.shared.$didFinishInitialCloudSync) { done in
+            guard done else { return }
+            guard !hasCheckedOnboarding else { return }
+            waitingForCloudBootstrap = false
+            hasCheckedOnboarding = true
+            if !onboardingCompleted {
+                showingOnboarding = true
+            } else {
+                presentLaunchPaywallIfNeeded()
+                maybePresentSpecialOffer(for: timer.totalCompletedSessions)
+                if entitlements.isPro {
+                    grantProWelcomeBonusIfNeeded()
+                    grantProMonthlyBonusIfNeeded()
                 }
             }
         }

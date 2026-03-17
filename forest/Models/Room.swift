@@ -228,7 +228,7 @@ final class RoomViewModel: ObservableObject {
                      placedAssets: placedItems.map { $0.asset.id })
     }
 
-    private func apply(_ snapshot: RoomSnapshot) {
+    func apply(_ snapshot: RoomSnapshot) {
         unlockedAssets = Set(snapshot.unlockedAssets)
         ownedThemes = snapshot.ownedThemes.filter { theme(for: $0) != nil }
         if let restoredTheme = theme(for: snapshot.currentThemeID) {
