@@ -74,6 +74,21 @@ final class PomodoroTimerService: ObservableObject {
     @Published private(set) var sessionHistory: [FocusSession] = []
     @Published var selectedCategory: FocusCategory = .predefined(.untagged)
 
+    /// A dynamic 0-100 score representing the user's daily focus success based on session history and active streak.
+    var focusScore: Int {
+        let maxDailyMinutes: Double = 180.0 // 3 hours = 80 points base
+        let todayMinutes = sessionHistory
+            .filter { calendar.isDateInToday($0.date) }
+            .map { $0.durationMinutes }
+            .reduce(0, +)
+        
+        let baseScore = min(80.0, (todayMinutes / maxDailyMinutes) * 80.0)
+        let streakBonus = min(20.0, Double(streak) * 2.5) // Cap bonus at 20
+        
+        let total = baseScore + streakBonus
+        return max(0, min(100, Int(total)))
+    }
+
     // MARK: - Configuration
     @Published var focusDuration: Int = 25 * 60
     @Published var shortBreakDuration: Int = 5 * 60

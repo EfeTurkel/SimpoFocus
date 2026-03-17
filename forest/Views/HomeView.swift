@@ -5,6 +5,7 @@ struct HomeView: View {
     @EnvironmentObject private var wallet: WalletViewModel
     @EnvironmentObject private var localization: LocalizationManager
     @EnvironmentObject private var entitlements: EntitlementManager
+
     @ObservedObject private var themeManager = ThemeManager.shared
     @Environment(\.colorScheme) var colorScheme
     @AppStorage("userName") private var userName: String = ""
@@ -16,6 +17,7 @@ struct HomeView: View {
 
     var body: some View {
         VStack(spacing: 24) {
+
             // MARK: - Active Theme
             activeThemeCard
 
@@ -63,6 +65,7 @@ struct HomeView: View {
             .presentationBackgroundInteraction(.automatic)
         }
     }
+
 
     // MARK: - Overview / Theme
     

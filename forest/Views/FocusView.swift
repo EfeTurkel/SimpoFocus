@@ -26,7 +26,8 @@ struct FocusView: View {
                 progress: phaseProgress,
                 timeText: formattedTime(timer.remainingSeconds),
                 subtitle: timer.phase.displayName(using: localization),
-                isRunning: timer.isRunning
+                isRunning: timer.isRunning,
+                focusScore: timer.focusScore
             )
             .padding(.horizontal, DS.Padding.xl)
 
@@ -331,13 +332,34 @@ private struct CircularTimerView: View {
     let timeText: String
     let subtitle: String
     let isRunning: Bool
+    let focusScore: Int
     @State private var breatheScale: CGFloat = 1.0
 
     private let ringSize: CGFloat = 220
     private let strokeWidth: CGFloat = 10
+    
+    // Outer ring parameters
+    private let outerRingSize: CGFloat = 244
+    private let outerStrokeWidth: CGFloat = 6
 
     var body: some View {
         ZStack {
+            // MARK: - Outer Focus Score Ring
+            Circle()
+                .stroke(Color.primary.opacity(0.05), lineWidth: outerStrokeWidth)
+                .frame(width: outerRingSize, height: outerRingSize)
+
+            Circle()
+                .trim(from: 0, to: CGFloat(focusScore) / 100.0)
+                .stroke(
+                    Color("ForestGreen").opacity(0.5),
+                    style: StrokeStyle(lineWidth: outerStrokeWidth, lineCap: .round)
+                )
+                .frame(width: outerRingSize, height: outerRingSize)
+                .rotationEffect(.degrees(-90))
+                .animation(DS.Animation.defaultSpring, value: focusScore)
+            
+            // MARK: - Inner Timer Ring
             Circle()
                 .stroke(Color("ForestGreen").opacity(0.1), lineWidth: strokeWidth)
                 .frame(width: ringSize, height: ringSize)
