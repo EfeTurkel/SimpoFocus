@@ -34,29 +34,7 @@ struct PaywallView: View {
                             .offset(y: appeared ? 0 : 10)
                             .animation(DS.Animation.defaultSpring.delay(DS.Animation.staggerDelay(index: 1, base: 0.05)), value: appeared)
 
-                        if let loadError = storeKit.loadError {
-                            GlassSection {
-                                VStack(spacing: DS.Padding.element) {
-                                    Text(loadError)
-                                        .font(.footnote)
-                                        .foregroundStyle(.red)
-                                        .multilineTextAlignment(.center)
-                                    Button(loc("PAYWALL_RESTORE")) {
-                                        Task { await storeKit.loadProducts() }
-                                    }
-                                    .buttonStyle(SecondaryCTAStyle())
-                                }
-                            }
-                        } else {
-                            plansSection
-                                .opacity(appeared ? 1 : 0)
-                                .offset(y: appeared ? 0 : 10)
-                                .animation(DS.Animation.defaultSpring.delay(DS.Animation.staggerDelay(index: 2, base: 0.05)), value: appeared)
-                            purchaseButton
-                                .opacity(appeared ? 1 : 0)
-                                .offset(y: appeared ? 0 : 10)
-                                .animation(DS.Animation.defaultSpring.delay(DS.Animation.staggerDelay(index: 3, base: 0.05)), value: appeared)
-                        }
+                        plansAndPurchaseSection
 
                         restoreButton
                         termsFooter
@@ -143,6 +121,64 @@ struct PaywallView: View {
     }
 
     // MARK: - Plans
+
+    @ViewBuilder
+    private var plansAndPurchaseSection: some View {
+        if let loadError = storeKit.loadError {
+            GlassSection {
+                VStack(spacing: DS.Padding.element) {
+                    Text(loadError)
+                        .font(.footnote)
+                        .foregroundStyle(.red)
+                        .multilineTextAlignment(.center)
+                    Button(loc("PAYWALL_RESTORE")) {
+                        Task { await storeKit.loadProducts() }
+                    }
+                    .buttonStyle(SecondaryCTAStyle())
+                }
+            }
+        } else if storeKit.subscriptionProducts.isEmpty {
+            GlassSection {
+                VStack(spacing: DS.Padding.element) {
+                    if storeKit.isLoading {
+                        ProgressView()
+                    }
+                    Text(loc("PAYWALL_LOADING_PLANS", fallback: "Planlar yükleniyor..."))
+                        .font(.footnote.weight(.medium))
+                        .onGlassPrimary()
+                        .multilineTextAlignment(.center)
+                    Text(loc("PAYWALL_LOADING_HINT", fallback: "Debug modda test ediyorsan Scheme > Run > Options içinden StoreKit Configuration seçmelisin."))
+                        .font(.caption2)
+                        .onGlassSecondary()
+                        .multilineTextAlignment(.center)
+                        .opacity(0.8)
+                    #if DEBUG
+                    if let summary = storeKit.debugLastLoadSummary {
+                        Text(summary)
+                            .font(.system(size: 10, weight: .regular, design: .monospaced))
+                            .onGlassSecondary()
+                            .opacity(0.75)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.top, 6)
+                    }
+                    #endif
+                    Button(loc("PAYWALL_RETRY", fallback: "Yeniden Dene")) {
+                        Task { await storeKit.loadProducts() }
+                    }
+                    .buttonStyle(SecondaryCTAStyle())
+                }
+            }
+        } else {
+            plansSection
+                .opacity(appeared ? 1 : 0)
+                .offset(y: appeared ? 0 : 10)
+                .animation(DS.Animation.defaultSpring.delay(DS.Animation.staggerDelay(index: 2, base: 0.05)), value: appeared)
+            purchaseButton
+                .opacity(appeared ? 1 : 0)
+                .offset(y: appeared ? 0 : 10)
+                .animation(DS.Animation.defaultSpring.delay(DS.Animation.staggerDelay(index: 3, base: 0.05)), value: appeared)
+        }
+    }
 
     private var plansSection: some View {
         let weekly = storeKit.subscriptionProducts.first { $0.id == StoreKitService.proWeeklyID }
@@ -243,6 +279,10 @@ struct PaywallView: View {
 
     private func loc(_ key: String, _ arguments: CVarArg...) -> String {
         localization.translate(key, fallback: key, arguments: arguments)
+    }
+
+    private func loc(_ key: String, fallback: String) -> String {
+        localization.translate(key, fallback: fallback)
     }
 
     private var personalizedPaywallTitle: String? {

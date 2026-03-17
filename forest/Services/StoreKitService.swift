@@ -30,6 +30,7 @@ final class StoreKitService: ObservableObject {
     @MainActor @Published private(set) var hasLifetime: Bool = false
     @MainActor @Published private(set) var isLoading = false
     @MainActor @Published var loadError: String?
+    @MainActor @Published private(set) var debugLastLoadSummary: String?
 
     var onCoinsPurchased: ((Double) -> Void)?
 
@@ -60,6 +61,20 @@ final class StoreKitService: ObservableObject {
 
         do {
             let products = try await Product.products(for: Self.allProductIDs)
+            
+            #if DEBUG
+            let ids = products.map { $0.id }.sorted().joined(separator: "\n")
+            debugLastLoadSummary = """
+            requested: \(Self.allProductIDs.count)
+            received: \(products.count)
+            subs: \(products.filter { Self.subscriptionIDs.contains($0.id) }.count)
+            consumables: \(products.filter { Self.consumableIDs.contains($0.id) }.count)
+            lifetime: \(products.contains(where: { $0.id == Self.proLifetimeID }) ? "yes" : "no")
+            
+            ids:
+            \(ids)
+            """
+            #endif
 
             subscriptionProducts = products
                 .filter { Self.subscriptionIDs.contains($0.id) }
@@ -74,6 +89,9 @@ final class StoreKitService: ObservableObject {
             await updateEntitlements()
         } catch {
             loadError = error.localizedDescription
+            #if DEBUG
+            debugLastLoadSummary = "load error: \(error.localizedDescription)"
+            #endif
             #if DEBUG
             print("StoreKitService: Failed to load products: \(error)")
             #endif
