@@ -216,6 +216,9 @@ struct OnboardingView: View {
                     }
                 }
             }
+        case .rings:
+            RingsInfoCard()
+                .environmentObject(localization)
         case .finance:
             FinanceCard()
                 .environmentObject(localization)
@@ -317,6 +320,74 @@ struct OnboardingView: View {
             .padding(.horizontal, DS.Padding.screen)
         }
 
+        private func loc(_ key: String, _ arguments: CVarArg...) -> String {
+            localization.translate(key, fallback: key, arguments: arguments)
+        }
+    }
+    
+    private struct RingsInfoCard: View {
+        @EnvironmentObject private var localization: LocalizationManager
+        
+        var body: some View {
+            OnboardingCard {
+                VStack(alignment: .leading, spacing: 14) {
+                    Text(loc("ONBOARD_RINGS_TITLE"))
+                        .font(.headline)
+                        .onGlassPrimary()
+                    
+                    RingLegendRow(
+                        color: Color("ForestGreen"),
+                        title: loc("ONBOARD_RING_INNER_TITLE"),
+                        description: loc("ONBOARD_RING_INNER_DESC")
+                    )
+                    
+                    RingLegendRow(
+                        color: .orange,
+                        title: loc("ONBOARD_RING_MIDDLE_TITLE"),
+                        description: loc("ONBOARD_RING_MIDDLE_DESC")
+                    )
+                    
+                    RingLegendRow(
+                        color: .purple,
+                        title: loc("ONBOARD_RING_OUTER_TITLE"),
+                        description: loc("ONBOARD_RING_OUTER_DESC")
+                    )
+                }
+            }
+        }
+        
+        private struct RingLegendRow: View {
+            let color: Color
+            let title: String
+            let description: String
+
+            var body: some View {
+                HStack(alignment: .top, spacing: 12) {
+                    ZStack {
+                        Circle()
+                            .stroke(Color.primary.opacity(0.08), lineWidth: 6)
+                            .frame(width: 30, height: 30)
+                        Circle()
+                            .trim(from: 0, to: 0.85)
+                            .stroke(color, style: StrokeStyle(lineWidth: 6, lineCap: .round))
+                            .frame(width: 30, height: 30)
+                            .rotationEffect(.degrees(-90))
+                    }
+                    .padding(.top, 1)
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(title)
+                            .font(.subheadline.weight(.semibold))
+                            .onGlassPrimary()
+                        Text(description)
+                            .font(.footnote)
+                            .onGlassSecondary()
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+            }
+        }
+        
         private func loc(_ key: String, _ arguments: CVarArg...) -> String {
             localization.translate(key, fallback: key, arguments: arguments)
         }
@@ -456,6 +527,7 @@ struct OnboardingView: View {
         case theme
         case focus
         case breaks
+        case rings
         case finance
         case notifications
         case language
@@ -467,6 +539,7 @@ struct OnboardingView: View {
             case .theme: return "paintpalette.fill"
             case .focus: return "timer"
             case .breaks: return "bed.double"
+            case .rings: return "circle.dotted"
             case .finance: return "banknote"
             case .notifications: return "bell.badge.fill"
             case .language: return "globe"
@@ -480,6 +553,7 @@ struct OnboardingView: View {
             case .theme: return "ONBOARD_STEP_THEME"
             case .focus: return "ONBOARD_STEP_FOCUS"
             case .breaks: return "ONBOARD_STEP_BREAKS"
+            case .rings: return "ONBOARD_STEP_RINGS"
             case .finance: return "ONBOARD_STEP_FINANCE"
             case .notifications: return "ONBOARD_STEP_NOTIFICATIONS"
             case .language: return "ONBOARD_LANGUAGE_TITLE"
@@ -493,6 +567,7 @@ struct OnboardingView: View {
             case .theme: return "ONBOARD_SUB_THEME"
             case .focus: return "ONBOARD_SUB_FOCUS"
             case .breaks: return "ONBOARD_SUB_BREAKS"
+            case .rings: return "ONBOARD_SUB_RINGS"
             case .finance: return "ONBOARD_SUB_FINANCE"
             case .notifications: return "ONBOARD_SUB_NOTIFICATIONS"
             case .language: return "ONBOARD_LANGUAGE_DESCRIPTION"

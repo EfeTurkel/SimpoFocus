@@ -160,6 +160,10 @@ final class PomodoroTimerService: ObservableObject {
 #endif
 
     struct Snapshot: Codable {
+        let phaseRaw: PomodoroPhase.RawValue
+        let remainingSeconds: Int
+        let isRunning: Bool
+        let runningEndsAt: Date?
         let focusDuration: Int
         let shortBreakDuration: Int
         let longBreakDuration: Int
@@ -182,7 +186,11 @@ final class PomodoroTimerService: ObservableObject {
         let sessionHistory: [FocusSession]
         let selectedCategory: FocusCategory
 
-        init(focusDuration: Int,
+        init(phaseRaw: PomodoroPhase.RawValue,
+             remainingSeconds: Int,
+             isRunning: Bool,
+             runningEndsAt: Date?,
+             focusDuration: Int,
              shortBreakDuration: Int,
              longBreakDuration: Int,
              sessionsBeforeLongBreak: Int,
@@ -203,6 +211,10 @@ final class PomodoroTimerService: ObservableObject {
              lastGoalReset: Date? = nil,
              sessionHistory: [FocusSession] = [],
              selectedCategory: FocusCategory = .predefined(.untagged)) {
+            self.phaseRaw = phaseRaw
+            self.remainingSeconds = remainingSeconds
+            self.isRunning = isRunning
+            self.runningEndsAt = runningEndsAt
             self.focusDuration = focusDuration
             self.shortBreakDuration = shortBreakDuration
             self.longBreakDuration = longBreakDuration
@@ -225,10 +237,41 @@ final class PomodoroTimerService: ObservableObject {
             self.sessionHistory = sessionHistory
             self.selectedCategory = selectedCategory
         }
+
+        init(from decoder: Decoder) throws {
+            let container = try decoder.container(keyedBy: CodingKeys.self)
+            phaseRaw = try container.decodeIfPresent(PomodoroPhase.RawValue.self, forKey: .phaseRaw) ?? PomodoroPhase.idle.rawValue
+            remainingSeconds = try container.decodeIfPresent(Int.self, forKey: .remainingSeconds) ?? 0
+            isRunning = try container.decodeIfPresent(Bool.self, forKey: .isRunning) ?? false
+            runningEndsAt = try container.decodeIfPresent(Date.self, forKey: .runningEndsAt)
+
+            focusDuration = try container.decode(Int.self, forKey: .focusDuration)
+            shortBreakDuration = try container.decode(Int.self, forKey: .shortBreakDuration)
+            longBreakDuration = try container.decode(Int.self, forKey: .longBreakDuration)
+            sessionsBeforeLongBreak = try container.decode(Int.self, forKey: .sessionsBeforeLongBreak)
+            baseRewardPerSession = try container.decode(Double.self, forKey: .baseRewardPerSession)
+            soundEnabled = try container.decode(Bool.self, forKey: .soundEnabled)
+            hapticsEnabled = try container.decode(Bool.self, forKey: .hapticsEnabled)
+            autoStartBreaks = try container.decode(Bool.self, forKey: .autoStartBreaks)
+            tickingEnabled = try container.decodeIfPresent(Bool.self, forKey: .tickingEnabled) ?? true
+            selectedTickSound = try container.decodeIfPresent(TickSound.RawValue.self, forKey: .selectedTickSound) ?? TickSound.classic.rawValue
+            overrideMute = try container.decodeIfPresent(Bool.self, forKey: .overrideMute) ?? false
+            tickVolume = try container.decodeIfPresent(Double.self, forKey: .tickVolume) ?? 0.55
+            notificationsEnabled = try container.decodeIfPresent(Bool.self, forKey: .notificationsEnabled) ?? false
+            completedFocusSessions = try container.decode(Int.self, forKey: .completedFocusSessions)
+            streak = try container.decode(Int.self, forKey: .streak)
+            totalSessions = try container.decode(Int.self, forKey: .totalSessions)
+            totalFocusMinutes = try container.decode(Double.self, forKey: .totalFocusMinutes)
+            focusDays = try container.decode([Date].self, forKey: .focusDays)
+            lastGoalReset = try container.decodeIfPresent(Date.self, forKey: .lastGoalReset)
+            sessionHistory = try container.decodeIfPresent([FocusSession].self, forKey: .sessionHistory) ?? []
+            selectedCategory = try container.decodeIfPresent(FocusCategory.self, forKey: .selectedCategory) ?? .predefined(.untagged)
+        }
     }
 
     init(snapshot: Snapshot? = nil) {
         if let snapshot {
+            phase = PomodoroPhase(rawValue: snapshot.phaseRaw) ?? .idle
             focusDuration = sanitizeDuration(snapshot.focusDuration, minimumMinutes: 1)
             shortBreakDuration = sanitizeDuration(snapshot.shortBreakDuration, minimumMinutes: 1)
             longBreakDuration = sanitizeDuration(snapshot.longBreakDuration, minimumMinutes: 1)
@@ -250,7 +293,46 @@ final class PomodoroTimerService: ObservableObject {
             lastGoalReset = snapshot.lastGoalReset ?? calendar.startOfDay(for: Date())
             sessionHistory = snapshot.sessionHistory
             selectedCategory = snapshot.selectedCategory
-            remainingSeconds = focusDuration
+            remainingSeconds = snapshot.remainingSeconds
+            isRunning = snapshot.isRunning
+
+            if let endsAt = snapshot.runningEndsAt, snapshot.isRunning {
+                let remaining = max(0, endsAt.timeIntervalSinceNow)
+                remainingSeconds = Int(remaining.rounded(.down))
+                if remainingSeconds > 0 {
+                    beginTicking()
+#if canImport(ActivityKit)
+                    if #available(iOS 16.1, *) {
+                        let label = phase.displayName(using: LocalizationManager.shared)
+                        LiveActivityService.shared.startOrUpdate(
+                            phase: label,
+                            endDate: endsAt,
+                            isPaused: false,
+                            remainingSeconds: remainingSeconds
+                        )
+                    }
+#endif
+                } else {
+                    remainingSeconds = 0
+                    // Phase ended while app was closed; finalize once on launch.
+                    DispatchQueue.main.async { [weak self] in
+                        self?.finishPhase()
+                    }
+                }
+            } else if snapshot.isRunning, remainingSeconds > 0 {
+                beginTicking()
+#if canImport(ActivityKit)
+                if #available(iOS 16.1, *) {
+                    let label = phase.displayName(using: LocalizationManager.shared)
+                    LiveActivityService.shared.startOrUpdate(
+                        phase: label,
+                        endDate: Date().addingTimeInterval(TimeInterval(remainingSeconds)),
+                        isPaused: false,
+                        remainingSeconds: remainingSeconds
+                    )
+                }
+#endif
+            }
         } else {
             lastGoalReset = calendar.startOfDay(for: Date())
             remainingSeconds = focusDuration
@@ -839,6 +921,13 @@ final class PomodoroTimerService: ObservableObject {
         sharedDefaults?.set(remainingSeconds, forKey: "remainingSeconds")
         sharedDefaults?.set(isRunning, forKey: "isRunning")
         sharedDefaults?.set(currentLanguage, forKey: "app_language")
+        // A stable, non-localized phase key for exact sync.
+        sharedDefaults?.set(phase.rawValue, forKey: "phase_raw")
+        if isRunning {
+            sharedDefaults?.set(Date().addingTimeInterval(TimeInterval(remainingSeconds)).timeIntervalSince1970, forKey: "running_ends_at")
+        } else {
+            sharedDefaults?.removeObject(forKey: "running_ends_at")
+        }
         
         // Force synchronization
         sharedDefaults?.synchronize()
@@ -913,7 +1002,11 @@ final class PomodoroTimerService: ObservableObject {
     }
 
     func snapshot() -> Snapshot {
-        Snapshot(focusDuration: focusDuration,
+        Snapshot(phaseRaw: phase.rawValue,
+                 remainingSeconds: remainingSeconds,
+                 isRunning: isRunning,
+                 runningEndsAt: isRunning ? Date().addingTimeInterval(TimeInterval(remainingSeconds)) : nil,
+                 focusDuration: focusDuration,
                  shortBreakDuration: shortBreakDuration,
                  longBreakDuration: longBreakDuration,
                  sessionsBeforeLongBreak: sessionsBeforeLongBreak,

@@ -42,7 +42,7 @@ struct SellCoinSheet: View {
                                     QuantitySlider(quantity: $quantity, maxQuantity: coin.quantity, price: coin.currentPrice)
                                         .environmentObject(localization)
 
-                                    SellStatTile(title: loc("SELL_COIN_MARKET_VALUE"), value: CurrencyFormatter.abbreviatedCurrency(coin.marketValue), icon: "chart.line.uptrend.xyaxis")
+                                    SellStatTile(title: loc("SELL_COIN_MARKET_VALUE"), value: TokenFormatter.abbreviatedTokens(coin.marketValue), icon: "chart.line.uptrend.xyaxis")
                                 }
                             }
                         }
@@ -199,7 +199,7 @@ private struct CoinOverview: View {
                     Text(loc("SELL_COIN_AVAILABLE", coin.quantity.formatted(.number.precision(.fractionLength(2)))))
                         .font(.caption)
                         .onGlassSecondary()
-                    Text(coin.currentPrice, format: .currency(code: "TRY"))
+                    Text(TokenFormatter.format(coin.currentPrice, maximumFractionDigits: 2))
                         .font(.headline)
                         .onGlassPrimary()
                 }
@@ -272,7 +272,7 @@ private struct QuantitySlider: View {
                 .tint(Color("ForestGreen"))
 
             if price > 0 {
-                Text("≈ \((quantity * price), format: .currency(code: "TRY"))")
+                Text("≈ \(TokenFormatter.format(quantity * price, maximumFractionDigits: 2))")
                     .font(.subheadline.weight(.medium))
                     .onGlassSecondary()
             }

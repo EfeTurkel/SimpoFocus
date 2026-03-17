@@ -24,8 +24,17 @@ struct Provider: AppIntentTimelineProvider {
         // Get current timer state from UserDefaults (shared between app and widget)
         let sharedDefaults = UserDefaults(suiteName: "group.com.efeturkel.simpoapp")
         let phase = sharedDefaults?.string(forKey: "currentPhase") ?? "Hazır"
-        let remainingSeconds = sharedDefaults?.integer(forKey: "remainingSeconds") ?? 1500
         let isRunning = sharedDefaults?.bool(forKey: "isRunning") ?? false
+        let endsAtTimestamp = sharedDefaults?.double(forKey: "running_ends_at")
+
+        let remainingSeconds: Int = {
+            // Prefer endDate-based sync to avoid drift when the app is closed.
+            if isRunning, let endsAtTimestamp, endsAtTimestamp > 0 {
+                let endsAt = Date(timeIntervalSince1970: endsAtTimestamp)
+                return max(0, Int(endsAt.timeIntervalSince(Date()).rounded(.down)))
+            }
+            return sharedDefaults?.integer(forKey: "remainingSeconds") ?? 1500
+        }()
         
         // Debug log
         #if DEBUG

@@ -114,7 +114,7 @@ struct FinanceView: View {
                 .foregroundStyle(Color.secondary)
 
             HStack(alignment: .bottom) {
-                Text(wallet.balance, format: .currency(code: "TRY"))
+                Text(TokenFormatter.format(wallet.balance, maximumFractionDigits: 0))
                     .font(.system(size: 44, weight: .light, design: .rounded))
                     .onGlassPrimary()
                     .contentTransition(.numericText())
@@ -124,7 +124,7 @@ struct FinanceView: View {
 
             HStack(spacing: 12) {
                 minimalChip(label: "+\(Int(wallet.passiveIncomeBoost * 100))% Boost")
-                minimalChip(label: "\(wallet.stakedBalance.formatted(.currency(code: "TRY"))) Stake")
+                minimalChip(label: "\(TokenFormatter.format(wallet.stakedBalance, maximumFractionDigits: 0)) Stake")
             }
             .padding(.top, 4)
         }
@@ -226,7 +226,7 @@ struct FinanceView: View {
                     Text(loc("PRO_BANNER_TITLE", fallback: "SimpoFocus Pro"))
                         .font(.system(size: 14, weight: .medium, design: .rounded))
                         .onGlassPrimary()
-                    Text(loc("PRO_BANNER_SUBTITLE", fallback: "2x Token & Sınırsız Özellikler"))
+                    Text(loc("PRO_BANNER_SUBTITLE", fallback: "2x Sim & Sınırsız Özellikler"))
                         .font(.system(size: 12, weight: .regular, design: .rounded))
                         .foregroundStyle(Color.secondary)
                 }

@@ -4,7 +4,7 @@
   "version" : 2,
   "products" : [
     {
-      "displayPrice" : "0.99",
+      "displayPrice" : "2.99",
       "familyShareable" : false,
       "internalID" : "PRO_WEEKLY_001",
       "localizations" : [
@@ -41,7 +41,7 @@
       }
     },
     {
-      "displayPrice" : "2.99",
+      "displayPrice" : "9.99",
       "familyShareable" : false,
       "internalID" : "PRO_MONTHLY_001",
       "localizations" : [
@@ -68,12 +68,17 @@
       "subscription" : {
         "adHocOffers" : [],
         "groupLevel" : 1,
-        "introductoryOffer" : null,
+        "introductoryOffer" : {
+          "displayPrice" : "0.00",
+          "internalID" : "MONTHLY_FREE_TRIAL",
+          "paymentMode" : "free",
+          "subscriptionPeriod" : "P3D"
+        },
         "subscriptionPeriod" : "P1M"
       }
     },
     {
-      "displayPrice" : "19.99",
+      "displayPrice" : "49.99",
       "familyShareable" : false,
       "internalID" : "PRO_YEARLY_001",
       "localizations" : [
@@ -100,28 +105,70 @@
       "subscription" : {
         "adHocOffers" : [],
         "groupLevel" : 1,
-        "introductoryOffer" : null,
+        "introductoryOffer" : {
+          "displayPrice" : "0.00",
+          "internalID" : "YEARLY_FREE_TRIAL",
+          "paymentMode" : "free",
+          "subscriptionPeriod" : "P3D"
+        },
         "subscriptionPeriod" : "P1Y"
       }
     },
     {
-      "displayPrice" : "0.99",
+      "displayPrice" : "15.00",
+      "familyShareable" : false,
+      "internalID" : "PRO_YEARLY_SPECIAL_001",
+      "localizations" : [
+        {
+          "description" : "Yearly special campaign — limited time",
+          "displayName" : "SimpoFocus Pro Yearly (Special)",
+          "locale" : "en_US"
+        },
+        {
+          "description" : "Özel kampanya — sınırlı süre",
+          "displayName" : "SimpoFocus Pro Yıllık (Özel)",
+          "locale" : "tr"
+        },
+        {
+          "description" : "Spezialangebot — begrenzte Zeit",
+          "displayName" : "SimpoFocus Pro Jährlich (Spezial)",
+          "locale" : "de"
+        }
+      ],
+      "productID" : "com.efeturkel.simpoapp.pro.yearly.special",
+      "referenceName" : "Pro Yearly Special",
+      "subscriptionGroupID" : "SIMPO_PRO_GROUP",
+      "type" : "RecurringSubscription",
+      "subscription" : {
+        "adHocOffers" : [],
+        "groupLevel" : 1,
+        "introductoryOffer" : {
+          "displayPrice" : "0.00",
+          "internalID" : "YEARLY_SPECIAL_FREE_TRIAL",
+          "paymentMode" : "free",
+          "subscriptionPeriod" : "P3D"
+        },
+        "subscriptionPeriod" : "P1Y"
+      }
+    },
+    {
+      "displayPrice" : "2.99",
       "familyShareable" : false,
       "internalID" : "COINS_SMALL_001",
       "localizations" : [
         {
-          "description" : "500 coins to spend in the app",
-          "displayName" : "Small Coin Pack",
+          "description" : "500 sims to spend in the app",
+          "displayName" : "Small Sim Pack",
           "locale" : "en_US"
         },
         {
-          "description" : "Uygulamada harcamak için 500 coin",
-          "displayName" : "Küçük Coin Paketi",
+          "description" : "Uygulamada harcamak için 500 sim",
+          "displayName" : "Küçük Sim Paketi",
           "locale" : "tr"
         },
         {
-          "description" : "500 Coins zum Ausgeben in der App",
-          "displayName" : "Kleines Coin-Paket",
+          "description" : "500 Sim zum Ausgeben in der App",
+          "displayName" : "Kleines Sim-Paket",
           "locale" : "de"
         }
       ],
@@ -130,23 +177,23 @@
       "type" : "Consumable"
     },
     {
-      "displayPrice" : "1.99",
+      "displayPrice" : "6.99",
       "familyShareable" : false,
       "internalID" : "COINS_MEDIUM_001",
       "localizations" : [
         {
-          "description" : "1500 coins to spend in the app",
-          "displayName" : "Medium Coin Pack",
+          "description" : "1500 sims to spend in the app",
+          "displayName" : "Medium Sim Pack",
           "locale" : "en_US"
         },
         {
-          "description" : "Uygulamada harcamak için 1500 coin",
-          "displayName" : "Orta Coin Paketi",
+          "description" : "Uygulamada harcamak için 1500 sim",
+          "displayName" : "Orta Sim Paketi",
           "locale" : "tr"
         },
         {
-          "description" : "1500 Coins zum Ausgeben in der App",
-          "displayName" : "Mittleres Coin-Paket",
+          "description" : "1500 Sim zum Ausgeben in der App",
+          "displayName" : "Mittleres Sim-Paket",
           "locale" : "de"
         }
       ],
@@ -155,29 +202,54 @@
       "type" : "Consumable"
     },
     {
-      "displayPrice" : "4.99",
+      "displayPrice" : "14.99",
       "familyShareable" : false,
       "internalID" : "COINS_LARGE_001",
       "localizations" : [
         {
-          "description" : "5000 coins to spend in the app",
-          "displayName" : "Large Coin Pack",
+          "description" : "5000 sims to spend in the app",
+          "displayName" : "Large Sim Pack",
           "locale" : "en_US"
         },
         {
-          "description" : "Uygulamada harcamak için 5000 coin",
-          "displayName" : "Büyük Coin Paketi",
+          "description" : "Uygulamada harcamak için 5000 sim",
+          "displayName" : "Büyük Sim Paketi",
           "locale" : "tr"
         },
         {
-          "description" : "5000 Coins zum Ausgeben in der App",
-          "displayName" : "Großes Coin-Paket",
+          "description" : "5000 Sim zum Ausgeben in der App",
+          "displayName" : "Großes Sim-Paket",
           "locale" : "de"
         }
       ],
       "productID" : "com.efeturkel.simpoapp.coins.large",
       "referenceName" : "Coins Large",
       "type" : "Consumable"
+    },
+    {
+      "displayPrice" : "79.99",
+      "familyShareable" : false,
+      "internalID" : "PRO_LIFETIME_001",
+      "localizations" : [
+        {
+          "description" : "Unlock all premium features forever",
+          "displayName" : "SimpoFocus Pro Lifetime",
+          "locale" : "en_US"
+        },
+        {
+          "description" : "Tüm premium özellikleri ömür boyu aç",
+          "displayName" : "SimpoFocus Pro Ömür Boyu",
+          "locale" : "tr"
+        },
+        {
+          "description" : "Alle Premium-Funktionen dauerhaft freischalten",
+          "displayName" : "SimpoFocus Pro Lebenslang",
+          "locale" : "de"
+        }
+      ],
+      "productID" : "com.efeturkel.simpoapp.pro.lifetime",
+      "referenceName" : "Pro Lifetime",
+      "type" : "NonConsumable"
     }
   ],
   "subscriptionGroups" : [

@@ -114,7 +114,7 @@ struct ThemePickerView: View {
                     }
                     .foregroundStyle(.orange)
                 } else if !room.ownedThemes.contains(theme.id) {
-                    Text(loc("THEME_PRICE_COINS", fallback: "500 Token", String(500)))
+                    Text(loc("THEME_PRICE_COINS", fallback: "500 Sim", String(500)))
                         .font(.custom("Rounded", size: 13).weight(.regular))
                         .foregroundStyle(Color.secondary)
                 } else {

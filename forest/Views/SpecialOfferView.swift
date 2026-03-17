@@ -13,6 +13,7 @@ struct SpecialOfferView: View {
     @State private var errorMessage: String?
     @State private var timeRemaining: Int = 15 * 60
     @State private var appeared = false
+    @AppStorage("userName") private var userName: String = ""
 
     private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
@@ -77,7 +78,7 @@ struct SpecialOfferView: View {
                                    startPoint: .top, endPoint: .bottom)
                 )
 
-            Text(loc("SPECIAL_OFFER_WAIT"))
+            Text(personalizedWait ?? loc("SPECIAL_OFFER_WAIT"))
                 .font(.system(size: 34, weight: .black, design: .rounded))
                 .onGlassPrimary()
 
@@ -86,6 +87,12 @@ struct SpecialOfferView: View {
                 .onGlassPrimary()
                 .multilineTextAlignment(.center)
         }
+    }
+
+    private var personalizedWait: String? {
+        let trimmed = userName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return nil }
+        return loc("SPECIAL_OFFER_WAIT_NAME", trimmed)
     }
 
     // MARK: - Discount Badge
@@ -106,7 +113,7 @@ struct SpecialOfferView: View {
                     Text(loc("SPECIAL_OFFER_ORIGINAL_PRICE"))
                         .font(.caption2)
                         .onGlassSecondary()
-                    Text("₺199.99")
+                    Text(yearlyStandardProduct?.displayPrice ?? "49,99 TL")
                         .font(.title2.weight(.bold))
                         .strikethrough(true, color: .red)
                         .onGlassSecondary()
@@ -121,11 +128,10 @@ struct SpecialOfferView: View {
                         .font(.caption2.weight(.bold))
                         .foregroundStyle(Color("ForestGreen"))
                     HStack(alignment: .firstTextBaseline, spacing: 2) {
-                        let weeklyProduct = storeKit.subscriptionProducts.first { $0.id == StoreKitService.proWeeklyID }
-                        Text(weeklyProduct?.displayPrice ?? "$0.99")
+                        Text(yearlySpecialProduct?.displayPrice ?? "15 TL")
                             .font(.system(size: 32, weight: .black, design: .rounded))
                             .onGlassPrimary()
-                        Text(loc("SPECIAL_OFFER_PER_WEEK"))
+                        Text("/" + loc("PAYWALL_PERIOD_YEAR"))
                             .font(.subheadline.weight(.semibold))
                             .onGlassSecondary()
                     }
@@ -138,6 +144,12 @@ struct SpecialOfferView: View {
                 .fill(themeManager.currentTheme.getCardBackground(for: colorScheme))
         )
         .clipShape(RoundedRectangle(cornerRadius: DS.Radius.large, style: .continuous))
+        .overlay(alignment: .bottom) {
+            Text(loc("SPECIAL_OFFER_WEEKLY_BASED_NOTE"))
+                .font(.caption2)
+                .onGlassTertiary()
+                .padding(.bottom, 10)
+        }
     }
 
     // MARK: - Countdown
@@ -274,7 +286,7 @@ struct SpecialOfferView: View {
     // MARK: - Actions
 
     private func handlePurchase() async {
-        guard let product = storeKit.subscriptionProducts.first(where: { $0.id == StoreKitService.proWeeklyID }) else { return }
+        guard let product = yearlySpecialProduct ?? yearlyStandardProduct else { return }
         isPurchasing = true
         errorMessage = nil
 
@@ -294,5 +306,13 @@ struct SpecialOfferView: View {
 
     private func loc(_ key: String, _ arguments: CVarArg...) -> String {
         localization.translate(key, fallback: key, arguments: arguments)
+    }
+
+    private var yearlyStandardProduct: Product? {
+        storeKit.subscriptionProducts.first { $0.id == StoreKitService.proYearlyID }
+    }
+
+    private var yearlySpecialProduct: Product? {
+        storeKit.subscriptionProducts.first { $0.id == StoreKitService.proYearlySpecialID }
     }
 }

@@ -21,11 +21,18 @@ final class LiveActivityService {
 
     private var activity: Activity<FocusActivityAttributes>?
 
+    private func attachExistingActivityIfNeeded() {
+        if activity == nil {
+            activity = Activity<FocusActivityAttributes>.activities.first
+        }
+    }
+
     func startOrUpdate(phase: String, endDate: Date, isPaused: Bool = false, remainingSeconds: Int) {
         guard ActivityAuthorizationInfo().areActivitiesEnabled else { return }
+        attachExistingActivityIfNeeded()
         
-        // Calculate the correct end date based on remaining seconds
-        let actualEndDate = isPaused ? Date() : Date().addingTimeInterval(TimeInterval(remainingSeconds))
+        // Prefer the caller-provided endDate when active, so we can resync on app relaunch.
+        let actualEndDate = isPaused ? Date() : endDate
         
         let state = FocusActivityAttributes.ContentState(
             phase: phase,
@@ -50,6 +57,7 @@ final class LiveActivityService {
 
     func pause(phase: String, remainingSeconds: Int) {
         guard ActivityAuthorizationInfo().areActivitiesEnabled else { return }
+        attachExistingActivityIfNeeded()
         let state = FocusActivityAttributes.ContentState(
             phase: phase,
             endDate: Date(), // When paused, endDate is current time
@@ -62,9 +70,19 @@ final class LiveActivityService {
     }
 
     func end() {
-        guard let activity else { return }
-        Task { await activity.end(using: FocusActivityAttributes.ContentState(phase: "", endDate: Date(), isPaused: false, remainingSeconds: 0), dismissalPolicy: .immediate) }
-        self.activity = nil
+        attachExistingActivityIfNeeded()
+        let state = FocusActivityAttributes.ContentState(phase: "", endDate: Date(), isPaused: false, remainingSeconds: 0)
+        if let activity {
+            Task { await activity.end(using: state, dismissalPolicy: .immediate) }
+            self.activity = nil
+        } else {
+            // Best-effort cleanup in case there are multiple activities alive.
+            Task {
+                for activity in Activity<FocusActivityAttributes>.activities {
+                    await activity.end(using: state, dismissalPolicy: .immediate)
+                }
+            }
+        }
     }
 }
 

@@ -88,7 +88,7 @@ private struct MarketHeader: View {
                 .font(.caption.weight(.medium))
                 .onGlassSecondary()
 
-            Text(balance, format: .currency(code: "TRY"))
+            Text(TokenFormatter.format(balance, maximumFractionDigits: 0))
                 .font(.system(size: 36, weight: .bold, design: .rounded))
                 .onGlassPrimary()
 
@@ -133,7 +133,7 @@ private struct CoinCard: View {
                     Text(coin.name)
                         .font(.subheadline.weight(.medium))
                         .onGlassPrimary()
-                    Text(coin.currentPrice, format: .currency(code: "TRY"))
+                    Text(TokenFormatter.format(coin.currentPrice, maximumFractionDigits: 2))
                         .font(.subheadline.weight(.semibold))
                         .onGlassPrimary()
                 }

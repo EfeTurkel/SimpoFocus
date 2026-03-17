@@ -24,6 +24,7 @@ struct FocusView: View {
 
             CircularTimerView(
                 progress: phaseProgress,
+                dailyGoalProgress: dailyGoalProgress,
                 timeText: formattedTime(timer.remainingSeconds),
                 subtitle: timer.phase.displayName(using: localization),
                 isRunning: timer.isRunning,
@@ -52,13 +53,6 @@ struct FocusView: View {
             }
 
             Spacer(minLength: DS.Padding.section)
-
-            dailyProgressBar
-                .padding(.horizontal, DS.Padding.screen)
-
-            statsRow
-                .padding(.horizontal, DS.Padding.screen)
-                .padding(.top, DS.Padding.element)
 
             Spacer(minLength: DS.Padding.section)
         }
@@ -221,38 +215,7 @@ struct FocusView: View {
         }
     }
 
-    // MARK: - Stats Row
-
-    private var statsRow: some View {
-        HStack(spacing: 0) {
-            statCell(icon: "flame.fill", value: "x\(timer.streak)", label: loc("STAT_STREAK"))
-            statCell(icon: "leaf.fill", value: "\(timer.completedFocusSessions)", label: loc("STAT_SESSIONS"))
-            statCell(icon: phaseIcon, value: phaseShort, label: loc("STAT_PHASE"))
-        }
-        .padding(.vertical, DS.Padding.element)
-        .padding(.horizontal, DS.Padding.section)
-        .background(
-            RoundedRectangle(cornerRadius: DS.Radius.medium, style: .continuous)
-                .fill(.clear)
-        )
-        .liquidGlass(.card, edgeMask: [.top])
-        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.medium, style: .continuous))
-    }
-
-    private func statCell(icon: String, value: String, label: String) -> some View {
-        VStack(spacing: 2) {
-            Image(systemName: icon)
-                .font(DS.Typography.micro)
-                .onGlassSecondary()
-            Text(value)
-                .font(DS.Typography.caption)
-                .onGlassPrimary()
-            Text(label)
-                .font(DS.Typography.micro)
-                .onGlassSecondary()
-        }
-        .frame(maxWidth: .infinity)
-    }
+    // MARK: - Stats Chips (removed)
 
     // MARK: - Helpers
 
@@ -289,6 +252,12 @@ struct FocusView: View {
     private func formattedTime(_ seconds: Int) -> String {
         guard seconds > 0 else { return "00:00" }
         return String(format: "%02d:%02d", seconds / 60, seconds % 60)
+    }
+    
+    private var dailyGoalProgress: Double {
+        let target = market.dailyTarget
+        guard target > 0 else { return 0 }
+        return min(max(Double(timer.completedFocusSessions) / Double(target), 0), 1)
     }
 
     // MARK: - Pro Session Nudge
@@ -329,21 +298,43 @@ struct FocusView: View {
 
 private struct CircularTimerView: View {
     let progress: Double
+    let dailyGoalProgress: Double
     let timeText: String
     let subtitle: String
     let isRunning: Bool
     let focusScore: Int
     @State private var breatheScale: CGFloat = 1.0
 
-    private let ringSize: CGFloat = 220
-    private let strokeWidth: CGFloat = 10
+    private let ringSize: CGFloat = 252
+    private let strokeWidth: CGFloat = 12
     
-    // Outer ring parameters
-    private let outerRingSize: CGFloat = 244
-    private let outerStrokeWidth: CGFloat = 6
+    // Middle ring parameters (daily goal)
+    private let middleRingSize: CGFloat = 270
+    private let middleStrokeWidth: CGFloat = 9
+    
+    // Outer ring parameters (focus score)
+    private let outerRingSize: CGFloat = 288
+    private let outerStrokeWidth: CGFloat = 7
 
     var body: some View {
         ZStack {
+            // MARK: - Glow / Halo
+            Circle()
+                .fill(
+                    RadialGradient(
+                        colors: [
+                            Color("ForestGreen").opacity(isRunning ? 0.22 : 0.12),
+                            .clear
+                        ],
+                        center: .center,
+                        startRadius: 40,
+                        endRadius: outerRingSize * 0.62
+                    )
+                )
+                .frame(width: outerRingSize + 40, height: outerRingSize + 40)
+                .blur(radius: isRunning ? 6 : 10)
+                .opacity(isRunning ? 1.0 : 0.7)
+
             // MARK: - Outer Focus Score Ring
             Circle()
                 .stroke(Color.primary.opacity(0.05), lineWidth: outerStrokeWidth)
@@ -352,12 +343,29 @@ private struct CircularTimerView: View {
             Circle()
                 .trim(from: 0, to: CGFloat(focusScore) / 100.0)
                 .stroke(
-                    Color("ForestGreen").opacity(0.5),
+                    Color.purple.opacity(0.75),
                     style: StrokeStyle(lineWidth: outerStrokeWidth, lineCap: .round)
                 )
                 .frame(width: outerRingSize, height: outerRingSize)
                 .rotationEffect(.degrees(-90))
                 .animation(DS.Animation.defaultSpring, value: focusScore)
+                .shadow(color: Color.purple.opacity(isRunning ? 0.25 : 0.12), radius: isRunning ? 10 : 6)
+
+            // MARK: - Middle Daily Goal Ring
+            Circle()
+                .stroke(Color.primary.opacity(0.05), lineWidth: middleStrokeWidth)
+                .frame(width: middleRingSize, height: middleRingSize)
+
+            Circle()
+                .trim(from: 0, to: dailyGoalProgress)
+                .stroke(
+                    Color.orange,
+                    style: StrokeStyle(lineWidth: middleStrokeWidth, lineCap: .round)
+                )
+                .frame(width: middleRingSize, height: middleRingSize)
+                .rotationEffect(.degrees(-90))
+                .animation(DS.Animation.defaultSpring, value: dailyGoalProgress)
+                .shadow(color: Color.orange.opacity(isRunning ? 0.25 : 0.12), radius: isRunning ? 10 : 6)
             
             // MARK: - Inner Timer Ring
             Circle()
@@ -373,6 +381,7 @@ private struct CircularTimerView: View {
                 .frame(width: ringSize, height: ringSize)
                 .rotationEffect(.degrees(-90))
                 .animation(DS.Animation.defaultSpring, value: progress)
+                .shadow(color: Color("ForestGreen").opacity(isRunning ? 0.35 : 0.18), radius: isRunning ? 14 : 8)
 
             VStack(spacing: 4) {
                 Text(timeText)
@@ -391,7 +400,7 @@ private struct CircularTimerView: View {
         .onChange(of: isRunning) { _, running in
             if running {
                 withAnimation(DS.Animation.breathing) {
-                    breatheScale = 1.02
+                    breatheScale = 1.035
                 }
             } else {
                 withAnimation(DS.Animation.quickSpring) {
@@ -402,7 +411,7 @@ private struct CircularTimerView: View {
         .onAppear {
             if isRunning {
                 withAnimation(DS.Animation.breathing) {
-                    breatheScale = 1.02
+                    breatheScale = 1.035
                 }
             }
         }

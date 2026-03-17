@@ -91,7 +91,7 @@ struct BankView: View {
                 .foregroundStyle(isPrimary ? themeManager.currentTheme.getPrimaryTextColor(for: colorScheme) : Color.secondary)
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(amount, format: .currency(code: "TRY"))
+                Text(TokenFormatter.format(amount, maximumFractionDigits: 2))
                     .font(.system(size: 17, weight: .medium, design: .rounded))
                     .onGlassPrimary()
                 Text(title)
@@ -160,7 +160,7 @@ struct BankView: View {
                     .font(.system(size: 15, weight: .medium, design: .rounded))
                     .onGlassPrimary()
                 Spacer()
-                Text("Max: \(balance.formatted(.currency(code: "TRY")))")
+                Text("Max: \(TokenFormatter.format(balance, maximumFractionDigits: 2))")
                     .font(.system(size: 11, weight: .medium, design: .rounded))
                     .foregroundStyle(Color.secondary)
             }
@@ -238,7 +238,7 @@ struct BankView: View {
         let success = wallet.stake(amount: requested, description: "TXN_STAKE_DEPOSIT")
         if success {
             depositAmount = .zero
-            let formatted = "₺" + String(format: "%.2f", requested)
+            let formatted = TokenFormatter.format(requested, maximumFractionDigits: 2)
             showFeedback(loc("BANK_SUCCESS_DEPOSIT", fallback: "Yatırıldı: \(formatted)"), success: true)
         } else {
             showFeedback(loc("BANK_ERROR_GENERIC", fallback: "Hata oluştu"), success: false)
@@ -263,7 +263,7 @@ struct BankView: View {
         let success = wallet.unstake(amount: requested, description: "TXN_STAKE_WITHDRAW")
         if success {
             withdrawAmount = .zero
-            let formatted = "₺" + String(format: "%.2f", requested)
+            let formatted = TokenFormatter.format(requested, maximumFractionDigits: 2)
             showFeedback(loc("BANK_SUCCESS_WITHDRAW", fallback: "Çekildi: \(formatted)"), success: true)
         } else {
             showFeedback(loc("BANK_ERROR_GENERIC", fallback: "Hata oluştu"), success: false)

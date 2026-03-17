@@ -90,7 +90,7 @@ struct BuyCoinSheet: View {
     private func handlePurchase() {
         if let spent = market.buy(symbol: coin.symbol, amount: amount, wallet: wallet) {
             withAnimation(DS.Animation.quickSpring) {
-                let formatted = CurrencyFormatter.abbreviatedCurrency(spent)
+                let formatted = TokenFormatter.abbreviatedTokens(spent)
                 errorMessage = loc("BUY_CONFIRM_SUCCESS", formatted, coin.symbol)
             }
             showConfetti = true
@@ -177,7 +177,7 @@ private struct CoinDetailHeader: View {
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
 
-                    Text(coin.currentPrice, format: .currency(code: "TRY"))
+                    Text(TokenFormatter.format(coin.currentPrice, maximumFractionDigits: 2))
                         .font(.title3.weight(.semibold))
                         .onGlassPrimary()
                 }
@@ -188,7 +188,7 @@ private struct CoinDetailHeader: View {
                     Text(loc("BUY_MARKET_CAP"))
                         .font(.caption2)
                         .onGlassSecondary()
-                    Text(CurrencyFormatter.abbreviatedCurrency(coin.marketValue))
+                    Text(TokenFormatter.abbreviatedTokens(coin.marketValue))
                         .font(.subheadline.weight(.medium))
                         .onGlassPrimary()
                 }
@@ -368,17 +368,8 @@ struct DetailedSparklineView: View {
             self.latest = values.last ?? max
         }
 
-        private static let currencyFormatter: NumberFormatter = {
-            let f = NumberFormatter()
-            f.numberStyle = .currency
-            f.currencyCode = "TRY"
-            f.maximumFractionDigits = 2
-            f.minimumFractionDigits = 0
-            return f
-        }()
-
         private func format(_ value: Double) -> String {
-            Self.currencyFormatter.string(from: NSNumber(value: value)) ?? String(format: "%.2f", value)
+            TokenFormatter.format(value, maximumFractionDigits: 2)
         }
 
         var maxString: String { format(max) }
@@ -430,12 +421,7 @@ private struct QuickAmountRow: View {
     }
 
     private func formatted(_ value: Double) -> String {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .currency
-        formatter.currencySymbol = "₺"
-        formatter.maximumFractionDigits = 0
-        formatter.minimumFractionDigits = 0
-        return formatter.string(from: NSNumber(value: value)) ?? "₺\(Int(value))"
+        TokenFormatter.format(value, maximumFractionDigits: 0)
     }
 }
 
@@ -450,7 +436,7 @@ private struct AmountSlider: View {
                     .font(.headline)
                     .onGlassPrimary()
                 Spacer()
-                Text(amount, format: .currency(code: "TRY"))
+                Text(TokenFormatter.format(amount, maximumFractionDigits: 0))
                     .font(.headline)
                     .onGlassPrimary()
             }
@@ -493,8 +479,8 @@ private struct StatRow: View {
     var body: some View {
         HStack(spacing: DS.Padding.section) {
             StatTile(title: loc("BUY_STATS_HELD"), value: coin.quantity.formatted(.number.precision(.fractionLength(2))), icon: "cube")
-            StatTile(title: loc("BUY_STATS_AVERAGE"), value: coin.averagePrice.formatted(.currency(code: "TRY")), icon: "chart.bar")
-            StatTile(title: loc("BUY_STATS_MARKET"), value: CurrencyFormatter.abbreviatedCurrency(coin.marketValue), icon: "chart.line.uptrend.xyaxis")
+            StatTile(title: loc("BUY_STATS_AVERAGE"), value: TokenFormatter.format(coin.averagePrice, maximumFractionDigits: 2), icon: "chart.bar")
+            StatTile(title: loc("BUY_STATS_MARKET"), value: TokenFormatter.abbreviatedTokens(coin.marketValue), icon: "chart.line.uptrend.xyaxis")
         }
     }
 
@@ -521,7 +507,7 @@ private struct BuyAmountSection: View {
                 .onGlassSecondary()
 
             VStack(spacing: DS.Padding.element) {
-                AmountDisplayRow(label: "TRY", value: amount.formatted(.currency(code: "TRY")))
+                AmountDisplayRow(label: "Sim", value: TokenFormatter.format(amount, maximumFractionDigits: 0))
                 AmountDisplayRow(label: symbol, value: tokenQuantity.formatted(.number.precision(.fractionLength(4))))
             }
         }

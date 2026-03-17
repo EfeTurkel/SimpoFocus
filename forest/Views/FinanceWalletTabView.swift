@@ -1,7 +1,7 @@
 import SwiftUI
 import StoreKit
 
-// MARK: - Token Packages View
+// MARK: - Sim Packages View
 
 struct TokenPackagesView: View {
     @EnvironmentObject private var storeKit: StoreKitService
@@ -31,10 +31,10 @@ struct TokenPackagesView: View {
             // Header
             HStack(alignment: .bottom) {
                 VStack(alignment: .leading, spacing: 6) {
-                    Text(isSheet ? loc("COIN_STORE_INSUFFICIENT", fallback: "Yetersiz Bakiye") : loc("COIN_STORE_TITLE", fallback: "Token Paketleri"))
+                    Text(isSheet ? loc("COIN_STORE_INSUFFICIENT", fallback: "Yetersiz Bakiye") : loc("COIN_STORE_TITLE", fallback: "Sim Paketleri"))
                         .font(.system(size: 17, weight: .regular, design: .rounded))
                         .onGlassPrimary()
-                    Text(isSheet ? loc("COIN_STORE_BUY_MORE", fallback: "Gerekli işlemi yapmak için token almalısınız.") : loc("COIN_STORE_SUBTITLE", fallback: "Uygulama içi satın alımlar"))
+                    Text(isSheet ? loc("COIN_STORE_BUY_MORE", fallback: "Gerekli işlemi yapmak için sim almalısınız.") : loc("COIN_STORE_SUBTITLE", fallback: "Uygulama içi satın alımlar"))
                         .font(.system(size: 13, weight: .regular, design: .rounded))
                         .foregroundStyle(isSheet ? .red.opacity(0.8) : Color.secondary)
                 }
@@ -55,9 +55,9 @@ struct TokenPackagesView: View {
                     Spacer().frame(width: DS.Padding.screen - 16)
 
                     if storeKit.coinProducts.isEmpty {
-                        placeholderPackCard(tier: .starter, amount: "500", price: "₺29.99")
-                        placeholderPackCard(tier: .popular, amount: "1.5K", price: "₺69.99")
-                        placeholderPackCard(tier: .mega, amount: "5.0K", price: "₺149.99")
+                        placeholderPackCard(tier: .starter, amount: "500", price: "2,99 TL")
+                        placeholderPackCard(tier: .popular, amount: "1.5K", price: "6,99 TL")
+                        placeholderPackCard(tier: .mega, amount: "5.0K", price: "14,99 TL")
                     } else {
                         ForEach(storeKit.coinProducts, id: \.id) { product in
                             paidPackageCard(for: product)
@@ -171,7 +171,7 @@ struct TokenPackagesView: View {
                 Text(amountText)
                     .font(.system(size: 28, weight: .light, design: .rounded))
                     .onGlassPrimary()
-                Text(tier.isBest ? "TOKEN PAKETİ" : "TOKEN")
+                Text(tier.isBest ? "SİM PAKETİ" : "SİM")
                     .font(.system(size: 10, weight: .medium, design: .rounded))
                     .tracking(1)
                     .foregroundStyle(Color.secondary.opacity(0.8))

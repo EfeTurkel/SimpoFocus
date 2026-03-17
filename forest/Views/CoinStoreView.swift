@@ -234,7 +234,7 @@ private struct CoinPackCard: View {
                     .font(.subheadline.weight(.semibold))
                     .onGlassPrimary()
 
-                Text(String(format: "%.0f coins", coinAmount))
+                Text(String(format: "%.0f sims", coinAmount))
                     .font(.caption)
                     .onGlassSecondary()
             }

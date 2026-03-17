@@ -318,7 +318,7 @@ private struct MarketItemCard: View {
                         .tracking(1)
                         .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme).opacity(0.6))
                 } else {
-                    Text(asset.price, format: .currency(code: "TRY"))
+                    Text(TokenFormatter.format(asset.price, maximumFractionDigits: 0))
                         .font(.system(size: 12, weight: .regular, design: .rounded))
                         .foregroundStyle(Color.secondary)
                 }
@@ -415,7 +415,7 @@ private struct PurchaseSheet: View {
                         .padding(.horizontal, 24)
                 }
 
-                Text(asset.price, format: .currency(code: "TRY"))
+                Text(TokenFormatter.format(asset.price, maximumFractionDigits: 0))
                     .font(.system(size: 18, weight: .medium, design: .rounded))
                     .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
 

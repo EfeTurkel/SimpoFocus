@@ -1,37 +1,46 @@
 import Foundation
 
-enum CurrencyFormatter {
-    static func abbreviatedCurrency(_ value: Double, currencyCode: String = "TRY") -> String {
+enum TokenFormatter {
+    static func format(_ value: Double, maximumFractionDigits: Int = 0) -> String {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .decimal
+        formatter.maximumFractionDigits = max(0, maximumFractionDigits)
+        formatter.minimumFractionDigits = 0
+        formatter.locale = Locale(identifier: LocalizationManager.shared.language.localeIdentifier)
+        let number = formatter.string(from: NSNumber(value: value)) ?? "0"
+        return "\(number) Sim"
+    }
+
+    static func abbreviatedTokens(_ value: Double, maximumFractionDigits: Int = 2) -> String {
         let absValue = abs(value)
         let sign = value < 0 ? "-" : ""
 
-        let currencyFormatter = NumberFormatter()
-        currencyFormatter.numberStyle = .currency
-        currencyFormatter.currencyCode = currencyCode
-        currencyFormatter.maximumFractionDigits = 2
-        currencyFormatter.minimumFractionDigits = 0
-
         let decimalFormatter = NumberFormatter()
         decimalFormatter.numberStyle = .decimal
-        decimalFormatter.maximumFractionDigits = 2
+        decimalFormatter.maximumFractionDigits = max(0, maximumFractionDigits)
         decimalFormatter.minimumFractionDigits = 0
-
-        let symbol = currencyFormatter.currencySymbol ?? "₺"
+        decimalFormatter.locale = Locale(identifier: LocalizationManager.shared.language.localeIdentifier)
 
         if absValue >= 1_000_000_000 {
             let scaled = absValue / 1_000_000_000
             let number = decimalFormatter.string(from: NSNumber(value: scaled)) ?? "0"
-            return "\(sign)\(symbol)\(number)B"
+            return "\(sign)\(number)B Sim"
         }
 
         if absValue >= 1_000_000 {
             let scaled = absValue / 1_000_000
             let number = decimalFormatter.string(from: NSNumber(value: scaled)) ?? "0"
-            return "\(sign)\(symbol)\(number)M"
+            return "\(sign)\(number)M Sim"
         }
 
-        let formatted = currencyFormatter.string(from: NSNumber(value: absValue)) ?? "₺0"
-        return sign + formatted
+        if absValue >= 1_000 {
+            let scaled = absValue / 1_000
+            let number = decimalFormatter.string(from: NSNumber(value: scaled)) ?? "0"
+            return "\(sign)\(number)K Sim"
+        }
+
+        let formatted = decimalFormatter.string(from: NSNumber(value: absValue)) ?? "0"
+        return "\(sign)\(formatted) Sim"
     }
 }
 

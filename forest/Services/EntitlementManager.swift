@@ -20,11 +20,11 @@ final class EntitlementManager: ObservableObject {
         let cached = UserDefaults.standard.bool(forKey: cacheKey)
         _isPro = Published(initialValue: cached)
 
-        storeKit.$purchasedSubscriptions
+        Publishers.CombineLatest(storeKit.$purchasedSubscriptions, storeKit.$hasLifetime)
             .receive(on: RunLoop.main)
-            .sink { [weak self] subs in
+            .sink { [weak self] subs, hasLifetime in
                 Task { @MainActor in
-                    self?.isPro = !subs.isEmpty
+                    self?.isPro = !subs.isEmpty || hasLifetime
                 }
             }
             .store(in: &cancellables)
@@ -32,7 +32,7 @@ final class EntitlementManager: ObservableObject {
 
     @MainActor
     func refresh() async {
-        await storeKit.updatePurchasedSubscriptions()
+        await storeKit.updateEntitlements()
     }
 
     @MainActor

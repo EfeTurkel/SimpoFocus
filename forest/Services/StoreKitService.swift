@@ -7,13 +7,15 @@ final class StoreKitService: ObservableObject {
     static let proWeeklyID   = "com.efeturkel.simpoapp.pro.weekly"
     static let proMonthlyID  = "com.efeturkel.simpoapp.pro.monthly"
     static let proYearlyID   = "com.efeturkel.simpoapp.pro.yearly"
+    static let proYearlySpecialID = "com.efeturkel.simpoapp.pro.yearly.special"
+    static let proLifetimeID = "com.efeturkel.simpoapp.pro.lifetime"
     static let coinsSmallID  = "com.efeturkel.simpoapp.coins.small"
     static let coinsMediumID = "com.efeturkel.simpoapp.coins.medium"
     static let coinsLargeID  = "com.efeturkel.simpoapp.coins.large"
 
-    static let subscriptionIDs: Set<String> = [proWeeklyID, proMonthlyID, proYearlyID]
+    static let subscriptionIDs: Set<String> = [proWeeklyID, proMonthlyID, proYearlyID, proYearlySpecialID]
     static let consumableIDs: Set<String> = [coinsSmallID, coinsMediumID, coinsLargeID]
-    static let allProductIDs: Set<String> = subscriptionIDs.union(consumableIDs)
+    static let allProductIDs: Set<String> = subscriptionIDs.union(consumableIDs).union([proLifetimeID])
 
     static let coinAmounts: [String: Double] = [
         coinsSmallID: 500,
@@ -24,6 +26,8 @@ final class StoreKitService: ObservableObject {
     @MainActor @Published private(set) var subscriptionProducts: [Product] = []
     @MainActor @Published private(set) var coinProducts: [Product] = []
     @MainActor @Published private(set) var purchasedSubscriptions: [Product] = []
+    @MainActor @Published private(set) var lifetimeProduct: Product?
+    @MainActor @Published private(set) var hasLifetime: Bool = false
     @MainActor @Published private(set) var isLoading = false
     @MainActor @Published var loadError: String?
 
@@ -65,7 +69,9 @@ final class StoreKitService: ObservableObject {
                 .filter { Self.consumableIDs.contains($0.id) }
                 .sorted { $0.price < $1.price }
 
-            await updatePurchasedSubscriptions()
+            lifetimeProduct = products.first { $0.id == Self.proLifetimeID }
+
+            await updateEntitlements()
         } catch {
             loadError = error.localizedDescription
             #if DEBUG
@@ -88,7 +94,7 @@ final class StoreKitService: ObservableObject {
             }
 
             await transaction.finish()
-            await updatePurchasedSubscriptions()
+            await updateEntitlements()
             return transaction
 
         case .userCancelled:
@@ -105,16 +111,22 @@ final class StoreKitService: ObservableObject {
     @MainActor
     func restorePurchases() async {
         try? await AppStore.sync()
-        await updatePurchasedSubscriptions()
+        await updateEntitlements()
     }
 
     @MainActor
     var isPro: Bool {
-        !purchasedSubscriptions.isEmpty
+        !purchasedSubscriptions.isEmpty || hasLifetime
     }
 
     @MainActor
-    func updatePurchasedSubscriptions() async {
+    func updateEntitlements() async {
+        await updatePurchasedSubscriptions()
+        await updateLifetimeEntitlement()
+    }
+
+    @MainActor
+    private func updatePurchasedSubscriptions() async {
         var active: [Product] = []
 
         for product in subscriptionProducts {
@@ -133,6 +145,20 @@ final class StoreKitService: ObservableObject {
         purchasedSubscriptions = active
     }
 
+    @MainActor
+    private func updateLifetimeEntitlement() async {
+        var entitled = false
+        for await result in Transaction.currentEntitlements {
+            guard case .verified(let transaction) = result else { continue }
+            guard transaction.revocationDate == nil else { continue }
+            if transaction.productID == Self.proLifetimeID {
+                entitled = true
+                break
+            }
+        }
+        hasLifetime = entitled
+    }
+
     private func listenForTransactions() -> Task<Void, Error> {
         Task.detached { [weak self] in
             for await result in Transaction.updates {
@@ -146,8 +172,8 @@ final class StoreKitService: ObservableObject {
                     }
 
                     await transaction.finish()
-                    await MainActor.run {
-                        Task { await self.updatePurchasedSubscriptions() }
+                    _ = await MainActor.run {
+                        Task { await self.updateEntitlements() }
                     }
                 } catch {
                     #if DEBUG

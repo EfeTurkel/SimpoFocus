@@ -15,10 +15,16 @@ struct RootView: View {
     @AppStorage("userName") private var userName: String = ""
     @AppStorage("paywallLaunchCount") private var paywallLaunchCount: Int = 0
     @AppStorage("paywallLastShownDate") private var paywallLastShownDate: String = ""
+    @AppStorage("specialOfferLastMilestoneShown") private var specialOfferLastMilestoneShown: Int = 0
+    @AppStorage("specialOfferMilestoneShowCount") private var specialOfferMilestoneShowCount: Int = 0
+    @AppStorage("lifetimeOfferShown") private var lifetimeOfferShown: Bool = false
+    @AppStorage("proWelcomeBonusGranted") private var proWelcomeBonusGranted: Bool = false
+    @AppStorage("proMonthlyBonusLastYearMonth") private var proMonthlyBonusLastYearMonth: String = ""
     @State private var showingOnboarding = false
     @State private var hasCheckedOnboarding = false
     @State private var showLaunchPaywall = false
     @State private var showSpecialOffer = false
+    @State private var showLifetimeOffer = false
     @State private var persistenceError: String?
 
     var body: some View {
@@ -46,6 +52,16 @@ struct RootView: View {
             wallet.earn(amount: adjustedReward, description: "TXN_REWARD_POMODORO")
             wallet.applyPassiveBoost(reward.passiveBoost)
         }
+        .onChange(of: timer.totalCompletedSessions) { _, newValue in
+            maybePresentLifetimeOffer(for: newValue)
+            maybePresentSpecialOffer(for: newValue)
+        }
+        .onChange(of: entitlements.isPro) { _, isPro in
+            if isPro {
+                grantProWelcomeBonusIfNeeded()
+                grantProMonthlyBonusIfNeeded()
+            }
+        }
         .onAppear {
             if !hasCheckedOnboarding {
                 hasCheckedOnboarding = true
@@ -53,6 +69,11 @@ struct RootView: View {
                     showingOnboarding = true
                 } else {
                     presentLaunchPaywallIfNeeded()
+                    maybePresentSpecialOffer(for: timer.totalCompletedSessions)
+                    if entitlements.isPro {
+                        grantProWelcomeBonusIfNeeded()
+                        grantProMonthlyBonusIfNeeded()
+                    }
                 }
             }
         }
@@ -71,12 +92,15 @@ struct RootView: View {
         .fullScreenCover(isPresented: $showLaunchPaywall) {
             PaywallView(onDismissedWithoutPurchase: {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
-                    showSpecialOffer = true
+                    maybePresentSpecialOffer(for: timer.totalCompletedSessions)
                 }
             })
         }
         .fullScreenCover(isPresented: $showSpecialOffer) {
             SpecialOfferView()
+        }
+        .fullScreenCover(isPresented: $showLifetimeOffer) {
+            LifetimeOfferView()
         }
         .onReceive(PersistenceController.shared.$lastSaveError.compactMap { $0 }) { error in
             persistenceError = error
@@ -109,6 +133,60 @@ struct RootView: View {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
         return formatter.string(from: Date())
+    }
+
+    private func currentYearMonth() -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM"
+        return formatter.string(from: Date())
+    }
+    
+    private func maybePresentSpecialOffer(for totalCompletedSessions: Int) {
+        guard !entitlements.isPro else { return }
+        guard onboardingCompleted, !showingOnboarding else { return }
+        guard !showLaunchPaywall else { return }
+        guard !showSpecialOffer else { return }
+        guard !showLifetimeOffer else { return }
+        
+        let milestones: Set<Int> = [10, 100, 1000]
+        guard milestones.contains(totalCompletedSessions) else { return }
+        if totalCompletedSessions != specialOfferLastMilestoneShown {
+            specialOfferLastMilestoneShown = totalCompletedSessions
+            specialOfferMilestoneShowCount = 0
+        }
+        // Show up to 3 times for the active milestone (e.g. right after install).
+        guard specialOfferMilestoneShowCount < 3 else { return }
+
+        specialOfferMilestoneShowCount += 1
+        showSpecialOffer = true
+    }
+
+    private func maybePresentLifetimeOffer(for totalCompletedSessions: Int) {
+        guard !entitlements.isPro else { return }
+        guard onboardingCompleted, !showingOnboarding else { return }
+        guard !showLaunchPaywall else { return }
+        guard !showSpecialOffer else { return }
+        guard !showLifetimeOffer else { return }
+        guard totalCompletedSessions == 1 else { return }
+        guard !lifetimeOfferShown else { return }
+
+        lifetimeOfferShown = true
+        showLifetimeOffer = true
+    }
+
+    private func grantProWelcomeBonusIfNeeded() {
+        guard entitlements.isPro else { return }
+        guard !proWelcomeBonusGranted else { return }
+        proWelcomeBonusGranted = true
+        wallet.earn(amount: 2000, description: "TXN_PRO_WELCOME_BONUS")
+    }
+
+    private func grantProMonthlyBonusIfNeeded() {
+        guard entitlements.isPro else { return }
+        let ym = currentYearMonth()
+        guard proMonthlyBonusLastYearMonth != ym else { return }
+        proMonthlyBonusLastYearMonth = ym
+        wallet.earn(amount: 1000, description: "TXN_PRO_MONTHLY_BONUS")
     }
 }
 

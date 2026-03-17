@@ -15,6 +15,7 @@ struct PaywallView: View {
     @State private var isPurchasing = false
     @State private var errorMessage: String?
     @State private var appeared = false
+    @AppStorage("userName") private var userName: String = ""
 
     var body: some View {
         NavigationStack {
@@ -85,6 +86,18 @@ struct PaywallView: View {
                 }
                 appeared = true
             }
+            .onChange(of: storeKit.subscriptionProducts) { _, newProducts in
+                guard selectedProduct == nil else { return }
+                selectedProduct = newProducts.first { $0.id == StoreKitService.proYearlyID }
+                    ?? newProducts.first { $0.id == StoreKitService.proMonthlyID }
+                    ?? newProducts.first { $0.id == StoreKitService.proWeeklyID }
+            }
+            .task {
+                // Ensure products are available when paywall opens.
+                await MainActor.run {
+                    storeKit.startIfNeeded()
+                }
+            }
         }
     }
 
@@ -97,9 +110,15 @@ struct PaywallView: View {
                 .foregroundStyle(Color("ForestGreen"))
                 .shadow(color: Color("ForestGreen").opacity(0.3), radius: 20, y: 4)
 
-            Text(loc("PAYWALL_TITLE"))
-                .font(DS.Typography.heroTitle)
-                .onGlassPrimary()
+            if let personalized = personalizedPaywallTitle {
+                Text(personalized)
+                    .font(DS.Typography.heroTitle)
+                    .onGlassPrimary()
+            } else {
+                Text(loc("PAYWALL_TITLE"))
+                    .font(DS.Typography.heroTitle)
+                    .onGlassPrimary()
+            }
 
             Text(loc("PAYWALL_SUBTITLE"))
                 .font(DS.Typography.body)
@@ -126,12 +145,20 @@ struct PaywallView: View {
     // MARK: - Plans
 
     private var plansSection: some View {
-        VStack(spacing: DS.Padding.element) {
-            ForEach(Array(storeKit.subscriptionProducts.enumerated()), id: \.element.id) { index, product in
+        let weekly = storeKit.subscriptionProducts.first { $0.id == StoreKitService.proWeeklyID }
+        let standardPlans = storeKit.subscriptionProducts.filter {
+            $0.id == StoreKitService.proWeeklyID || $0.id == StoreKitService.proMonthlyID || $0.id == StoreKitService.proYearlyID
+        }
+        .sorted { lhs, rhs in
+            planRank(lhs.id) < planRank(rhs.id)
+        }
+        return VStack(spacing: DS.Padding.element) {
+            ForEach(Array(standardPlans.enumerated()), id: \.element.id) { index, product in
                 PlanCard(
                     product: product,
                     isSelected: selectedProduct?.id == product.id,
-                    isBestValue: product.id == StoreKitService.proYearlyID
+                    isBestValue: product.id == StoreKitService.proYearlyID,
+                    weeklyReferencePrice: weekly?.price
                 ) {
                     withAnimation(DS.Animation.quickSpring) {
                         selectedProduct = product
@@ -217,6 +244,21 @@ struct PaywallView: View {
     private func loc(_ key: String, _ arguments: CVarArg...) -> String {
         localization.translate(key, fallback: key, arguments: arguments)
     }
+
+    private var personalizedPaywallTitle: String? {
+        let trimmed = userName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return nil }
+        return loc("PAYWALL_PERSONALIZED_TITLE", trimmed)
+    }
+    
+    private func planRank(_ productID: String) -> Int {
+        switch productID {
+        case StoreKitService.proYearlyID: return 0
+        case StoreKitService.proMonthlyID: return 1
+        case StoreKitService.proWeeklyID: return 2
+        default: return 99
+        }
+    }
 }
 
 // MARK: - Feature Row
@@ -254,6 +296,7 @@ private struct PlanCard: View {
     let product: Product
     let isSelected: Bool
     let isBestValue: Bool
+    let weeklyReferencePrice: Decimal?
     let onTap: () -> Void
     @EnvironmentObject private var localization: LocalizationManager
     @ObservedObject private var themeManager = ThemeManager.shared
@@ -281,19 +324,42 @@ private struct PlanCard: View {
                     Text(product.displayPrice + " / " + periodSuffix)
                         .font(.caption)
                         .onGlassSecondary()
+
+                    Text(loc("PAYWALL_TRIAL_3_DAYS"))
+                        .font(.caption2)
+                        .onGlassSecondary()
+                        .opacity(0.85)
+                    
+                    if let secondaryPriceNote {
+                        Text(secondaryPriceNote)
+                            .font(.caption2)
+                            .onGlassSecondary()
+                            .opacity(0.75)
+                    }
                 }
 
                 Spacer()
 
-                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                    .font(.title3)
-                    .foregroundStyle(isSelected ? Color("ForestGreen") : themeManager.currentTheme.glassSecondaryText(for: colorScheme))
+                VStack(alignment: .trailing, spacing: 6) {
+                    Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                        .font(.title3)
+                        .foregroundStyle(isSelected ? Color("ForestGreen") : themeManager.currentTheme.glassSecondaryText(for: colorScheme))
+                    
+                    if let savingsChipText {
+                        Text(savingsChipText)
+                            .font(.caption2.weight(.bold))
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(Color.orange.opacity(0.9), in: Capsule())
+                    }
+                }
             }
             .padding(DS.Padding.card)
-            .frame(minHeight: 80)
+            .frame(minHeight: 92)
             .background(
                 RoundedRectangle(cornerRadius: DS.Radius.medium, style: .continuous)
-                    .fill(isBestValue ? Color.yellow.opacity(0.1) : .clear)
+                    .fill(isBestValue ? Color.yellow.opacity(0.12) : .clear)
             )
             .liquidGlass(.card, edgeMask: [.all])
             .clipShape(RoundedRectangle(cornerRadius: DS.Radius.medium, style: .continuous))
@@ -304,6 +370,38 @@ private struct PlanCard: View {
             .shadow(color: isSelected ? (isBestValue ? Color.yellow.opacity(0.3) : Color("ForestGreen").opacity(0.15)) : (isBestValue ? Color.yellow.opacity(0.1) : .clear), radius: isBestValue ? 15 : 8, y: isBestValue ? 0 : 2)
         }
         .buttonStyle(ScaleButtonStyle())
+    }
+    
+    private var savingsChipText: String? {
+        guard isBestValue else { return nil }
+        guard let weeklyReferencePrice else { return loc("PAYWALL_BEST_VALUE") }
+        let weekly = NSDecimalNumber(decimal: weeklyReferencePrice).doubleValue
+        let yearly = NSDecimalNumber(decimal: product.price).doubleValue
+        guard weekly > 0, yearly > 0 else { return nil }
+        let weeklyYear = weekly * 52.0
+        guard weeklyYear > 0 else { return nil }
+        let savings = max(0, 1.0 - (yearly / weeklyYear))
+        let percent = Int((savings * 100.0).rounded())
+        guard percent > 0 else { return loc("PAYWALL_BEST_VALUE") }
+        return "%\(percent) " + loc("PAYWALL_SAVE")
+    }
+    
+    private var secondaryPriceNote: String? {
+        guard isBestValue else { return nil }
+        let yearly = NSDecimalNumber(decimal: product.price).doubleValue
+        guard yearly > 0 else { return nil }
+        let monthly = yearly / 12.0
+        let formatted = currencyString(monthly)
+        return "≈ \(formatted) / " + loc("PAYWALL_PERIOD_MONTH")
+    }
+    
+    private func currencyString(_ value: Double) -> String {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .currency
+        formatter.maximumFractionDigits = 2
+        formatter.minimumFractionDigits = 0
+        formatter.locale = Locale(identifier: localization.language.localeIdentifier)
+        return formatter.string(from: NSNumber(value: value)) ?? "\(value)"
     }
 
     private var planTitle: String {

@@ -100,7 +100,7 @@ struct CoinBuyCard: View {
                     Text(coin.name)
                         .font(.headline)
                         .onGlassPrimary()
-                    Text(coin.currentPrice, format: .currency(code: "TRY"))
+                    Text(TokenFormatter.format(coin.currentPrice, maximumFractionDigits: 2))
                         .font(.title3.weight(.semibold))
                         .onGlassPrimary()
                 }
@@ -128,13 +128,13 @@ struct WalletSummaryCard: View {
                 .font(DS.Typography.caption)
                 .onGlassSecondary()
 
-            Text(balance, format: .currency(code: "TRY"))
+            Text(TokenFormatter.format(balance, maximumFractionDigits: 0))
                 .font(.system(size: 42, weight: .bold, design: .rounded))
                 .onGlassPrimary()
 
             HStack(spacing: DS.Padding.element) {
                 SummaryChip(title: "WALLET_PASSIVE_CHIP", value: "+\(Int(passiveBoost * 100))%", icon: "sparkles")
-                SummaryChip(title: "WALLET_STAKED_CHIP", value: wallet.stakedBalance.formatted(.currency(code: "TRY")), icon: "lock.fill")
+                SummaryChip(title: "WALLET_STAKED_CHIP", value: TokenFormatter.format(wallet.stakedBalance, maximumFractionDigits: 0), icon: "lock.fill")
             }
 
             PassiveIncomeRow(passiveBoost: passiveBoost, accruedInterest: wallet.earnedFromInterest)
@@ -171,7 +171,7 @@ struct PassiveIncomeRow: View {
                 Label(loc("WALLET_PASSIVE_RATE", Int(passiveBoost * 100)), systemImage: "chart.line.uptrend.xyaxis")
                     .font(.subheadline)
                 Spacer()
-                Text(accruedInterest, format: .currency(code: "TRY"))
+                Text(TokenFormatter.format(accruedInterest, maximumFractionDigits: 2))
                     .font(.headline)
             }
             .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
@@ -242,7 +242,7 @@ struct TransactionCard: View {
 
             Spacer()
 
-            Text(transaction.amount, format: .currency(code: "TRY"))
+            Text(TokenFormatter.format(transaction.amount, maximumFractionDigits: 2))
                 .font(DS.Typography.cardTitle)
                 .foregroundStyle(transaction.amount >= 0 ? .green : .red)
         }
