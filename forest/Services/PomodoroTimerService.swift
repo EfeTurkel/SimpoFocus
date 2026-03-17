@@ -570,13 +570,12 @@ final class PomodoroTimerService: ObservableObject {
                 updatedFocusDays.insert(day)
                 focusDays = updatedFocusDays
                 
-                // Create and save session history with actual duration
-                let coinsEarned = rewardAmountForCurrentStreak()
+                // The actual coinsEarned is updated asynchronously below
                 let session = FocusSession(
                     date: start,
                     durationMinutes: actualDuration,
                     category: selectedCategory,
-                    coinsEarned: coinsEarned
+                    coinsEarned: 0
                 )
                 // Update sessionHistory in a way that properly triggers @Published
                 var updatedHistory = sessionHistory
@@ -584,11 +583,25 @@ final class PomodoroTimerService: ObservableObject {
                 sessionHistory = updatedHistory
             }
             streak += 1
-            let reward = FocusReward(
-                coinsReward: rewardAmountForCurrentStreak(),
-                passiveBoost: passiveBoostForStreak()
-            )
-            rewardPublisher.send(reward)
+            Task { @MainActor in
+                let reward = FocusReward(
+                    coinsReward: rewardAmountForCurrentStreak(),
+                    passiveBoost: passiveBoostForStreak()
+                )
+                rewardPublisher.send(reward)
+                
+                // Also update the session coins when completed
+                if var session = sessionHistory.last {
+                    sessionHistory.removeLast()
+                    let updatedSession = FocusSession(
+                        date: session.date,
+                        durationMinutes: session.durationMinutes,
+                        category: session.category,
+                        coinsEarned: reward.coinsReward
+                    )
+                    sessionHistory.append(updatedSession)
+                }
+            }
             playCompletionCue()
             schedulePhaseNotification(for: .focus)
             scheduleAlarmIfAvailable(for: .focus)
@@ -854,11 +867,13 @@ final class PomodoroTimerService: ObservableObject {
 #endif
     }
 
+    @MainActor
     private func rewardAmountForCurrentStreak() -> Double {
-        let minutes = Double(focusDuration) / 60.0
-        let streakMultiplier = 1 + Double(streak - 1) * 0.15
-        let proMultiplier: Double = UserDefaults.standard.bool(forKey: "entitlement_isPro") ? 2.0 : 1.0
-        return minutes * max(streakMultiplier, 1) * proMultiplier
+        let base = baseRewardPerSession
+        let multiplier = 1.0 + (Double(streak) * 0.1)
+        
+        let calculatedReward = base * multiplier
+        return StoreKitService.shared.isPro ? calculatedReward : (calculatedReward * 0.5)
     }
 
     private func passiveBoostForStreak() -> Double {

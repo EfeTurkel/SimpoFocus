@@ -12,6 +12,14 @@ enum AppTheme: String, Codable, CaseIterable, Identifiable {
         LocalizationManager.shared.translate("THEME_\(rawValue.uppercased())")
     }
     
+    var colorSchemeOverride: ColorScheme? {
+        switch self {
+        case .system: return nil
+        case .gradient, .oledDark: return .dark
+        case .light: return .light
+        }
+    }
+    
     private static let warmCream = Color(red: 0.98, green: 0.97, blue: 0.96)
     private static let warmLight = Color(red: 0.97, green: 0.96, blue: 0.95)
     private static let warmDark = Color(red: 0.11, green: 0.11, blue: 0.12)

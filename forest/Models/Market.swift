@@ -53,11 +53,11 @@ final class MarketViewModel: ObservableObject {
         seedInitialHistoryIfNeeded()
     }
 
-    func refreshPrices(force: Bool = false) {
+    func refreshPrices(force: Bool = false, wallet: WalletViewModel? = nil) {
         let calendar = Calendar.current
         if !force,
            calendar.isDate(Date(), inSameDayAs: lastRefreshDate) {
-            return
+            guard wallet?.consumeMarketRefreshCreditIfAvailable() == true else { return }
         }
 
         coins = coins.map { coin in

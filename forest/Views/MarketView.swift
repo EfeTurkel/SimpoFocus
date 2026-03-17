@@ -9,6 +9,7 @@ struct MarketView: View {
     @State private var selectedCoin: Coin?
     @State private var amount: Double = 100
     @State private var showingSellSheet = false
+    @State private var refreshPulse = false
 
     var body: some View {
         ScrollView {
@@ -46,6 +47,18 @@ struct MarketView: View {
             SellCoinSheet()
         }
         .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    market.refreshPrices(wallet: wallet)
+                    withAnimation(.easeInOut(duration: 0.2)) { refreshPulse.toggle() }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+                        withAnimation(.easeInOut(duration: 0.2)) { refreshPulse.toggle() }
+                    }
+                } label: {
+                    Label("\(wallet.marketRefreshCredits)", systemImage: "arrow.clockwise")
+                        .scaleEffect(refreshPulse ? 1.08 : 1)
+                }
+            }
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
                     showingSellSheet = true

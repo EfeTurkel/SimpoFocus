@@ -98,6 +98,7 @@ struct OnboardingView: View {
             }
         }
         .interactiveDismissDisabled(true)
+        .preferredColorScheme(themeManager.currentTheme.colorSchemeOverride)
         .onAppear {
             // Set the language to device language when onboarding appears
             selectedLanguage = AppLanguage.defaultFromDevice()
@@ -217,9 +218,6 @@ struct OnboardingView: View {
             }
         case .finance:
             FinanceCard()
-                .environmentObject(localization)
-        case .home:
-            HomeCard()
                 .environmentObject(localization)
         case .notifications:
             OnboardingCard {
@@ -459,7 +457,6 @@ struct OnboardingView: View {
         case focus
         case breaks
         case finance
-        case home
         case notifications
         case language
         case profile
@@ -471,7 +468,6 @@ struct OnboardingView: View {
             case .focus: return "timer"
             case .breaks: return "bed.double"
             case .finance: return "banknote"
-            case .home: return "house.fill"
             case .notifications: return "bell.badge.fill"
             case .language: return "globe"
             case .profile: return "person.fill"
@@ -485,7 +481,6 @@ struct OnboardingView: View {
             case .focus: return "ONBOARD_STEP_FOCUS"
             case .breaks: return "ONBOARD_STEP_BREAKS"
             case .finance: return "ONBOARD_STEP_FINANCE"
-            case .home: return "ONBOARD_STEP_HOME"
             case .notifications: return "ONBOARD_STEP_NOTIFICATIONS"
             case .language: return "ONBOARD_LANGUAGE_TITLE"
             case .profile: return "ONBOARD_STEP_PROFILE"
@@ -499,7 +494,6 @@ struct OnboardingView: View {
             case .focus: return "ONBOARD_SUB_FOCUS"
             case .breaks: return "ONBOARD_SUB_BREAKS"
             case .finance: return "ONBOARD_SUB_FINANCE"
-            case .home: return "ONBOARD_SUB_HOME"
             case .notifications: return "ONBOARD_SUB_NOTIFICATIONS"
             case .language: return "ONBOARD_LANGUAGE_DESCRIPTION"
             case .profile: return "ONBOARD_SUB_PROFILE"

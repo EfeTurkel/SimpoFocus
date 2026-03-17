@@ -40,8 +40,10 @@ struct RootView: View {
                     ModernTabBar(selectedTab: $rootViewModel.selectedTab)
                 }
         }
+        .preferredColorScheme(themeManager.currentTheme.colorSchemeOverride)
         .onReceive(timer.rewardPublisher) { reward in
-            wallet.earn(amount: reward.coinsReward, description: "TXN_REWARD_POMODORO")
+            let adjustedReward = reward.coinsReward * wallet.currentEarningMultiplier
+            wallet.earn(amount: adjustedReward, description: "TXN_REWARD_POMODORO")
             wallet.applyPassiveBoost(reward.passiveBoost)
         }
         .onAppear {
@@ -118,7 +120,6 @@ private struct TabContentView: View {
             switch selectedTab {
             case .forest: FocusView()
             case .finance: FinanceView()
-            case .home: HomeView()
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)

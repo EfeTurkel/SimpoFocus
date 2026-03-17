@@ -32,38 +32,53 @@ struct FocusForestApp: App {
         _room = StateObject(wrappedValue: roomService)
     }
 
+    @State private var isShowingLaunchScreen = true
+
     var body: some Scene {
         WindowGroup {
-            RootView()
+            ZStack {
+                RootView()
                     .environmentObject(LocalizationManager.shared)
-                .environmentObject(timerService)
-                .environmentObject(wallet)
-                .environmentObject(market)
-                .environmentObject(room)
-                .environmentObject(bank)
-                .environmentObject(StoreKitService.shared)
-                .environmentObject(EntitlementManager.shared)
-                .onAppear(perform: setupPersistenceObservers)
-                .onAppear {
-                    #if canImport(AlarmKit)
-                    if #available(iOS 18.0, *) {
-                        AlarmService.shared.requestAuthorization()
+                    .environmentObject(timerService)
+                    .environmentObject(wallet)
+                    .environmentObject(market)
+                    .environmentObject(room)
+                    .environmentObject(bank)
+                    .environmentObject(StoreKitService.shared)
+                    .environmentObject(EntitlementManager.shared)
+                    .onAppear(perform: setupPersistenceObservers)
+                    .onAppear {
+                        #if canImport(AlarmKit)
+                        if #available(iOS 18.0, *) {
+                            AlarmService.shared.requestAuthorization()
+                        }
+                        #endif
+                        processPendingAction()
                     }
-                    #endif
-                    processPendingAction()
-                }
-                .task {
-                    StoreKitService.shared.onCoinsPurchased = { [weak wallet] coins in
-                        wallet?.addPurchasedCoins(amount: coins)
+                    .task {
+                        StoreKitService.shared.onCoinsPurchased = { [weak wallet] coins in
+                            wallet?.addPurchasedCoins(amount: coins)
+                        }
+                        StoreKitService.shared.startIfNeeded()
                     }
-                    StoreKitService.shared.startIfNeeded()
+                    .onChange(of: scenePhase) { _, newPhase in
+                        handleScenePhaseChange(newPhase)
+                    }
+                    .onOpenURL { url in
+                        handleURL(url)
+                    }
+
+                if isShowingLaunchScreen {
+                    LuxuryLaunchScreen()
+                        .transition(.opacity.animation(.easeInOut(duration: 0.8)))
+                        .zIndex(2)
                 }
-                .onChange(of: scenePhase) { _, newPhase in
-                    handleScenePhaseChange(newPhase)
+            }
+            .onAppear {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
+                    isShowingLaunchScreen = false
                 }
-                .onOpenURL { url in
-                    handleURL(url)
-                }
+            }
         }
     }
     

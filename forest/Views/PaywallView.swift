@@ -293,15 +293,15 @@ private struct PlanCard: View {
             .frame(minHeight: 80)
             .background(
                 RoundedRectangle(cornerRadius: DS.Radius.medium, style: .continuous)
-                    .fill(.clear)
+                    .fill(isBestValue ? Color.yellow.opacity(0.1) : .clear)
             )
             .liquidGlass(.card, edgeMask: [.all])
             .clipShape(RoundedRectangle(cornerRadius: DS.Radius.medium, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: DS.Radius.medium, style: .continuous)
-                    .stroke(isSelected ? Color("ForestGreen") : .clear, lineWidth: 2)
+                    .stroke(isSelected ? (isBestValue ? Color.yellow : Color("ForestGreen")) : (isBestValue ? Color.yellow.opacity(0.5) : .clear), lineWidth: isSelected ? 2 : (isBestValue ? 1 : 0))
             )
-            .shadow(color: isSelected ? Color("ForestGreen").opacity(0.15) : .clear, radius: 8, y: 2)
+            .shadow(color: isSelected ? (isBestValue ? Color.yellow.opacity(0.3) : Color("ForestGreen").opacity(0.15)) : (isBestValue ? Color.yellow.opacity(0.1) : .clear), radius: isBestValue ? 15 : 8, y: isBestValue ? 0 : 2)
         }
         .buttonStyle(ScaleButtonStyle())
     }

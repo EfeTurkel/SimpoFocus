@@ -106,7 +106,7 @@ struct SpecialOfferView: View {
                     Text(loc("SPECIAL_OFFER_ORIGINAL_PRICE"))
                         .font(.caption2)
                         .onGlassSecondary()
-                    Text("$9.99")
+                    Text("₺199.99")
                         .font(.title2.weight(.bold))
                         .strikethrough(true, color: .red)
                         .onGlassSecondary()

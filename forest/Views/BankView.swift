@@ -7,118 +7,282 @@ struct BankView: View {
     @EnvironmentObject private var bank: BankService
     @EnvironmentObject private var wallet: WalletViewModel
     @EnvironmentObject private var localization: LocalizationManager
-    @State private var depositAmount: Double = 100
-    @State private var withdrawAmount: Double = 50
-    @State private var feedback: FeedbackMessage?
+    @State private var depositAmount: Double = .zero
+    @State private var withdrawAmount: Double = .zero
+    @State private var feedbackMessage: String?
+    @State private var isSuccess: Bool = true
     @ObservedObject private var themeManager = ThemeManager.shared
     @Environment(\.colorScheme) var colorScheme
 
-    private let amountRange: ClosedRange<Double> = 0...100000
-
     var body: some View {
-        ScrollView {
-            VStack(spacing: 24) {
-                if let feedback {
-                    ToastMessage(text: feedback.message, tint: feedback.color)
-                }
+        VStack(spacing: 24) {
+            // MARK: - Summary
+            summarySection
 
-                BankSummaryCard(available: wallet.availableBalance,
-                                 staked: wallet.stakedBalance,
-                                 earned: wallet.earnedFromInterest,
-                                 rate: bank.annualInterestRate)
-                    .environmentObject(localization)
-
-                BankInfoSection(lastRateUpdate: bank.lastRateUpdate,
-                                lastInterestApplied: bank.lastInterestApplied)
-                    .environmentObject(localization)
-
-                BankActionsSection(depositAmount: $depositAmount,
-                                   withdrawAmount: $withdrawAmount,
-                                   available: wallet.availableBalance,
-                                   staked: wallet.stakedBalance,
-                                   onDeposit: deposit,
-                                   onWithdraw: withdraw)
-                    .environmentObject(localization)
+            // MARK: - Actions
+            actionsSection
+        }
+        // Removed the .padding(.horizontal) similar to HomeView, as FinanceView provides it
+        // Or keep matching padding
+        .padding(.horizontal, 0)
+        .padding(.vertical, 8)
+        .overlay(alignment: .top) {
+            if let feedbackMessage {
+                feedbackBanner(feedbackMessage, isSuccess: isSuccess)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                    .padding(.top, -16)
+                    .zIndex(1)
             }
-            .padding(24)
         }
-        .scrollIndicators(.never)
-        .ignoresSafeArea(.keyboard, edges: .bottom)
-        .task {
-            bank.applyDailyInterestIfNeeded(to: wallet)
-            bank.updateWeeklyRateIfNeeded()
+        .gesture(TapGesture().onEnded { dismissKeyboard() })
+        .simultaneousGesture(DragGesture().onChanged { _ in dismissKeyboard() })
+        // Removed `.task` and `.onAppear` calls to `bank.applyDailyInterestIfNeeded` that caused the infinite freeze loop.
+        // The interest will still be applied manually on any deposit/withdraw action.
+    }
+
+    // MARK: - Summary Section
+
+    private var summarySection: some View {
+        VStack(spacing: 16) {
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(loc("BANK_ACCOUNT", fallback: "Banka Hesabı"))
+                        .font(.system(size: 17, weight: .regular, design: .rounded))
+                        .onGlassPrimary()
+                    Text(loc("BANK_STAKED_DESC", fallback: "Faiz kazandıran tasarruflarınız"))
+                        .font(.system(size: 13, weight: .regular, design: .rounded))
+                        .foregroundStyle(Color.secondary)
+                }
+                Spacer()
+            }
+
+            HStack(spacing: 12) {
+                balanceCard(
+                    title: loc("BANK_AVAILABLE", fallback: "Kullanılabilir"),
+                    amount: wallet.availableBalance,
+                    icon: "tray",
+                    isPrimary: false
+                )
+                
+                balanceCard(
+                    title: loc("BANK_STAKED", fallback: "Bankada"),
+                    amount: wallet.stakedBalance,
+                    icon: "building.columns.fill",
+                    isPrimary: true
+                )
+            }
         }
-        .onAppear {
-            bank.applyDailyInterestIfNeeded(to: wallet)
-            bank.updateWeeklyRateIfNeeded()
-        }
-        .gesture(
-            TapGesture().onEnded { dismissKeyboard() }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 20)
+        .background(
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .fill(Color.primary.opacity(0.01))
         )
-        .simultaneousGesture(
-            DragGesture().onChanged { _ in dismissKeyboard() }
+        .overlay(
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .strokeBorder(Color.primary.opacity(0.05), lineWidth: 0.5)
         )
     }
 
+    private func balanceCard(title: String, amount: Double, icon: String, isPrimary: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Image(systemName: icon)
+                .font(.system(size: 16, weight: .light))
+                .foregroundStyle(isPrimary ? themeManager.currentTheme.getPrimaryTextColor(for: colorScheme) : Color.secondary)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(amount, format: .currency(code: "TRY"))
+                    .font(.system(size: 17, weight: .medium, design: .rounded))
+                    .onGlassPrimary()
+                Text(title)
+                    .font(.system(size: 11, weight: .medium, design: .rounded))
+                    .tracking(0.5)
+                    .foregroundStyle(Color.secondary)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(16)
+        .background(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(Color.primary.opacity(isPrimary ? 0.03 : 0.01))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .strokeBorder(Color.primary.opacity(isPrimary ? 0.08 : 0.04), lineWidth: 0.5)
+        )
+    }
+
+    // MARK: - Actions Section
+
+    private var actionsSection: some View {
+        VStack(spacing: 16) {
+            actionInputRow(
+                title: loc("BANK_DEPOSIT_TITLE", fallback: "Yatır"),
+                balance: wallet.availableBalance,
+                amount: $depositAmount,
+                actionTitle: loc("BANK_DEPOSIT_BUTTON", fallback: "Yatır"),
+                action: deposit
+            )
+
+            Divider().opacity(0.5)
+
+            actionInputRow(
+                title: loc("BANK_WITHDRAW_TITLE", fallback: "Çek"),
+                balance: wallet.stakedBalance,
+                amount: $withdrawAmount,
+                actionTitle: loc("BANK_WITHDRAW_BUTTON", fallback: "Çek"),
+                action: withdraw
+            )
+        }
+        .padding(20)
+        .background(
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .fill(Color.primary.opacity(0.01))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .strokeBorder(Color.primary.opacity(0.05), lineWidth: 0.5)
+        )
+    }
+
+    private let formatter: NumberFormatter = {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .decimal
+        formatter.maximumFractionDigits = 2
+        formatter.minimumFractionDigits = 0
+        return formatter
+    }()
+
+    private func actionInputRow(title: String, balance: Double, amount: Binding<Double>, actionTitle: String, action: @escaping () -> Void) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text(title)
+                    .font(.system(size: 15, weight: .medium, design: .rounded))
+                    .onGlassPrimary()
+                Spacer()
+                Text("Max: \(balance.formatted(.currency(code: "TRY")))")
+                    .font(.system(size: 11, weight: .medium, design: .rounded))
+                    .foregroundStyle(Color.secondary)
+            }
+
+            HStack(spacing: 12) {
+                TextField("0", value: amount, formatter: formatter)
+                    .keyboardType(.decimalPad)
+                    .font(.system(size: 15, weight: .medium, design: .rounded))
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .fill(Color.primary.opacity(0.03))
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .strokeBorder(Color.primary.opacity(0.08), lineWidth: 0.5)
+                    )
+
+                Button {
+                    let generator = UIImpactFeedbackGenerator(style: .light)
+                    generator.impactOccurred()
+                    action()
+                } label: {
+                    Text(actionTitle)
+                        .font(.system(size: 13, weight: .semibold, design: .rounded))
+                        .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 12)
+                        .background(Color.primary.opacity(0.05), in: Capsule())
+                        .overlay(Capsule().strokeBorder(Color.primary.opacity(0.1), lineWidth: 0.5))
+                }
+                .buttonStyle(ScaleButtonStyle())
+            }
+        }
+    }
+
+    // MARK: - Feedback Banner
+
+    private func feedbackBanner(_ text: String, isSuccess: Bool) -> some View {
+        HStack(spacing: 8) {
+            Image(systemName: isSuccess ? "checkmark" : "exclamationmark.triangle")
+                .font(.system(size: 12, weight: .semibold))
+            Text(text)
+                .font(.system(size: 13, weight: .medium, design: .rounded))
+        }
+        .foregroundStyle(isSuccess ? .green : .red.opacity(0.9))
+        .padding(.vertical, 10)
+        .padding(.horizontal, 16)
+        .background(
+            Capsule()
+                .fill(Color.primary.opacity(0.02))
+                .background(.ultraThinMaterial, in: Capsule())
+        )
+        .overlay(Capsule().strokeBorder(Color.primary.opacity(0.1), lineWidth: 0.5))
+    }
+
+    // MARK: - Actions
+
     private func deposit() {
+        dismissKeyboard()
         bank.applyDailyInterestIfNeeded(to: wallet)
-        bank.updateWeeklyRateIfNeeded()
 
         let requested = roundTwo(depositAmount)
         guard requested > 0 else {
-            feedback = FeedbackMessage(message: loc("BANK_ERROR_INVALID_DEPOSIT"), color: .red)
+            showFeedback(loc("BANK_ERROR_INVALID_DEPOSIT", fallback: "Geçersiz miktar"), success: false)
             return
         }
 
         guard requested <= wallet.availableBalance else {
-            let formatted = wallet.availableBalance.formatted(.currency(code: "TRY"))
-            feedback = FeedbackMessage(message: loc("BANK_ERROR_INSUFFICIENT", formatted), color: .red)
+            showFeedback(loc("BANK_ERROR_INSUFFICIENT_BARE", fallback: "Yetersiz bakiye"), success: false)
             return
         }
 
         let success = wallet.stake(amount: requested, description: "TXN_STAKE_DEPOSIT")
         if success {
-            depositAmount = 0
+            depositAmount = .zero
             let formatted = "₺" + String(format: "%.2f", requested)
-            feedback = FeedbackMessage(message: loc("BANK_SUCCESS_DEPOSIT", formatted), color: .green)
-            scheduleDismiss()
+            showFeedback(loc("BANK_SUCCESS_DEPOSIT", fallback: "Yatırıldı: \(formatted)"), success: true)
         } else {
-            feedback = FeedbackMessage(message: loc("BANK_ERROR_GENERIC"), color: .red)
-            scheduleDismiss()
+            showFeedback(loc("BANK_ERROR_GENERIC", fallback: "Hata oluştu"), success: false)
         }
     }
 
     private func withdraw() {
+        dismissKeyboard()
         bank.applyDailyInterestIfNeeded(to: wallet)
-        bank.updateWeeklyRateIfNeeded()
 
         let requested = roundTwo(withdrawAmount)
         guard requested > 0 else {
-            feedback = FeedbackMessage(message: loc("BANK_ERROR_INVALID_WITHDRAW"), color: .red)
+            showFeedback(loc("BANK_ERROR_INVALID_WITHDRAW", fallback: "Geçersiz miktar"), success: false)
             return
         }
 
         guard requested <= wallet.stakedBalance else {
-            let formatted = wallet.stakedBalance.formatted(.currency(code: "TRY"))
-            feedback = FeedbackMessage(message: loc("BANK_ERROR_OVER_STAKED", formatted), color: .red)
+            showFeedback(loc("BANK_ERROR_OVER_STAKED_BARE", fallback: "Bankada yeterli bakiye yok"), success: false)
             return
         }
 
         let success = wallet.unstake(amount: requested, description: "TXN_STAKE_WITHDRAW")
         if success {
-            withdrawAmount = 0
+            withdrawAmount = .zero
             let formatted = "₺" + String(format: "%.2f", requested)
-            feedback = FeedbackMessage(message: loc("BANK_SUCCESS_WITHDRAW", formatted), color: .green)
-            scheduleDismiss()
+            showFeedback(loc("BANK_SUCCESS_WITHDRAW", fallback: "Çekildi: \(formatted)"), success: true)
         } else {
-            feedback = FeedbackMessage(message: loc("BANK_ERROR_GENERIC"), color: .red)
-            scheduleDismiss()
+            showFeedback(loc("BANK_ERROR_GENERIC", fallback: "Hata oluştu"), success: false)
         }
     }
 
-    private func scheduleDismiss() {
+    private func showFeedback(_ text: String, success: Bool) {
+        let generator = UINotificationFeedbackGenerator()
+        generator.notificationOccurred(success ? .success : .error)
+        
+        withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+            feedbackMessage = text
+            isSuccess = success
+        }
+        
         DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
-            withAnimation(DS.Animation.quickSpring) { feedback = nil }
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                feedbackMessage = nil
+            }
         }
     }
 
@@ -132,392 +296,7 @@ struct BankView: View {
         #endif
     }
 
-    private func loc(_ key: String, _ arguments: CVarArg...) -> String {
-        localization.translate(key, fallback: key, arguments: arguments)
+    private func loc(_ key: String, fallback: String, _ arguments: CVarArg...) -> String {
+        localization.translate(key, fallback: fallback, arguments: arguments)
     }
 }
-
-private struct FeedbackMessage {
-    let message: String
-    let color: Color
-}
-
-private struct ToastMessage: View {
-    let text: String
-    let tint: Color
-    @ObservedObject private var themeManager = ThemeManager.shared
-    @Environment(\.colorScheme) var colorScheme
-
-    var body: some View {
-        HStack(spacing: 12) {
-            Image(systemName: "exclamationmark.triangle.fill")
-                .font(.headline)
-                .onGlassPrimary()
-                .padding(10)
-                .background(themeManager.currentTheme.getCardBackground(for: colorScheme), in: RoundedRectangle(cornerRadius: DS.Radius.small, style: .continuous))
-
-            Text(text)
-                .font(.callout.weight(.semibold))
-                .onGlassPrimary()
-                .lineLimit(2)
-                .multilineTextAlignment(.leading)
-
-            Spacer(minLength: 0)
-        }
-        .padding(.horizontal, 18)
-        .padding(.vertical, 14)
-        .background(
-            RoundedRectangle(cornerRadius: DS.Radius.large, style: .continuous)
-                .fill(themeManager.currentTheme.getCardBackground(for: colorScheme))
-        )
-    }
-}
-
-private struct BankSummaryCard: View {
-    let available: Double
-    let staked: Double
-    let earned: Double
-    let rate: Double
-    @EnvironmentObject private var localization: LocalizationManager
-    @ObservedObject private var themeManager = ThemeManager.shared
-    @Environment(\.colorScheme) var colorScheme
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: DS.Padding.card) {
-            Text(loc("BANK_ACCOUNT"))
-                .font(DS.Typography.caption)
-                .onGlassSecondary()
-
-            VStack(alignment: .leading, spacing: DS.Padding.section) {
-                SummaryRow(title: loc("BANK_AVAILABLE"), value: available)
-                SummaryRow(title: loc("BANK_STAKED"), value: staked)
-                SummaryRow(title: loc("BANK_EARNED"), value: earned, highlight: true)
-            }
-
-            HStack(spacing: DS.Padding.section) {
-                InfoChip(title: loc("BANK_YEARLY_RATE"), value: ratePercent)
-                InfoChip(title: loc("BANK_DAILY_RATE"), value: dailyPercent)
-            }
-        }
-        .padding(DS.Padding.card)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            RoundedRectangle(cornerRadius: DS.Radius.large, style: .continuous)
-                .fill(Color.clear)
-        )
-        .liquidGlass(.card, edgeMask: [.top])
-        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.large, style: .continuous))
-    }
-
-    private var ratePercent: String {
-        String(format: "%.2f%%", rate * 100)
-    }
-
-    private var dailyPercent: String {
-        String(format: "%.3f%%", rate / 365 * 100)
-    }
-
-    private func loc(_ key: String, _ arguments: CVarArg...) -> String {
-        localization.translate(key, fallback: key, arguments: arguments)
-    }
-}
-
-private struct SummaryRow: View {
-    let title: String
-    let value: Double
-    var highlight: Bool = false
-    @ObservedObject private var themeManager = ThemeManager.shared
-    @Environment(\.colorScheme) var colorScheme
-
-    var body: some View {
-        HStack {
-            Text(title)
-                .onGlassSecondary()
-            Spacer()
-            Text(value, format: .currency(code: "TRY"))
-                .font(.title3.weight(highlight ? .bold : .medium))
-                .onGlassPrimary()
-        }
-    }
-}
-
-private struct InfoChip: View {
-    let title: String
-    let value: String
-    @ObservedObject private var themeManager = ThemeManager.shared
-    @Environment(\.colorScheme) var colorScheme
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(title)
-                .font(DS.Typography.micro)
-                .onGlassSecondary()
-            Text(value)
-                .font(DS.Typography.cardTitle)
-                .onGlassPrimary()
-        }
-        .padding(.vertical, DS.Padding.element)
-        .padding(.horizontal, DS.Padding.section)
-        .background(themeManager.currentTheme.getCardBackground(for: colorScheme).opacity(0.8), in: RoundedRectangle(cornerRadius: DS.Radius.medium, style: .continuous))
-    }
-}
-
-private struct BankActionsSection: View {
-    @Binding var depositAmount: Double
-    @Binding var withdrawAmount: Double
-    let available: Double
-    let staked: Double
-    let onDeposit: () -> Void
-    let onWithdraw: () -> Void
-    @EnvironmentObject private var localization: LocalizationManager
-    @ObservedObject private var themeManager = ThemeManager.shared
-    @Environment(\.colorScheme) var colorScheme
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: DS.Padding.card) {
-            Text(loc("BANK_ACTIONS"))
-                .font(DS.Typography.sectionTitle)
-                .onGlassPrimary()
-
-            VStack(spacing: 18) {
-                ActionCard(title: loc("BANK_DEPOSIT_TITLE"),
-                           subtitle: loc("BANK_DEPOSIT_SUB"),
-                           balance: available,
-                           amount: $depositAmount,
-                           gradient: Gradient(colors: [Color("ForestGreen"), Color("LakeBlue")]),
-                           buttonTitle: loc("BANK_DEPOSIT_BUTTON"),
-                           action: onDeposit)
-                .environmentObject(localization)
-
-                ActionCard(title: loc("BANK_WITHDRAW_TITLE"),
-                           subtitle: loc("BANK_WITHDRAW_SUB"),
-                           balance: staked,
-                           amount: $withdrawAmount,
-                           gradient: Gradient(colors: [Color("LakeNight"), Color("ForestGreen")]),
-                           buttonTitle: loc("BANK_WITHDRAW_BUTTON"),
-                           action: onWithdraw)
-                .environmentObject(localization)
-            }
-        }
-        .padding(DS.Padding.card)
-        .background(
-            RoundedRectangle(cornerRadius: DS.Radius.large, style: .continuous)
-                .fill(Color.clear)
-        )
-        .liquidGlass(.card, edgeMask: [.top])
-        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.large, style: .continuous))
-    }
-
-    private func loc(_ key: String, _ arguments: CVarArg...) -> String {
-        localization.translate(key, fallback: key, arguments: arguments)
-    }
-}
-
-private struct ActionCard: View {
-    let title: String
-    let subtitle: String
-    let balance: Double
-    @Binding var amount: Double
-    let gradient: Gradient
-    let buttonTitle: String
-    let action: () -> Void
-
-    @FocusState private var isFocused: Bool
-    @EnvironmentObject private var localization: LocalizationManager
-    @ObservedObject private var themeManager = ThemeManager.shared
-    @Environment(\.colorScheme) var colorScheme
-
-    private let formatter: NumberFormatter = {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .decimal
-        formatter.maximumFractionDigits = 2
-        formatter.minimumFractionDigits = 0
-        return formatter
-    }()
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: DS.Padding.section) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(title)
-                    .font(.subheadline.weight(.semibold))
-                    .onGlassPrimary()
-                Text(subtitle)
-                    .font(.caption2)
-                    .onGlassSecondary()
-            }
-
-            HStack {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(loc("BANK_AVAILABLE_LABEL"))
-                        .font(.caption2)
-                        .onGlassSecondary()
-                    Text(balance, format: .currency(code: "TRY"))
-                        .font(.subheadline.weight(.semibold))
-                        .onGlassPrimary()
-                }
-                Spacer()
-            }
-
-            HStack(spacing: 12) {
-                TextField(loc("BANK_AMOUNT_PLACEHOLDER"), value: $amount, formatter: formatter)
-                    .focused($isFocused)
-                    .keyboardType(.decimalPad)
-                    .textFieldStyle(.plain)
-                    .padding(.horizontal, DS.Padding.section)
-                    .padding(.vertical, DS.Padding.section)
-                    .onGlassPrimary()
-                    .background(
-                        RoundedRectangle(cornerRadius: DS.Radius.small, style: .continuous)
-                            .fill(Color("ForestGreen").opacity(0.06))
-                    )
-
-                Button(action: action) {
-                    Text(loc(buttonTitle))
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(.white)
-                        .padding(.horizontal, 18)
-                        .padding(.vertical, 10)
-                        .background(Color("ForestGreen"), in: RoundedRectangle(cornerRadius: DS.Radius.small, style: .continuous))
-                }
-            }
-        }
-        .padding(DS.Padding.card)
-    }
-
-    private func loc(_ key: String, _ arguments: CVarArg...) -> String {
-        localization.translate(key, fallback: key, arguments: arguments)
-    }
-}
-
-private struct AmountControl: View {
-    let title: String
-    @Binding var amount: Double
-    let maxAmount: Double
-    let actionTitle: String
-    let action: () -> Void
-
-    @EnvironmentObject private var localization: LocalizationManager
-
-    private let formatter: NumberFormatter = {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .decimal
-        formatter.maximumFractionDigits = 2
-        formatter.minimumFractionDigits = 0
-        return formatter
-    }()
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Text(title)
-                    .font(.subheadline.weight(.semibold))
-                Spacer()
-                Text(loc("BANK_MAX_FORMAT", maxAmount.formatted(.currency(code: "TRY"))))
-                    .font(.caption)
-                    .onGlassSecondary()
-            }
-
-            HStack(spacing: 12) {
-                TextField(loc("BANK_AMOUNT_PLACEHOLDER"), value: $amount, formatter: formatter)
-                    .keyboardType(.decimalPad)
-                    .textFieldStyle(.roundedBorder)
-                    .frame(maxWidth: 160)
-                Spacer()
-                Button(actionTitle, action: action)
-                    .buttonStyle(.borderedProminent)
-            }
-        }
-    }
-
-    private func loc(_ key: String, _ arguments: CVarArg...) -> String {
-        localization.translate(key, fallback: key, arguments: arguments)
-    }
-}
-
-private struct BankInfoSection: View {
-    let lastRateUpdate: Date
-    let lastInterestApplied: Date
-    @EnvironmentObject private var localization: LocalizationManager
-    @ObservedObject private var themeManager = ThemeManager.shared
-    @Environment(\.colorScheme) var colorScheme
-
-    private var relativeFormatter: RelativeDateTimeFormatter {
-        let formatter = RelativeDateTimeFormatter()
-        formatter.locale = Locale(identifier: localization.language.localeIdentifier)
-        formatter.unitsStyle = .full
-        return formatter
-    }
-
-    private var dateFormatter: DateFormatter {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .medium
-        formatter.timeStyle = .short
-        formatter.locale = Locale(identifier: localization.language.localeIdentifier)
-        return formatter
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: DS.Padding.card) {
-            Text(loc("BANK_INFO"))
-                .font(DS.Typography.sectionTitle)
-                .onGlassPrimary()
-
-            InfoRow(icon: "calendar.badge.clock",
-                    title: loc("BANK_LAST_RATE"),
-                    description: dateFormatter.string(from: lastRateUpdate),
-                    relative: relativeFormatter.localizedString(for: lastRateUpdate, relativeTo: Date()))
-                .environmentObject(localization)
-
-            InfoRow(icon: "arrow.down.to.line",
-                    title: loc("BANK_LAST_INTEREST"),
-                    description: dateFormatter.string(from: lastInterestApplied),
-                    relative: relativeFormatter.localizedString(for: lastInterestApplied, relativeTo: Date()))
-                .environmentObject(localization)
-        }
-        .padding(DS.Padding.card)
-        .background(
-            RoundedRectangle(cornerRadius: DS.Radius.large, style: .continuous)
-                .fill(Color.clear)
-        )
-        .liquidGlass(.card, edgeMask: [.top])
-        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.large, style: .continuous))
-    }
-
-    private func loc(_ key: String, _ arguments: CVarArg...) -> String {
-        localization.translate(key, fallback: key, arguments: arguments)
-    }
-
-    private struct InfoRow: View {
-        let icon: String
-        let title: String
-        let description: String
-        let relative: String
-        @EnvironmentObject private var localization: LocalizationManager
-        @ObservedObject private var themeManager = ThemeManager.shared
-        @Environment(\.colorScheme) var colorScheme
-
-        var body: some View {
-            HStack(alignment: .top, spacing: 12) {
-                Image(systemName: icon)
-                    .font(.body)
-                    .onGlassSecondary()
-                    .frame(width: 28)
-
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(title)
-                        .font(.subheadline.weight(.semibold))
-                        .onGlassPrimary()
-                    Text(description)
-                        .font(.caption)
-                        .onGlassSecondary()
-                    Text(relative)
-                        .font(.caption2)
-                        .onGlassSecondary()
-                }
-
-                Spacer()
-            }
-        }
-    }
-}
-

@@ -8,32 +8,27 @@ struct HomeView: View {
     @ObservedObject private var themeManager = ThemeManager.shared
     @Environment(\.colorScheme) var colorScheme
     @AppStorage("userName") private var userName: String = ""
-    @State private var selectedSegment: Segment = .overview
     @State private var selectedAsset: RoomAsset?
     @State private var showingInventory = false
     @State private var showingPaywall = false
     @State private var showingCoinStore = false
     @State private var toastMessage: ToastMessage?
-    @Namespace private var animation
-
-    private var greetingName: String {
-        let trimmed = userName.trimmingCharacters(in: .whitespacesAndNewlines)
-        return trimmed.isEmpty ? loc("HOME_GUEST_NAME") : trimmed
-    }
 
     var body: some View {
-        ScrollView {
-            VStack(spacing: DS.Padding.card) {
-                heroHeader
-                segmentedControl
-                contentForSelectedSegment
-            }
-            .padding(.vertical, DS.Padding.section)
-            .padding(.horizontal, DS.Padding.screen)
-            .padding(.bottom, 40)
+        VStack(spacing: 24) {
+            // MARK: - Active Theme
+            activeThemeCard
+
+            // MARK: - Selected / Studio
+            equippedSection
+
+            // MARK: - Market
+            marketSection
         }
-        .scrollIndicators(.never)
-        .background(themeManager.currentTheme.getBackgroundGradient(for: colorScheme))
+        .padding(.horizontal, DS.Padding.screen) // Matches finance view horizontal paddings if removed there. Actually since HomeView is placed INSIDE FinanceView which ALREADY has horizontal padding, this might cause double padding.
+        // I will remove the outer horizontal padding here, since FinanceView already handles the horizontal bounds for `HomeView`.
+        .padding(.horizontal, 0) // Explicitly no horizontal padding
+        .padding(.top, 8)
         .overlay(alignment: .top) {
             if let toastMessage {
                 ToastBanner(message: toastMessage)
@@ -47,255 +42,113 @@ struct HomeView: View {
                 .environmentObject(room)
                 .environmentObject(localization)
         }
-        .sheet(isPresented: $showingPaywall) {
-            PaywallView()
-        }
-        .sheet(isPresented: $showingCoinStore) {
-            CoinStoreView()
-        }
         .sheet(item: $selectedAsset) { asset in
             PurchaseSheet(asset: asset) { result in
-                withAnimation(DS.Animation.defaultSpring) {
+                withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
                     toastMessage = result
                 }
                 DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-                    withAnimation(DS.Animation.quickSpring) {
+                    withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
                         if toastMessage?.id == result.id {
                             toastMessage = nil
                         }
                     }
                 }
             }
-                .environmentObject(room)
-                .environmentObject(wallet)
-                .environmentObject(localization)
-                .presentationDetents([.fraction(0.42), .medium])
-                .presentationDragIndicator(.visible)
-                .presentationBackgroundInteraction(.automatic)
+            .environmentObject(room)
+            .environmentObject(wallet)
+            .environmentObject(localization)
+            .presentationDetents([.fraction(0.42), .medium])
+            .presentationDragIndicator(.visible)
+            .presentationBackgroundInteraction(.automatic)
         }
     }
 
-    private var bloomBackground: some View {
-        ZStack {
-            themeManager.currentTheme.getBackgroundGradient(for: colorScheme)
-            if themeManager.currentTheme == .gradient {
-                RadialGradient(colors: [Color.white.opacity(0.08), .clear], center: .topLeading, startRadius: 80, endRadius: 360)
-                RadialGradient(colors: [Color.white.opacity(0.08), .clear], center: .bottomTrailing, startRadius: 60, endRadius: 320)
+    // MARK: - Overview / Theme
+    
+    private var activeThemeCard: some View {
+        HStack(spacing: 16) {
+            Image(systemName: "sparkles")
+                .font(.system(size: 20, weight: .light))
+                .foregroundStyle(Color.secondary)
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(loc("HOME_ACTIVE_THEME_TITLE"))
+                    .font(.system(size: 15, weight: .medium, design: .rounded))
+                    .onGlassPrimary()
+                Text(room.currentTheme.name)
+                    .font(.system(size: 13, weight: .regular, design: .rounded))
+                    .foregroundStyle(Color.secondary)
             }
+
+            Spacer()
+
+            Button {
+                let generator = UIImpactFeedbackGenerator(style: .light)
+                generator.impactOccurred()
+                showingInventory = true
+            } label: {
+                Text(loc("HOME_ACTIVE_THEME_BUTTON"))
+                    .font(.system(size: 13, weight: .medium, design: .rounded))
+                    .foregroundStyle(Color.primary)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
+                    .background(Color.primary.opacity(0.04), in: Capsule())
+                    .overlay(Capsule().strokeBorder(Color.primary.opacity(0.1), lineWidth: 0.5))
+            }
+            .buttonStyle(ScaleButtonStyle())
         }
-        .ignoresSafeArea()
-    }
-
-    private var heroHeader: some View {
-        VStack(spacing: DS.Padding.card) {
-            HStack(alignment: .top) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(String(format: loc("HOME_GREETING"), greetingName))
-                        .font(DS.Typography.heroTitle)
-                        .onGlassPrimary()
-
-                    Text(loc("HOME_SUBTITLE"))
-                        .font(DS.Typography.body)
-                        .onGlassSecondary()
-                }
-
-                Spacer()
-
-                Button { showingInventory = true } label: {
-                    Image(systemName: "tray.full")
-                        .font(.body.weight(.medium))
-                        .onGlassSecondary()
-                        .frame(width: 40, height: 40)
-                }
-            }
-
-            Button { showingCoinStore = true } label: {
-                HStack {
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text(wallet.balance, format: .currency(code: "TRY"))
-                            .font(.system(size: 36, weight: .bold, design: .rounded))
-                            .onGlassPrimary()
-
-                        HStack(spacing: DS.Padding.element) {
-                            Label(loc("HOME_BALANCE_STAKED"), systemImage: "lock.fill")
-                                .font(DS.Typography.caption)
-                                .onGlassSecondary()
-                            Text(wallet.stakedBalance, format: .currency(code: "TRY"))
-                                .font(DS.Typography.caption)
-                                .onGlassPrimary()
-                        }
-                    }
-                    Spacer()
-                    Image(systemName: "chevron.right")
-                        .font(.body.weight(.medium))
-                        .onGlassSecondary()
-                }
-            }
-            .buttonStyle(.plain)
-
-            HStack(spacing: 10) {
-                if wallet.passiveIncomeBoost > 0 {
-                    Text("+\(Int(wallet.passiveIncomeBoost * 100))% boost")
-                        .font(DS.Typography.micro)
-                        .foregroundStyle(Color("ForestGreen"))
-                        .padding(.vertical, 5)
-                        .padding(.horizontal, 10)
-                        .background(Color("ForestGreen").opacity(0.1), in: Capsule())
-                }
-
-                if !entitlements.isPro {
-                    Button { showingPaywall = true } label: {
-                        Label(loc("PRO_BADGE"), systemImage: "crown.fill")
-                            .font(DS.Typography.micro)
-                            .foregroundStyle(.white)
-                            .padding(.vertical, 5)
-                            .padding(.horizontal, 10)
-                            .background(Color("ForestGreen"), in: Capsule())
-                    }
-                }
-
-                Spacer()
-            }
-        }
-        .padding(DS.Padding.card)
+        .padding(.vertical, 16)
+        .padding(.horizontal, 20)
         .background(
-            RoundedRectangle(cornerRadius: DS.Radius.xl, style: .continuous)
-                .fill(.clear)
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .fill(Color.primary.opacity(0.01))
         )
-        .liquidGlass(.hero, edgeMask: [.top])
-        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.xl, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .strokeBorder(Color.primary.opacity(0.05), lineWidth: 0.5)
+        )
     }
 
-    private var segmentedControl: some View {
-        HStack(spacing: 0) {
-            ForEach(Segment.allCases, id: \.self) { segment in
-                Button {
-                    withAnimation(DS.Animation.quickSpring) {
-                        selectedSegment = segment
-                    }
-                } label: {
-                    Text(loc(segment.titleKey))
-                        .font(DS.Typography.body.weight(selectedSegment == segment ? .semibold : .regular))
-                        .foregroundStyle(
-                            selectedSegment == segment
-                            ? Color("ForestGreen")
-                            : themeManager.currentTheme.glassSecondaryText(for: colorScheme)
-                        )
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 44)
-                        .background(
-                            Group {
-                                if selectedSegment == segment {
-                                    Capsule()
-                                        .fill(Color("ForestGreen").opacity(0.1))
-                                        .matchedGeometryEffect(id: "segment", in: animation)
-                                }
-                            }
-                        )
-                }
-                .buttonStyle(.plain)
-            }
-        }
-        .padding(4)
-    }
-
-    @ViewBuilder
-    private var contentForSelectedSegment: some View {
-        Group {
-            switch selectedSegment {
-            case .overview:
-                overviewSection
-            case .studio:
-                equippedSection
-            case .market:
-                marketSection
-            }
-        }
-        .id(selectedSegment)
-        .transition(.opacity)
-    }
-
-    private var overviewSection: some View {
-        VStack(spacing: DS.Padding.section) {
-            GlassCard(title: loc("HOME_ACTIVE_THEME_TITLE"), subtitle: room.currentTheme.name, icon: "sparkles") {
-                HStack {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(loc("HOME_ACTIVE_THEME_LABEL"))
-                            .font(.caption2)
-                            .onGlassSecondary()
-                        Text(themeEnergyText)
-                            .font(.subheadline.weight(.semibold))
-                            .onGlassPrimary()
-                    }
-                    Spacer()
-                    Button {
-                        showingInventory = true
-                    } label: {
-                        Text(loc("HOME_ACTIVE_THEME_BUTTON"))
-                            .font(.caption.weight(.medium))
-                            .foregroundStyle(Color("ForestGreen"))
-                    }
-                }
-            }
-
-            GlassCard(title: loc("HOME_STATS_TITLE"), subtitle: loc("HOME_STATS_SUBTITLE"), icon: "flame.fill") {
-                HStack(spacing: 0) {
-                    StatTile(title: loc("HOME_STATS_COMPLETED"), value: completedEarnedCount)
-                    Divider().frame(height: 28)
-                    StatTile(title: loc("HOME_STATS_SPENT"), value: spentTotalText)
-                    Divider().frame(height: 28)
-                    StatTile(title: loc("HOME_STATS_PASSIVE"), value: passiveBoostText)
-                }
-            }
-        }
-    }
-
-    private var themeEnergyText: String {
-        let bonus = min(Int(wallet.passiveIncomeBoost * 120), 100)
-        return String(format: loc("HOME_THEME_BONUS"), bonus)
-    }
-
-    private var completedEarnedCount: String {
-        "\(wallet.transactions.filter { $0.type == .earned }.count)"
-    }
-
-    private var spentTotalText: String {
-        let total = wallet.transactions.filter { $0.type == .spent }.map { $0.amount }.reduce(0, +)
-        return total.formatted(.currency(code: "TRY"))
-    }
-
-    private var passiveBoostText: String {
-        "+%" + String(Int(wallet.passiveIncomeBoost * 100))
-    }
+    // MARK: - Equipped / Studio
 
     private var equippedSection: some View {
-        VStack(alignment: .leading, spacing: DS.Padding.section) {
+        VStack(alignment: .leading, spacing: 16) {
             HStack {
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: 4) {
                     Text(loc("HOME_STUDIO_TITLE"))
-                        .font(.subheadline.weight(.semibold))
+                        .font(.system(size: 17, weight: .regular, design: .rounded))
                         .onGlassPrimary()
                     Text(loc("HOME_STUDIO_SUBTITLE"))
-                        .font(.caption2)
-                        .onGlassSecondary()
+                        .font(.system(size: 13, weight: .regular, design: .rounded))
+                        .foregroundStyle(Color.secondary)
                 }
                 Spacer()
                 Button {
+                    let generator = UIImpactFeedbackGenerator(style: .light)
+                    generator.impactOccurred()
                     showingInventory = true
                 } label: {
                     Text(loc("HOME_BUTTON_INVENTORY"))
-                        .font(.caption.weight(.medium))
-                        .foregroundStyle(Color("ForestGreen"))
+                        .font(.system(size: 13, weight: .medium, design: .rounded))
+                        .foregroundStyle(Color.primary)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                        .background(Color.primary.opacity(0.04), in: Capsule())
+                        .overlay(Capsule().strokeBorder(Color.primary.opacity(0.1), lineWidth: 0.5))
                 }
+                .buttonStyle(ScaleButtonStyle())
             }
 
             if room.placedItems.isEmpty {
                 EmptyStateView(message: loc("HOME_STUDIO_EMPTY"))
             } else {
-                LazyVGrid(columns: [GridItem(.adaptive(minimum: 150), spacing: 12)], spacing: 12) {
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: 150), spacing: 16)], spacing: 16) {
                     ForEach(room.placedItems) { item in
                         DecorCard(asset: item.asset) {
-                            withAnimation(DS.Animation.defaultSpring) {
+                            withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+                                let generator = UIImpactFeedbackGenerator(style: .rigid)
+                                generator.impactOccurred()
                                 room.remove(assetID: item.asset.id)
                             }
                         }
@@ -304,55 +157,52 @@ struct HomeView: View {
                 }
             }
         }
-        .padding(DS.Padding.card)
+        .padding(.vertical, 20)
+        .padding(.horizontal, 20)
         .background(
-            RoundedRectangle(cornerRadius: DS.Radius.large, style: .continuous)
-                .fill(.clear)
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .fill(Color.primary.opacity(0.01))
         )
-        .liquidGlass(.card, edgeMask: [.top])
-        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.large, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .strokeBorder(Color.primary.opacity(0.05), lineWidth: 0.5)
+        )
     }
 
+    // MARK: - Market
+
     private var marketSection: some View {
-        VStack(alignment: .leading, spacing: DS.Padding.section) {
-            VStack(alignment: .leading, spacing: 2) {
+        VStack(alignment: .leading, spacing: 24) {
+            VStack(alignment: .leading, spacing: 4) {
                 Text(loc("HOME_MARKET_TITLE"))
-                    .font(.subheadline.weight(.semibold))
+                    .font(.system(size: 17, weight: .regular, design: .rounded))
                     .onGlassPrimary()
                 Text(loc("HOME_MARKET_SUBTITLE"))
-                    .font(.caption2)
-                    .onGlassSecondary()
+                    .font(.system(size: 13, weight: .regular, design: .rounded))
+                    .foregroundStyle(Color.secondary)
             }
+            .padding(.horizontal, 20)
 
             ForEach(room.availableMarketSections) { section in
                 MarketListSectionView(section: section,
                                       isUnlocked: { room.unlockedAssets.contains($0) }) { asset in
+                    let generator = UIImpactFeedbackGenerator(style: .light)
+                    generator.impactOccurred()
                     selectedAsset = asset
                 }
                 .environmentObject(localization)
             }
         }
-        .padding(DS.Padding.card)
+        .padding(.vertical, 20)
+        .padding(.bottom, 8)
         .background(
-            RoundedRectangle(cornerRadius: DS.Radius.large, style: .continuous)
-                .fill(.clear)
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .fill(Color.primary.opacity(0.01))
         )
-        .liquidGlass(.card, edgeMask: [.top])
-        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.large, style: .continuous))
-    }
-
-    private enum Segment: CaseIterable {
-        case overview
-        case studio
-        case market
-
-        var titleKey: String {
-            switch self {
-            case .overview: return "HOME_SEGMENT_OVERVIEW"
-            case .studio: return "HOME_SEGMENT_STUDIO"
-            case .market: return "HOME_SEGMENT_MARKET"
-            }
-        }
+        .overlay(
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .strokeBorder(Color.primary.opacity(0.05), lineWidth: 0.5)
+        )
     }
 
     private func loc(_ key: String, _ arguments: CVarArg...) -> String {
@@ -362,74 +212,20 @@ struct HomeView: View {
 
 // MARK: - Supporting Views
 
-private struct BalanceCard: View {
-    let title: String
-    let value: Double
-    let icon: String
-    let tint: LinearGradient
-    @EnvironmentObject private var localization: LocalizationManager
-    @ObservedObject private var themeManager = ThemeManager.shared
-    @Environment(\.colorScheme) var colorScheme
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Image(systemName: icon)
-                .font(.body.weight(.medium))
-                .onGlassSecondary()
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(value, format: .currency(code: "TRY"))
-                    .font(.title3.weight(.bold))
-                    .onGlassPrimary()
-                Text(title)
-                    .font(.caption2)
-                    .onGlassSecondary()
-            }
-        }
-        .padding(DS.Padding.card)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            RoundedRectangle(cornerRadius: DS.Radius.large, style: .continuous)
-                .fill(.clear)
-        )
-        .liquidGlass(.card, edgeMask: [.top])
-        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.large, style: .continuous))
-    }
-}
-
-// GlassCard is now shared from Components/GlassCard.swift
-
-private struct StatTile: View {
-    let title: String
-    let value: String
-
-    var body: some View {
-        VStack(spacing: 4) {
-            Text(value)
-                .font(DS.Typography.cardTitle)
-                .onGlassPrimary()
-            Text(title)
-                .font(DS.Typography.micro)
-                .onGlassSecondary()
-        }
-        .frame(maxWidth: .infinity)
-    }
-}
-
 private struct EmptyStateView: View {
     let message: String
 
     var body: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: 12) {
             Image(systemName: "sparkles")
-                .font(.title2)
-                .onGlassSecondary()
+                .font(.system(size: 24, weight: .light))
+                .foregroundStyle(Color.secondary.opacity(0.6))
             Text(message)
-                .font(.caption)
-                .onGlassSecondary()
+                .font(.system(size: 13, weight: .regular, design: .rounded))
+                .foregroundStyle(Color.secondary)
                 .multilineTextAlignment(.center)
         }
-        .padding(DS.Padding.card)
+        .padding(32)
         .frame(maxWidth: .infinity)
     }
 }
@@ -442,47 +238,51 @@ private struct DecorCard: View {
     @Environment(\.colorScheme) var colorScheme
 
     var body: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: 16) {
             Image(systemName: asset.iconName)
-                .font(.system(size: 36, weight: .medium))
-                .onGlassPrimary()
+                .font(.system(size: 32, weight: .light))
+                .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
 
-            Text(localizedName)
-                .font(DS.Typography.cardTitle)
-                .onGlassPrimary()
-                .multilineTextAlignment(.center)
-                .lineLimit(2)
+            VStack(spacing: 4) {
+                Text(localizedName)
+                    .font(.system(size: 15, weight: .medium, design: .rounded))
+                    .onGlassPrimary()
+                    .multilineTextAlignment(.center)
+                    .lineLimit(2)
 
-            Text(localizedDescription)
-                .font(.caption2)
-                .onGlassSecondary()
-                .multilineTextAlignment(.center)
-                .lineLimit(2)
+                Text(localizedDescription)
+                    .font(.system(size: 12, weight: .regular, design: .rounded))
+                    .foregroundStyle(Color.secondary)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(2)
+            }
 
             Button(role: .destructive, action: removeAction) {
-                Label(loc("HOME_DECOR_REMOVE"), systemImage: "trash")
-                    .font(.caption2.weight(.medium))
+                Text(loc("HOME_DECOR_REMOVE"))
+                    .font(.system(size: 11, weight: .semibold, design: .rounded))
+                    .tracking(1)
                     .foregroundStyle(.red.opacity(0.8))
+                    .padding(.vertical, 6)
+                    .padding(.horizontal, 16)
+                    .background(Color.red.opacity(0.05), in: Capsule())
+                    .overlay(Capsule().strokeBorder(Color.red.opacity(0.2), lineWidth: 0.5))
             }
+            .buttonStyle(ScaleButtonStyle())
         }
-        .padding(DS.Padding.card)
+        .padding(20)
         .frame(maxWidth: .infinity)
         .background(
-            RoundedRectangle(cornerRadius: DS.Radius.medium, style: .continuous)
-                .fill(.clear)
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(Color.primary.opacity(0.02))
         )
-        .liquidGlass(.card, edgeMask: [.top])
-        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.medium, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .strokeBorder(Color.primary.opacity(0.06), lineWidth: 0.5)
+        )
     }
 
-    private var localizedName: String {
-        loc(asset.nameKey)
-    }
-
-    private var localizedDescription: String {
-        loc(asset.descriptionKey)
-    }
-
+    private var localizedName: String { loc(asset.nameKey) }
+    private var localizedDescription: String { loc(asset.descriptionKey) }
     private func loc(_ key: String, _ arguments: CVarArg...) -> String {
         localization.translate(key, fallback: key, arguments: arguments)
     }
@@ -498,49 +298,45 @@ private struct MarketItemCard: View {
 
     var body: some View {
         Button(action: action) {
-            VStack(spacing: 8) {
+            VStack(spacing: 12) {
                 Image(systemName: asset.iconName)
-                    .font(.title3.weight(.medium))
-                    .onGlassPrimary()
+                    .font(.system(size: 28, weight: .light))
+                    .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
 
                 Text(localizedName)
-                    .font(.subheadline.weight(.medium))
+                    .font(.system(size: 14, weight: .medium, design: .rounded))
                     .onGlassPrimary()
                     .multilineTextAlignment(.center)
                     .lineLimit(2)
 
-                Text(asset.price, format: .currency(code: "TRY"))
-                    .font(.caption)
-                    .onGlassSecondary()
-
                 if isUnlocked {
                     Text(loc("HOME_MARKET_PURCHASED"))
-                        .font(.caption2.weight(.medium))
-                        .foregroundStyle(Color("ForestGreen"))
+                        .font(.system(size: 10, weight: .bold, design: .rounded))
+                        .tracking(1)
+                        .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme).opacity(0.6))
+                } else {
+                    Text(asset.price, format: .currency(code: "TRY"))
+                        .font(.system(size: 12, weight: .regular, design: .rounded))
+                        .foregroundStyle(Color.secondary)
                 }
             }
-            .padding(DS.Padding.card)
+            .padding(20)
             .frame(maxWidth: .infinity)
             .background(
-                RoundedRectangle(cornerRadius: DS.Radius.medium, style: .continuous)
-                    .fill(.clear)
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .fill(Color.primary.opacity(isUnlocked ? 0.01 : 0.02))
             )
-            .liquidGlass(.card, edgeMask: [.top])
-            .clipShape(RoundedRectangle(cornerRadius: DS.Radius.medium, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .strokeBorder(Color.primary.opacity(isUnlocked ? 0.03 : 0.06), lineWidth: 0.5)
+            )
         }
         .buttonStyle(ScaleButtonStyle())
         .disabled(isUnlocked)
-        .opacity(isUnlocked ? 0.5 : 1)
+        .opacity(isUnlocked ? 0.6 : 1)
     }
 
-    private var localizedName: String {
-        loc(asset.nameKey)
-    }
-
-    private var localizedDescription: String {
-        loc(asset.descriptionKey)
-    }
-
+    private var localizedName: String { loc(asset.nameKey) }
     private func loc(_ key: String, _ arguments: CVarArg...) -> String {
         localization.translate(key, fallback: key, arguments: arguments)
     }
@@ -553,18 +349,27 @@ private struct MarketListSectionView: View {
     @EnvironmentObject private var localization: LocalizationManager
 
     var body: some View {
-        VStack(alignment: .leading, spacing: DS.Padding.section) {
+        VStack(alignment: .leading, spacing: 16) {
             Text(loc(section.titleKey))
-                .font(.subheadline.weight(.semibold))
-                .onGlassPrimary()
+                .font(.system(size: 14, weight: .medium, design: .rounded))
+                .foregroundStyle(Color.secondary)
+                .padding(.horizontal, 20)
+                .textCase(.uppercase)
+                .tracking(1)
 
-            LazyVGrid(columns: [GridItem(.adaptive(minimum: 150), spacing: 12)], spacing: 12) {
-                ForEach(section.assets) { asset in
-                    MarketItemCard(asset: asset,
-                                   isUnlocked: isUnlocked(asset.id),
-                                   action: { action(asset) })
-                    .environmentObject(localization)
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 12) {
+                    Spacer().frame(width: 8)
+                    ForEach(section.assets) { asset in
+                        MarketItemCard(asset: asset,
+                                       isUnlocked: isUnlocked(asset.id),
+                                       action: { action(asset) })
+                        .frame(width: 140)
+                        .environmentObject(localization)
+                    }
+                    Spacer().frame(width: 8)
                 }
+                .padding(.bottom, 8)
             }
         }
     }
@@ -587,53 +392,55 @@ private struct PurchaseSheet: View {
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 18) {
+            VStack(spacing: 24) {
                 Image(systemName: asset.iconName)
-                    .font(.system(size: 56, weight: .semibold))
-                    .foregroundStyle(Color("ForestGreen"))
-                    .padding(16)
-                    .background(themeManager.currentTheme.getCardBackground(for: colorScheme), in: RoundedRectangle(cornerRadius: DS.Radius.medium, style: .continuous))
+                    .font(.system(size: 48, weight: .light))
+                    .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
+                    .padding(24)
+                    .background(Color.primary.opacity(0.03), in: Circle())
+                    .overlay(Circle().strokeBorder(Color.primary.opacity(0.08), lineWidth: 0.5))
 
-                VStack(spacing: 6) {
+                VStack(spacing: 8) {
                     Text(loc(asset.nameKey))
-                        .font(.title3.weight(.semibold))
+                        .font(.system(size: 20, weight: .semibold, design: .rounded))
                         .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
 
                     Text(loc(asset.descriptionKey))
-                        .font(.subheadline)
+                        .font(.system(size: 14, weight: .regular, design: .rounded))
                         .multilineTextAlignment(.center)
-                        .foregroundStyle(themeManager.currentTheme.getSecondaryTextColor(for: colorScheme))
-                        .padding(.horizontal)
+                        .foregroundStyle(Color.secondary)
+                        .padding(.horizontal, 24)
                 }
 
                 Text(asset.price, format: .currency(code: "TRY"))
-                    .font(.title3.weight(.bold))
-                    .foregroundStyle(Color("ForestGreen"))
+                    .font(.system(size: 18, weight: .medium, design: .rounded))
+                    .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
 
                 if placementSuccess {
-                    Label(loc("HOME_PURCHASE_PLACED", loc(asset.nameKey)), systemImage: "checkmark.circle.fill")
-                        .font(.footnote.weight(.semibold))
+                    Label(loc("HOME_PURCHASE_PLACED", loc(asset.nameKey)), systemImage: "checkmark")
+                        .font(.system(size: 12, weight: .semibold, design: .rounded))
                         .foregroundStyle(.green)
                         .padding(.top, 4)
                 }
 
                 Button {
+                    let generator = UIImpactFeedbackGenerator(style: .medium)
+                    generator.impactOccurred()
                     purchaseAndPlace()
                 } label: {
                     Text(room.unlockedAssets.contains(asset.id) ? loc("HOME_PURCHASE_PLACE") : loc("HOME_PURCHASE_BUY_PLACE"))
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(.white)
+                        .font(.system(size: 15, weight: .medium, design: .rounded))
+                        .foregroundStyle(themeManager.currentTheme == .light || colorScheme == .light ? .white : .black)
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
-                        .background(Color("ForestGreen"), in: RoundedRectangle(cornerRadius: DS.Radius.medium, style: .continuous))
+                        .padding(.vertical, 14)
+                        .background(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
                 }
-                .padding(.horizontal)
+                .buttonStyle(ScaleButtonStyle())
+                .padding(.horizontal, 24)
                 .padding(.bottom, 12)
             }
-                .padding(.horizontal, 24)
-                .padding(.bottom, 24)
-                .padding(.top, 24)
-                .background(themeManager.currentTheme.sheetBackground(for: colorScheme))
+            .padding(.top, 32)
+            .background(themeManager.currentTheme.sheetBackground(for: colorScheme))
         }
     }
 
@@ -653,6 +460,8 @@ private struct PurchaseSheet: View {
         } else {
             let message = ToastMessage(text: loc("HOME_PURCHASE_BALANCE_ERROR"), style: .error)
             completion(message)
+            let generator = UINotificationFeedbackGenerator()
+            generator.notificationOccurred(.error)
         }
     }
 
@@ -675,12 +484,12 @@ private struct OwnedItemsView: View {
             Group {
                 if assets.isEmpty {
                     VStack(spacing: 16) {
-                        Image(systemName: "cube.transparent")
-                            .font(.system(size: 50))
-                            .foregroundStyle(themeManager.currentTheme.getSecondaryTextColor(for: colorScheme))
+                        Image(systemName: "cube")
+                            .font(.system(size: 48, weight: .light))
+                            .foregroundStyle(Color.secondary.opacity(0.6))
                         Text(loc("HOME_OWNED_EMPTY"))
-                            .font(.callout)
-                            .foregroundStyle(themeManager.currentTheme.getSecondaryTextColor(for: colorScheme))
+                            .font(.system(size: 14, weight: .regular, design: .rounded))
+                            .foregroundStyle(Color.secondary)
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .background(themeManager.currentTheme.sheetBackground(for: colorScheme))
@@ -689,42 +498,56 @@ private struct OwnedItemsView: View {
                         ForEach(assets) { asset in
                             HStack(spacing: 16) {
                                 Image(systemName: asset.iconName)
-                                    .font(.title3)
+                                    .font(.system(size: 20, weight: .light))
                                     .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
-                                    .frame(width: 36, height: 36)
+                                    .frame(width: 44, height: 44)
                                     .background(
-                                        RoundedRectangle(cornerRadius: DS.Radius.small, style: .continuous)
-                                            .fill(themeManager.currentTheme.getCardBackground(for: colorScheme))
+                                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                            .fill(Color.primary.opacity(0.04))
                                     )
 
                                 VStack(alignment: .leading, spacing: 4) {
                                     Text(loc(asset.nameKey))
-                                        .font(.headline)
+                                        .font(.system(size: 15, weight: .medium, design: .rounded))
                                     Text(loc(asset.descriptionKey))
-                                        .font(.caption)
-                                        .foregroundStyle(themeManager.currentTheme.getSecondaryTextColor(for: colorScheme))
+                                        .font(.system(size: 12, weight: .regular, design: .rounded))
+                                        .foregroundStyle(Color.secondary)
                                 }
 
                                 Spacer()
 
-                                Button(loc("HOME_PURCHASE_PLACE")) {
+                                Button {
+                                    let generator = UIImpactFeedbackGenerator(style: .light)
+                                    generator.impactOccurred()
                                     room.place(asset: asset)
+                                } label: {
+                                    Text(loc("HOME_PURCHASE_PLACE"))
+                                        .font(.system(size: 12, weight: .semibold, design: .rounded))
+                                        .foregroundStyle(themeManager.currentTheme.getPrimaryTextColor(for: colorScheme))
+                                        .padding(.horizontal, 16)
+                                        .padding(.vertical, 8)
+                                        .background(Color.primary.opacity(0.05), in: Capsule())
                                 }
-                                .buttonStyle(.borderedProminent)
-                                .tint(Color("ForestGreen"))
+                                .buttonStyle(ScaleButtonStyle())
                             }
                             .padding(.vertical, 4)
+                            .listRowBackground(Color.clear)
                         }
                     }
-                    .listStyle(.insetGrouped)
+                    .listStyle(.plain)
                     .scrollContentBackground(.hidden)
                     .background(themeManager.currentTheme.sheetBackground(for: colorScheme))
                 }
             }
             .navigationTitle(title)
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button(loc("HOME_NAV_CLOSE")) { dismiss() }
+                    Button(action: { dismiss() }) {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundStyle(Color.secondary)
+                    }
                 }
             }
             .presentationBackground(.regularMaterial)
@@ -753,59 +576,28 @@ private struct ToastBanner: View {
     let message: ToastMessage
 
     var body: some View {
-        HStack(spacing: 10) {
-            Image(systemName: message.style == .success ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
-                .font(.body)
-                .foregroundStyle(.white)
+        HStack(spacing: 12) {
+            Image(systemName: message.style == .success ? "checkmark" : "exclamationmark.triangle")
+                .font(.system(size: 14, weight: .medium))
+                .foregroundStyle(Color.primary)
 
             Text(message.text)
-                .font(.subheadline.weight(.medium))
-                .foregroundStyle(.white)
+                .font(.system(size: 13, weight: .medium, design: .rounded))
+                .foregroundStyle(Color.primary)
                 .lineLimit(2)
 
             Spacer(minLength: 0)
         }
-        .padding(.horizontal, DS.Padding.card)
-        .padding(.vertical, DS.Padding.section)
+        .padding(.horizontal, 20)
+        .padding(.vertical, 14)
         .background(
-            RoundedRectangle(cornerRadius: DS.Radius.medium, style: .continuous)
-                .fill(message.style == .success ? Color("ForestGreen") : Color.red.opacity(0.85))
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(Color.primary.opacity(message.style == .success ? 0.05 : 0.08))
+                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .strokeBorder(Color.primary.opacity(0.1), lineWidth: 0.5)
         )
     }
-}
-
-// MARK: - HomeView Extensions
-extension HomeView {
-    private func getBalanceCardGradient(for type: BalanceCardType) -> LinearGradient {
-        switch themeManager.currentTheme {
-        case .system:
-            // For system theme, use adaptive colors
-            let color = type == .primary ? Color.blue : Color.purple
-            return LinearGradient(colors: [color, color.opacity(0.7)], startPoint: .topLeading, endPoint: .bottomTrailing)
-        case .gradient:
-            // For gradient theme, use the original gradients
-            if type == .primary {
-                return LinearGradient(colors: [Color("ForestGreen"), Color("LakeBlue")], startPoint: .topLeading, endPoint: .bottomTrailing)
-            } else {
-                return LinearGradient(colors: [Color("LakeBlue"), Color("LakeNight")], startPoint: .topLeading, endPoint: .bottomTrailing)
-            }
-        case .oledDark, .light:
-            // For other themes, use gradient in dark mode, solid colors in light mode
-            if colorScheme == .dark {
-                if type == .primary {
-                    return LinearGradient(colors: [Color.blue, Color.purple], startPoint: .topLeading, endPoint: .bottomTrailing)
-                } else {
-                    return LinearGradient(colors: [Color.purple, Color.indigo], startPoint: .topLeading, endPoint: .bottomTrailing)
-                }
-            } else {
-                let color = type == .primary ? Color.blue : Color.purple
-                return LinearGradient(colors: [color, color.opacity(0.7)], startPoint: .topLeading, endPoint: .bottomTrailing)
-            }
-        }
-    }
-}
-
-private enum BalanceCardType {
-    case primary
-    case staked
 }

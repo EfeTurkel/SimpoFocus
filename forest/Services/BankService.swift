@@ -25,19 +25,24 @@ final class BankService: ObservableObject {
         lastRateUpdate = Date()
     }
 
+    @MainActor
     func applyDailyInterest(to wallet: WalletViewModel) {
-        let dailyRate = annualInterestRate / 365
+        let baseRate = StoreKitService.shared.isPro ? annualInterestRate : (annualInterestRate * 0.1)
+        let boostedAnnualRate = baseRate * wallet.currentBankBoostMultiplier
+        let dailyRate = boostedAnnualRate / 365
         let interest = wallet.stakedBalance * dailyRate
         guard interest > 0 else { return }
         wallet.depositInterest(amount: interest)
         lastInterestApplied = Date()
     }
 
+    @MainActor
     func applyDailyInterestIfNeeded(to wallet: WalletViewModel) {
         guard let nextDay = calendar.date(byAdding: .day, value: 1, to: lastInterestApplied), Date() >= nextDay else { return }
         applyDailyInterest(to: wallet)
     }
 
+    @MainActor
     func forceApplyInterest(to wallet: WalletViewModel) {
         applyDailyInterest(to: wallet)
     }

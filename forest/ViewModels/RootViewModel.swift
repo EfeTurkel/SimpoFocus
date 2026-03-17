@@ -22,7 +22,6 @@ final class RootViewModel: ObservableObject {
 enum AppTab: String, CaseIterable, Identifiable {
     case forest
     case finance
-    case home
 
     var id: String { rawValue }
 
@@ -30,7 +29,6 @@ enum AppTab: String, CaseIterable, Identifiable {
         switch self {
         case .forest: return "TAB_FOCUS"
         case .finance: return "TAB_FINANCE"
-        case .home: return "TAB_HOME"
         }
     }
 
@@ -38,7 +36,6 @@ enum AppTab: String, CaseIterable, Identifiable {
         switch self {
         case .forest: return "Odak"
         case .finance: return "Finans"
-        case .home: return "Ev"
         }
     }
 
@@ -46,7 +43,6 @@ enum AppTab: String, CaseIterable, Identifiable {
         switch self {
         case .forest: return "leaf.circle"
         case .finance: return "banknote"
-        case .home: return "house"
         }
     }
 
@@ -54,7 +50,6 @@ enum AppTab: String, CaseIterable, Identifiable {
         switch self {
         case .forest: return "leaf.circle.fill"
         case .finance: return "banknote.fill"
-        case .home: return "house.fill"
         }
     }
 }

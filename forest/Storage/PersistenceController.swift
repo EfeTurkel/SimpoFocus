@@ -151,6 +151,30 @@ final class PersistenceController: ObservableObject {
         wallet.$stakingAccruedInterest
             .sink { [weak self] _ in self?.saveWallet(wallet) }
             .store(in: &cancellables)
+
+        wallet.$earningMultiplier
+            .sink { [weak self] _ in self?.saveWallet(wallet) }
+            .store(in: &cancellables)
+
+        wallet.$earningMultiplierExpiresAt
+            .sink { [weak self] _ in self?.saveWallet(wallet) }
+            .store(in: &cancellables)
+
+        wallet.$bankBoostMultiplier
+            .sink { [weak self] _ in self?.saveWallet(wallet) }
+            .store(in: &cancellables)
+
+        wallet.$bankBoostExpiresAt
+            .sink { [weak self] _ in self?.saveWallet(wallet) }
+            .store(in: &cancellables)
+
+        wallet.$marketRefreshCredits
+            .sink { [weak self] _ in self?.saveWallet(wallet) }
+            .store(in: &cancellables)
+
+        wallet.$marketRefreshCreditsExpiresAt
+            .sink { [weak self] _ in self?.saveWallet(wallet) }
+            .store(in: &cancellables)
     }
 
     func setupMarketPersistence(_ market: MarketViewModel, cancellables: inout Set<AnyCancellable>) {
